@@ -1,3 +1,11 @@
 # Auto detect text files and perform LF normalization
 * text=auto
-dispenser_venv
+dispenser_venv/
+/dispenser_venv
+/dispenser_venv
+/dispenser_venv/dispenser_venv
+/dispenser_venv/dispenser_venv/Lib
+/dispenser_venv/dispenser_venv/Lib/site-packages
+/dispenser_venv/dispenser_venv/Lib/site-packages/pip
+/dispenser_venv/dispenser_venv/Lib/site-packages/pip/_internal
+/dispenser_venv/dispenser_venv/Lib/site-packages/pip/_internal/commands
