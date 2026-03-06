@@ -38,6 +38,22 @@ location = 0
 
 #Maak teks voor tijdens mengen
 mengen_bezig, mengen_bezig_rect = create_text("Aan het mengen", (width // 2, height // 2), (255,255,255))
+#Text menu 0
+menu0_text, menu0_text_rect = create_text("START", (width // 2, 100), (255,255,255))
+#Text menu 1
+menu1_text, menu1_text_rect = create_text("2 component dispensing", (width // 2, 100), (255,255,255))
+#Text menu 2
+menu2_text, menu2_text_rect = create_text("4 component dispensing", (width //2, 100))
+#Text menu 3
+menu3_text, menu3_text_rect = create_text("4 component dispensing", (width // 2, 100), (255,255,255))
+#Text menu 4
+menu4_text, menu4_text_rect = create_text("Mixing", (width // 2, 100), (255,255,255))
+#Text menu 5
+menu5_text, menu5_text_rect = create_text("Settings", (width // 2, 100), (255,255,255))
+#Text menu 6
+menu6_text, menu6_text_rect = create_text("Mixing Settings", (width // 2, 100), (255,255,255))
+#Text menu 7
+menu7_text, menu7_text_rect = create_text("Replace cartridge", (width // 2, 100), (255,255,255))
 
 
 
@@ -50,8 +66,6 @@ settings_image, settings_image_rect = load_image(r'./Sprites/settings.png', (100
 #load in return sprite
 return_image, return_image_rect = load_image(r'./Sprites/return.png', (100, 100), loci[4])
 
-#load button
-button_image, button_image_rect = load_image(r'./Sprites/button.png', (100, 100), (width // 2, height // 2 + 100))
 
 running = True
 
@@ -64,12 +78,26 @@ while running:
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_RIGHT: #changing location
                 location += 1
+                
                 if location == 5:
                     location = 0
+                if menu == 5:  
+                    if location == 0:
+                        location = 1
+                    if location == 3:
+                        location = 4
+
             elif event.key == pygame.K_LEFT:
                 location -= 1
+                
                 if location == -1:
                     location = 4
+                if menu == 5:  
+                    if location == 0:
+                        location = 4
+                    if location == 3:
+                        location = 2
+
             elif event.key == pygame.K_RETURN: #state machine for menu navigation
                 if menu == 0:
                     if location == 0:
@@ -103,50 +131,64 @@ while running:
                     else:
                         menu = -1
                 elif menu == 5:
-                    if location == 0:
+                    if location == 1:
                         menu = 6
-                    elif location == 1:
+                    elif location == 2:
                         menu = 7
                     elif location == 4:
                         menu = 0
+                elif menu == 6:
+                    if location == 4:
+                        menu = 5
+                elif menu == 7:
+                    if location == 4:
+                        menu = 5
+
                 
     if menu == 0:
         screen.fill((255, 255, 255))          # clear screen (white background)
+        screen.blit(menu0_text, menu0_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw image
         screen.blit(settings_image, settings_image_rect)  # draw settings image in top right corner
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
     if menu == 1:
         screen.fill((255, 0, 0))          # clear screen (red background)
+        screen.blit(menu1_text, menu1_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw image
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
     if menu == 2:
         screen.fill((0, 255, 0))          # clear screen (green background)
+        screen.blit(menu2_text, menu2_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw image
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
     if menu == 3:
         screen.fill((0, 0, 255))          # clear screen (blue background)
+        screen.blit(menu3_text, menu3_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw image
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
     if menu == 4:
         screen.fill((255, 255, 0))          # clear screen (yellow background)
+        screen.blit(menu4_text, menu4_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw image
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
     if menu == 5:
         screen.fill((255, 0, 255))          # clear screen (magenta background)
+        screen.blit(menu5_text, menu5_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw image
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner    
     if menu == 6:
         screen.fill((0, 255, 255))          # clear screen (cyan background)
+        screen.blit(menu6_text, menu6_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw image
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
     if menu == 7:
         screen.fill((128, 128, 128))          # clear screen (gray background)
+        screen.blit(menu7_text, menu7_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw image
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
     if menu == -1:
         screen.fill((0, 0, 0))          # clear screen (black background)
         screen.blit(mengen_bezig, mengen_bezig_rect)  # draw "mengen bezig" text in the center of the screen
-        screen.blit(button_image, button_image_rect)  # draw button image below the text
 
     pygame.display.flip()           # update display
     if menu == -1:
