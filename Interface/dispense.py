@@ -12,6 +12,7 @@ TESTING = True
 
 density_of_liquid = 1.06
 
+lossfactor = 0.90
 
 tube_inner_diameter = 3  # in mm
 tube_cross_section_area = 3.14159265 * (tube_inner_diameter / 2) ** 2  # in mm^2
@@ -138,7 +139,7 @@ def move_motor(steps, time_used, motor_id):
 
     if TESTING:
         global weight_variable
-        weight_variable += steps * volume_per_step * density_of_liquid
+        weight_variable += steps * volume_per_step * density_of_liquid * lossfactor
 
 
 
