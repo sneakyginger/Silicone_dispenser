@@ -11,6 +11,7 @@ def load_image(path, size, location):
     image.convert_alpha()
     image = pygame.transform.scale(image, size)
     image_rect = image.get_rect()
+    print(image_rect)
     image_rect.center = location
     return image, image_rect
 
@@ -36,7 +37,7 @@ location = 0
 
 
 #Maak teks voor tijdens mengen
-mengen_bezig, mengen_bezig_rect = create_text("Aan het mengen", (width // 2, height // 2))
+mengen_bezig, mengen_bezig_rect = create_text("Aan het mengen", (width // 2, height // 2), (255,255,255))
 
 
 
@@ -49,6 +50,8 @@ settings_image, settings_image_rect = load_image(r'./Sprites/settings.png', (100
 #load in return sprite
 return_image, return_image_rect = load_image(r'./Sprites/return.png', (100, 100), loci[4])
 
+#load button
+button_image, button_image_rect = load_image(r'./Sprites/button.png', (100, 100), (width // 2, height // 2 + 100))
 
 running = True
 
@@ -143,10 +146,11 @@ while running:
     if menu == -1:
         screen.fill((0, 0, 0))          # clear screen (black background)
         screen.blit(mengen_bezig, mengen_bezig_rect)  # draw "mengen bezig" text in the center of the screen
+        screen.blit(button_image, button_image_rect)  # draw button image below the text
 
     pygame.display.flip()           # update display
     if menu == -1:
-        time.sleep(5)
+        time.sleep(1)
         menu = 0
 
     
