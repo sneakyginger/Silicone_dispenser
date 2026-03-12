@@ -54,7 +54,7 @@ def available_locations(current_location, direction, options):
     return current_location
 
 #Maak teks voor tijdens mengen
-mengen_bezig, mengen_bezig_rect = create_text("Aan het mengen", (width // 2, height // 2), (255,255,255))
+mengen_bezig, mengen_bezig_rect = create_text("MIXING", (width // 2, height // 2), (255,255,255))
 #Text menu 0
 menu0_text, menu0_text_rect = create_text("START", (width // 2, 100), (0,0,0))
 #Text menu 1
