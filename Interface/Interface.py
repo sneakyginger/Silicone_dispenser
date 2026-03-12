@@ -83,9 +83,12 @@ settings_image, settings_image_rect = load_image(r'./Sprites/settings.png', (100
 #load in return sprite
 return_image, return_image_rect = load_image(r'./Sprites/return.png', (100, 100), loci[4])
 #load in loading bar sprite
-loading_bar_image, loading_bar_image_rect = load_image(r'./Sprites/button.png',(8,150) ,(200, height//2))
+loading_bar_image, loading_bar_image_rect = load_image(r'./Sprites/white.png',(8,150) ,(200, height//2))
 loading_progress = 0
 loading_bar_width = 8
+weight_bar_image, weight_bar_image_rect = load_image(r'./Sprites/white.png',(8,150) ,(200, height//2))
+weight_progress = 50
+weight_bar_width = 8
 
 #load button sprites to test
 button1_image, button1_image_rect = load_image(r'./Sprites/button.png', (100, 100), (loci[0]))
@@ -113,7 +116,13 @@ while running:
                 if location == 5:
                     location = 0
                 if menu == 1:
-                    location = available_locations(location, "right", [1,4])
+                    if weight_progress < 100:
+                        location  = 0
+                        weight_progress += 1
+                    else:
+                        weight_progress = 100
+                        location = 4
+
                 elif menu == 2:
                     location = available_locations(location, "right", [1,2,4])
                 elif menu == 4:
@@ -127,7 +136,12 @@ while running:
                 if location == -1:
                     location = 4
                 if menu == 1:
-                    location = available_locations(location, "left", [1,4])
+                    if weight_progress > 0:
+                        location  = 0
+                        weight_progress -= 1
+                    else:
+                        weight_progress = 0
+                        location = 4
                 elif menu == 2:
                     location = available_locations(location, "left", [1,2,4])
                 elif menu == 5:
@@ -194,9 +208,15 @@ while running:
     if menu == 1:
         screen.fill((255, 0, 0))          # clear screen (red background)
         screen.blit(menu1_text, menu1_text_rect)  # draw menu text in the center of the screen
-        screen.blit(selection_image, selection_image_rect)  # draw cursor
-        screen.blit(button2_image, button2_image_rect)  # draw button 2
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
+        if location == 4:
+            screen.blit(selection_image, selection_image_rect)  # draw cursor
+        weight_bar_width = abs(weight_progress)*width/2//100
+        weight_bar_image = pygame.transform.scale(weight_bar_image, (int(weight_bar_width), 50))  # scale loading bar based on selected weight
+        weight_bar_image_rect = weight_bar_image.get_rect(midleft=(200, 3/4*height))  # update loading bar position
+        screen.blit(weight_bar_image, weight_bar_image_rect)  # draw loading bar
+        weight_text,weight_rect = create_text("Desired weight: {weight_progress} g", (width // 2, height // 2), (255,255,255))
+        screen.blit(weight_text, weight_rect)  # draw weight text in the center
     if menu == 2:
         screen.fill((0, 255, 0))          # clear screen (green background)
         screen.blit(menu2_text, menu2_text_rect)  # draw menu text in the center of the screen
@@ -235,10 +255,9 @@ while running:
         screen.blit(mengen_bezig, mengen_bezig_rect)  # draw "mengen bezig" text in the center of the screen
         if loading_progress < 100:
             loading_bar_width = loading_progress*width/2//100
-            loading_bar_image = pygame.transform.scale(loading_bar_image, (int(loading_bar_width), 150))  # scale loading bar based on progress
+            loading_bar_image = pygame.transform.scale(loading_bar_image, (int(loading_bar_width), 50))  # scale loading bar based on progress
             loading_bar_image_rect = loading_bar_image.get_rect(midleft=(200, 3/4*height))  # update loading bar position
             screen.blit(loading_bar_image, loading_bar_image_rect)  # draw loading bar
-
         elif loading_progress >= 100:
             menu = 0
             location = 0
