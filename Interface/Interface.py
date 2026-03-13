@@ -33,8 +33,8 @@ def doWork():
         loading_progress = int((ii / work) * 100)+1
 
 pygame.init()
-size = (width, height)= (800, 600)
-screen = pygame.display.set_mode(size)
+screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+width, height = screen.get_size()
 pygame.display.set_caption('Dispenser Interface')
 loci = [(100, height/2), (300, height/2), (500, height/2), (700, height/2), (750, height-50)]
 menu = 0
