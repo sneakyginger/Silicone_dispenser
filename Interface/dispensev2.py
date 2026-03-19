@@ -1,27 +1,43 @@
 import random
+import math
+import time
+
+#import RPi.GPIO as GPIO
+
+
+RASPBERRY = False
+
+control_pins = [7, 11, 13, 15]  # BOARD pin numbers, one per motor
+
+step_delay = 0.001  # in seconds, delay between each microstep pulse
+
+servo_pins = [12, 32, 35, 33]  # BOARD pin numbers for servos 1–4 (hardware PWM, RPi 5)
+
+SERVO_ANGLE_DISPENSE = 0   # degrees — change here to recalibrate the dispense position
+SERVO_ANGLE_MIX      = 90  # degrees — change here to recalibrate the mix position
 
 
 comps_dispensed = [0, 0, 0, 0]  # in gram # for testing, to keep track of how much has been dispensed from each motor
 
 
 # to simulate dispensing, we will add noise to the process
-dispensing_noise_factor = 0.10  # 5% noise in dispensing, for testing purposes
+dispensing_noise_factor = 0.10  # 10% noise in dispensing, for testing purposes
 
-measurement_noise_factor = 0.03  # 1% noise in measurement, for testing purposes
+measurement_noise_factor = 0.03  # 3% noise in measurement, for testing purposes
 
 
-density_of_liquid = 1.06 # in g/ml, density of the liquid being dispensed
+density_of_liquid = 1.06  # in g/ml, density of the liquid being dispensed
 
 
 tube_inner_diameter = 3  # in mm
-tube_cross_section_area = 3.14159265 * (tube_inner_diameter / 2) ** 2  # in mm^2
+tube_cross_section_area = math.pi * (tube_inner_diameter / 2) ** 2  # in mm^2
 arm_length = 60  # in mm
 
-microsteps_per_step = 1 # 16
+microsteps_per_step = 1  # 16
 microsteps_per_revolution = 200 * microsteps_per_step  # 200 steps/rev with 16 microsteps
 
 
-length_per_step = (arm_length * 2 * 3.14159265) / microsteps_per_revolution  # in mm
+length_per_step = (arm_length * 2 * math.pi) / microsteps_per_revolution  # in mm
 volume_per_step = length_per_step * tube_cross_section_area / 1000  # in ml
 
 
@@ -31,68 +47,28 @@ def main():
     print("Starting multi dispensing...")
     print("")
 
-    multi_dispense([10, 20, 30, 40])  # dispense 10 grams from motor 1, 20 grams from motor 2, 30 grams from motor 3, and 40 grams from motor 4 simultaneously
+    multi_dispense([10, 20, 30, 40])  # dispense 10g from motor 1, 20g from motor 2, 30g from motor 3, 40g from motor 4
     show_dispensed_amounts()
 
 
-
-def multi_dispense(amounts, relative_tolerance=0.1):
-    assert(len(amounts) == 4 or len(amounts) == 2), "Must provide amounts for all 4 motors or 2 motors."
-
-    print("Dispensing multiple components:")
-    for i, amount in enumerate(amounts):
-        print(f"Component {i+1}: {amount} grams.")
-    print("")
-
-    measured_results = [0, 0, 0, 0] # measured weight of each component
-    last_measurement = 0
-
-    for i, amount in enumerate(amounts):
-        last_measurement = measure_weight()  # measure weight before dispensing
-        dispense(i+1, amount)  # dispense from motor i+1
-        measured_results[i] = measure_weight() - last_measurement  # measure weight of each component seperately
-    
-    print("Measured weights after dispensing:")
-    for i, measured in enumerate(measured_results):
-        print(f"Component {i+1}: {measured} grams.")
+def dispense_and_measure(component_id, amount):
+    """Dispense a given weight and return the actually measured dispensed amount."""
+    before = measure_weight()
+    dispense(component_id, amount)
+    return measure_weight() - before
 
 
-    # check if the measured weights are within the relative tolerance of the target amounts
-    for i, (measured, target) in enumerate(zip(measured_results, amounts)):
-        if abs(measured - target) > relative_tolerance:
-            print(f"Warning: Component {i+1} is outside the relative tolerance of {relative_tolerance}g. Measured: {measured} grams, Target: {target} grams.")
+def under_tolerance_components(measured_results, amounts, relative_tolerance):
+    """Return list of (index, shortfall) for components below their target by more than tolerance."""
+    return [
+        (i, target - measured)
+        for i, (measured, target) in enumerate(zip(measured_results, amounts))
+        if target - measured > relative_tolerance
+    ]
 
-    # correction loop: top up under-dispensed components until all are within tolerance
-    correction_fraction = 0.10  # add at most 10% of the original target per correction step
-    max_iterations = 10
 
-    iterations_used = 0
-    for iteration in range(max_iterations):
-        components_to_correct = [
-            (i, target - measured)
-            for i, (measured, target) in enumerate(zip(measured_results, amounts))
-            if target - measured > relative_tolerance
-        ]
-
-        if not components_to_correct:
-            print("All components within tolerance.")
-            break
-
-        for i, shortfall in components_to_correct:
-            correction = min(shortfall, amounts[i] * correction_fraction)
-            print(f"Component {i+1}: shortfall {shortfall:.3f}g, correcting by {correction:.3f}g.")
-            last_measurement = measure_weight()
-            dispense(i + 1, correction)
-            measured_results[i] += measure_weight() - last_measurement
-
-        iterations_used += 1
-
-    else:
-        print("Warning: max correction iterations reached. Some components may still be out of tolerance.")
-
-    print(f"Total correction iterations used: {iterations_used}")
-
-    # find the biggest % difference between 2 components (measured/target ratio)
+def biggest_ratio_difference(measured_results, amounts):
+    """Return (i, j, ratios, diff_pct) for the pair of components with the biggest % ratio difference."""
     ratios = [measured / target for measured, target in zip(measured_results, amounts)]
     max_diff_pct = 0
     max_pair = (0, 1)
@@ -103,6 +79,53 @@ def multi_dispense(amounts, relative_tolerance=0.1):
                 max_diff_pct = diff_pct
                 max_pair = (i, j)
     i, j = max_pair
+    return i, j, ratios, max_diff_pct
+
+
+def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, max_iterations=10):
+    assert len(amounts) in (2, 4), "Must provide amounts for 2 or 4 motors."
+
+    print("Dispensing multiple components:")
+    for i, amount in enumerate(amounts):
+        print(f"Component {i+1}: {amount} grams.")
+    print("")
+
+    # initial dispense pass
+    measured_results = [0] * len(amounts)
+    for i, amount in enumerate(amounts):
+        measured_results[i] = dispense_and_measure(i + 1, amount)
+
+    print("Measured weights after dispensing:")
+    for i, measured in enumerate(measured_results):
+        print(f"Component {i+1}: {measured:.3f} grams.")
+
+    # warn about out-of-tolerance components
+    for i, (measured, target) in enumerate(zip(measured_results, amounts)):
+        if abs(measured - target) > relative_tolerance:
+            print(f"Warning: Component {i+1} is outside tolerance of {relative_tolerance}g. Measured: {measured:.3f}g, Target: {target}g.")
+
+    # correction loop: top up under-dispensed components until all are within tolerance
+    iterations_used = 0
+    for iteration in range(max_iterations):
+        to_correct = under_tolerance_components(measured_results, amounts, relative_tolerance)
+
+        if not to_correct:
+            print("All components within tolerance.")
+            break
+
+        for i, shortfall in to_correct:
+            correction = min(shortfall, amounts[i] * correction_fraction)
+            print(f"Component {i+1}: shortfall {shortfall:.3f}g, correcting by {correction:.3f}g.")
+            measured_results[i] += dispense_and_measure(i + 1, correction)
+
+        iterations_used += 1
+    else:
+        print("Warning: max correction iterations reached. Some components may still be out of tolerance.")
+
+    print(f"Total correction iterations used: {iterations_used}")
+
+    # report biggest ratio difference
+    i, j, ratios, max_diff_pct = biggest_ratio_difference(measured_results, amounts)
     print(f"Biggest % difference: Component {i+1} ({ratios[i]*100:.2f}% of target) vs Component {j+1} ({ratios[j]*100:.2f}% of target): {max_diff_pct:.2f}%")
 
 
@@ -110,33 +133,109 @@ def show_dispensed_amounts():
     print("")
     print("Dispensed amounts:")
     for i, amount in enumerate(comps_dispensed):
-        print(f"Component {i+1}: {amount} grams.")
+        print(f"Component {i+1}: {amount:.3f} grams.")
 
 
 def measure_weight():
     noise = random.uniform(-measurement_noise_factor, measurement_noise_factor)
-    measurement = sum(comps_dispensed) * (1 + noise)  # in gram, total weight dispensed with noise
-    return measurement  # for testing, return the total amount dispensed from all motors as the measured weight
-
-
+    return sum(comps_dispensed) * (1 + noise)
 
 
 def dispense(component_id, weight):
     amount = weight / density_of_liquid  # convert weight to volume
-    print(f"Dispensing component {component_id}, amount: {amount}")
-
-
-    # using random number to simulate noise in dispensing, for testing purposes
-
+    print(f"Dispensing component {component_id}, amount: {amount:.4f} ml")
     amount_with_noise = amount * (1 + random.uniform(-dispensing_noise_factor, dispensing_noise_factor))
     move_motor(component_id, amount_with_noise / volume_per_step)
 
 
-
-
 def move_motor(motor_id, steps):
-    print(f"Moving motor {motor_id} by {steps} steps.")
-    comps_dispensed[motor_id - 1] += steps * volume_per_step * density_of_liquid # in gram  # for testing, update the amount dispensed for this motor
+    assert motor_id in [1, 2, 3, 4], "Invalid motor ID. Must be 1, 2, 3, or 4."
+    microsteps = int(steps * microsteps_per_step)
+    pin = control_pins[motor_id - 1]
+    print(f"Moving motor {motor_id} on pin {pin}: {microsteps} microsteps.")
+
+    if RASPBERRY:
+        GPIO.setmode(GPIO.BOARD)
+        for p in control_pins:
+            GPIO.setup(p, GPIO.OUT)
+            GPIO.output(p, 0)
+
+        for i in range(microsteps):
+            GPIO.output(pin, 1)
+            time.sleep(step_delay / 2)
+            GPIO.output(pin, 0)
+            time.sleep(step_delay / 2)
+
+        GPIO.cleanup()
+    else:
+        comps_dispensed[motor_id - 1] += steps * volume_per_step * density_of_liquid  # in gram
+
+
+def _angle_to_duty(angle):
+    """Convert a servo angle in degrees to a PWM duty cycle percentage (for 50 Hz signal).
+
+    Standard mapping: 2.5% = 0°, 7.5% = 90°, 12.5% = 180°.
+    """
+    return 2.5 + (angle / 180.0) * 10.0
+
+
+def set_servo_positions(positions):
+    """
+    Move all 4 servos to the requested positions.
+
+    Each servo can be in one of two positions:
+        0 — dispense: routes liquid toward the dispensing outlet
+        1 — mix:      routes liquid toward the mixing chamber
+
+    The angles used for each position are defined by the module-level constants
+    SERVO_ANGLE_DISPENSE and SERVO_ANGLE_MIX and can be adjusted there to
+    recalibrate the physical positions without changing this function.
+
+    Parameters
+    ----------
+    positions : list[int]
+        A list of exactly 4 integers (0 or 1), one per servo, in order:
+        [servo_1, servo_2, servo_3, servo_4].
+
+    Raises
+    ------
+    AssertionError
+        If the list does not contain exactly 4 elements, or if any element
+        is not 0 or 1.
+
+    Example
+    -------
+        set_servo_positions([0, 1, 0, 1])
+        # Servo 1 → dispense, Servo 2 → mix,
+        # Servo 3 → dispense, Servo 4 → mix
+    """
+    assert len(positions) == 4, "Must provide exactly 4 positions."
+    assert all(p in (0, 1) for p in positions), "Each position must be 0 (dispense) or 1 (mix)."
+
+    angles = [SERVO_ANGLE_DISPENSE if p == 0 else SERVO_ANGLE_MIX for p in positions]
+
+    for i, (pin, angle) in enumerate(zip(servo_pins, angles)):
+        label = "dispense" if positions[i] == 0 else "mix"
+        print(f"Servo {i+1} on pin {pin}: {label} ({angle}°)")
+
+    if RASPBERRY:
+        GPIO.setmode(GPIO.BOARD)
+        pwms = []
+        for pin in servo_pins:
+            GPIO.setup(pin, GPIO.OUT)
+            pwm = GPIO.PWM(pin, 50)  # 50 Hz — standard servo frequency
+            pwm.start(0)
+            pwms.append(pwm)
+
+        for pwm, angle in zip(pwms, angles):
+            pwm.ChangeDutyCycle(_angle_to_duty(angle))
+
+        time.sleep(0.5)  # allow servos to physically reach their position
+
+        for pwm in pwms:
+            pwm.stop()
+
+        GPIO.cleanup()
 
 
 if __name__ == "__main__":
