@@ -33,10 +33,12 @@ def doWork():
         loading_progress = int((ii / work) * 100)+1
 
 pygame.init()
-screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+#screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+screen = pygame.display.set_mode((960, 240))
 width, height = screen.get_size()
+
 pygame.display.set_caption('Dispenser Interface')
-loci = [(100, height/2), (300, height/2), (500, height/2), (700, height/2), (750, height-50)]
+loci = [(width/5, height/2), (width/5*2, height/2), (width/5*3, height/2), (width/5*4, height/2), (width-50, height-50)]
 menu = 0
 location = 0
 
@@ -56,21 +58,21 @@ def available_locations(current_location, direction, options):
 #Maak teks voor tijdens mengen
 mengen_bezig, mengen_bezig_rect = create_text("MIXING", (width // 2, height // 2), (255,255,255))
 #Text menu 0
-menu0_text, menu0_text_rect = create_text("START", (width // 2, 100), (0,0,0))
+menu0_text, menu0_text_rect = create_text("START", (width // 2, 25), (0,0,0))
 #Text menu 1
-menu1_text, menu1_text_rect = create_text("2 component dispensing", (width // 2, 100), (0,0,0))
+menu1_text, menu1_text_rect = create_text("2 component dispensing", (width // 2, 25), (0,0,0))
 #Text menu 2
-menu2_text, menu2_text_rect = create_text("4 component dispensing", (width //2, 100), (0,0,0))
+menu2_text, menu2_text_rect = create_text("4 component dispensing", (width //2, 25), (0,0,0))
 #Text menu 3
-menu3_text, menu3_text_rect = create_text("4 component dispensing", (width // 2, 100), (0,0,0))
+menu3_text, menu3_text_rect = create_text("4 component dispensing", (width // 2, 25), (0,0,0))
 #Text menu 4
-menu4_text, menu4_text_rect = create_text("Would you like to start mixing?", (width // 2, 100), (0,0,0))
+menu4_text, menu4_text_rect = create_text("Would you like to start mixing?", (width // 2, 25), (0,0,0))
 #Text menu 5
-menu5_text, menu5_text_rect = create_text("Settings", (width // 2, 100), (0,0,0))
+menu5_text, menu5_text_rect = create_text("Settings", (width // 2, 25), (0,0,0))
 #Text menu 6
-menu6_text, menu6_text_rect = create_text("Mixing Settings", (width // 2, 100), (0,0,0))
+menu6_text, menu6_text_rect = create_text("Mixing Settings", (width // 2, 25), (0,0,0))
 #Text menu 7
-menu7_text, menu7_text_rect = create_text("Replace cartridge", (width // 2, 100), (0,0,0))
+menu7_text, menu7_text_rect = create_text("Replace cartridge", (width // 2, 25), (0,0,0))
 
 
 
@@ -114,6 +116,8 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         if event.type == pygame.KEYUP:
+            if event.key == pygame.K_ESCAPE:
+                running = False
             if event.key == pygame.K_RIGHT: #changing location
                 location += 1
                 if location == 5:
@@ -171,6 +175,8 @@ while running:
                     else:
                         hardness_progress = 0
                         location = 4
+                elif menu == 4:
+                    location = available_locations(location, "left", [1,2,4])
                 elif menu == 5:
                     location = available_locations(location, "left", [1,2,4])
 
