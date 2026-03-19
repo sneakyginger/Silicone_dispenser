@@ -23,7 +23,7 @@ comps_dispensed = [0, 0, 0, 0]  # in gram # for testing, to keep track of how mu
 # to simulate dispensing, we will add noise to the process
 dispensing_noise_factor = 0.10  # 10% noise in dispensing, for testing purposes
 
-measurement_noise_factor = 0.03  # 3% noise in measurement, for testing purposes
+measurement_noise_factor = 0.04  # 0.04g noise in measurement, for testing purposes
 
 
 density_of_liquid = 1.06  # in g/ml, density of the liquid being dispensed
@@ -48,6 +48,7 @@ def main():
     print("")
 
     multi_dispense([10, 20, 30, 40])  # dispense 10g from motor 1, 20g from motor 2, 30g from motor 3, 40g from motor 4
+    #multi_dispense([100, 100, 100, 100]) 
     show_dispensed_amounts()
 
 
@@ -58,28 +59,28 @@ def dispense_and_measure(component_id, amount):
     return measure_weight() - before
 
 
-def under_tolerance_components(measured_results, amounts, relative_tolerance):
-    """Return list of (index, shortfall) for components below their target by more than tolerance."""
+def under_tolerance_components(measured_results, amounts, relative_tolerance, target_ratio=1.0):
+    """Return list of (index, shortfall) for components below target_ratio * target by more than tolerance.
+
+    target_ratio is the shared ratio all components should reach (e.g. the ratio of the most
+    over-dispensed component). Each component's proportional target is amounts[i] * target_ratio,
+    so all components are corrected to the same fraction of their individual targets rather than
+    to their absolute targets independently.
+    """
     return [
-        (i, target - measured)
-        for i, (measured, target) in enumerate(zip(measured_results, amounts))
-        if target - measured > relative_tolerance
+        (i, amounts[i] * target_ratio - measured)
+        for i, (measured, _) in enumerate(zip(measured_results, amounts))
+        if amounts[i] * target_ratio - measured > relative_tolerance
     ]
 
 
 def biggest_ratio_difference(measured_results, amounts):
     """Return (i, j, ratios, diff_pct) for the pair of components with the biggest % ratio difference."""
     ratios = [measured / target for measured, target in zip(measured_results, amounts)]
-    max_diff_pct = 0
-    max_pair = (0, 1)
-    for i in range(len(ratios)):
-        for j in range(i + 1, len(ratios)):
-            diff_pct = abs(ratios[i] - ratios[j]) * 100
-            if diff_pct > max_diff_pct:
-                max_diff_pct = diff_pct
-                max_pair = (i, j)
-    i, j = max_pair
-    return i, j, ratios, max_diff_pct
+    i = max(range(len(ratios)), key=lambda k: ratios[k])
+    j = min(range(len(ratios)), key=lambda k: ratios[k])
+    diff_pct = (ratios[i] - ratios[j]) * 100
+    return i, j, ratios, diff_pct
 
 
 def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, max_iterations=10):
@@ -91,36 +92,42 @@ def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, ma
     print("")
 
     # initial dispense pass
-    measured_results = [0] * len(amounts)
-    for i, amount in enumerate(amounts):
-        measured_results[i] = dispense_and_measure(i + 1, amount)
+    measured_results = [dispense_and_measure(i + 1, amount) for i, amount in enumerate(amounts)]
 
     print("Measured weights after dispensing:")
     for i, measured in enumerate(measured_results):
         print(f"Component {i+1}: {measured:.3f} grams.")
 
-    # warn about out-of-tolerance components
+    # warn about components whose ratio deviates from the most over-dispensed component
+    ratios = [m / t for m, t in zip(measured_results, amounts)]
+    max_ratio = max(ratios)
     for i, (measured, target) in enumerate(zip(measured_results, amounts)):
-        if abs(measured - target) > relative_tolerance:
-            print(f"Warning: Component {i+1} is outside tolerance of {relative_tolerance}g. Measured: {measured:.3f}g, Target: {target}g.")
+        shortfall_from_ratio = target * max_ratio - measured
+        if shortfall_from_ratio > relative_tolerance:
+            print(f"Warning: Component {i+1} is behind proportional target. "
+                  f"Measured: {measured:.3f}g, Proportional target: {target * max_ratio:.3f}g "
+                  f"(ratio {max_ratio:.4f}), shortfall: {shortfall_from_ratio:.3f}g.")
 
-    # correction loop: top up under-dispensed components until all are within tolerance
+    # correction loop: top up components that are below the fixed target ratio
+    # target_ratio is fixed once from the initial dispense — it must NOT be updated inside the loop,
+    # otherwise any overshoot caused by noise would raise the target and trigger a runaway chain reaction
+    target_ratio = max_ratio
     iterations_used = 0
     for iteration in range(max_iterations):
-        to_correct = under_tolerance_components(measured_results, amounts, relative_tolerance)
+        to_correct = under_tolerance_components(measured_results, amounts, relative_tolerance, target_ratio=target_ratio)
 
         if not to_correct:
-            print("All components within tolerance.")
+            print("All components within proportional tolerance.")
             break
 
         for i, shortfall in to_correct:
             correction = min(shortfall, amounts[i] * correction_fraction)
-            print(f"Component {i+1}: shortfall {shortfall:.3f}g, correcting by {correction:.3f}g.")
+            print(f"Component {i+1}: shortfall {shortfall:.3f}g from proportional target, correcting by {correction:.3f}g.")
             measured_results[i] += dispense_and_measure(i + 1, correction)
 
         iterations_used += 1
     else:
-        print("Warning: max correction iterations reached. Some components may still be out of tolerance.")
+        print("Warning: max correction iterations reached. Some components may still be out of proportional tolerance.")
 
     print(f"Total correction iterations used: {iterations_used}")
 
@@ -138,7 +145,7 @@ def show_dispensed_amounts():
 
 def measure_weight():
     noise = random.uniform(-measurement_noise_factor, measurement_noise_factor)
-    return sum(comps_dispensed) * (1 + noise)
+    return sum(comps_dispensed) + noise  # fixed absolute noise, not % of total
 
 
 def dispense(component_id, weight):
@@ -156,9 +163,8 @@ def move_motor(motor_id, steps):
 
     if RASPBERRY:
         GPIO.setmode(GPIO.BOARD)
-        for p in control_pins:
-            GPIO.setup(p, GPIO.OUT)
-            GPIO.output(p, 0)
+        GPIO.setup(pin, GPIO.OUT)
+        GPIO.output(pin, 0)
 
         for i in range(microsteps):
             GPIO.output(pin, 1)
@@ -166,7 +172,7 @@ def move_motor(motor_id, steps):
             GPIO.output(pin, 0)
             time.sleep(step_delay / 2)
 
-        GPIO.cleanup()
+        GPIO.cleanup(pin)
     else:
         comps_dispensed[motor_id - 1] += steps * volume_per_step * density_of_liquid  # in gram
 
