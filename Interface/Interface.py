@@ -20,9 +20,15 @@ pygame.font.init()
 
 # Create a font (font name, size) - None uses the default font
 font = pygame.font.SysFont(None, 48)
+font_small = pygame.font.SysFont(None, 36)
 
-def create_text(text, position, color=(255,255,255)):
-    surface_text = font.render(text, True, color)
+def create_text(text, position, color=(255,255,255), font_type="normal"):
+    if font_type == "small":
+        surface_text = font_small.render(text, True, color)
+        surface_text = font_small.render(text, True, color)
+    elif font_type == "normal":
+        surface_text = font.render(text, True, color)
+        surface_text = font.render(text, True, color)
     surface_text_rect = surface_text.get_rect()
     surface_text_rect.center = position
     return surface_text, surface_text_rect
@@ -59,6 +65,7 @@ def available_locations(current_location, direction, options):
 mengen_bezig, mengen_bezig_rect = create_text("MIXING", (width // 2, height // 2), (255,255,255))
 #Text menu 0
 menu0_text, menu0_text_rect = create_text("START", (width // 2, 25), (0,0,0))
+
 #Text menu 1
 menu1_text, menu1_text_rect = create_text("2 component dispensing", (width // 2, 25), (0,0,0))
 #Text menu 2
@@ -73,14 +80,19 @@ menu5_text, menu5_text_rect = create_text("Settings", (width // 2, 25), (0,0,0))
 menu6_text, menu6_text_rect = create_text("Mixing Settings", (width // 2, 25), (0,0,0))
 #Text menu 7
 menu7_text, menu7_text_rect = create_text("Replace cartridge", (width // 2, 25), (0,0,0))
+#menu names text
+two_component_text,two_component_text_rect = create_text("2 component", (loci[0][0], loci[0][1]+50), (0,0,0), "small")
+four_component_text, four_component_text_rect = create_text("4 component", (loci[1][0], loci[1][1]+50), (0,0,0), "small")
+mixing_settings_text, mixing_settings_text_rect = create_text("Mixing", (loci[2][0], loci[2][1]+50), (0,0,0), "small")
+replace_cartridge_text, replace_cartridge_text_rect = create_text("Settings", (loci[3][0], loci[3][1]+50), (0,0,0), "small")
 
 
 
 #load in selection sprite
-selection_image, selection_image_rect = load_image(r'./Sprites/dispenser.png', (150, 150), loci[0])
+selection_image, selection_image_rect = load_image(r'./Sprites/dispenser.png', (125, 125), loci[0])
 
 #load in settings sprite
-settings_image, settings_image_rect = load_image(r'./Sprites/settings.png', (100, 100), loci[3])
+settings_image, settings_image_rect = load_image(r'./Sprites/settings.png', (75, 75), loci[3])
 
 #load in return sprite
 return_image, return_image_rect = load_image(r'./Sprites/return.png', (100, 100), loci[4])
@@ -97,10 +109,10 @@ hardness_bar_width = 8
 
 
 #load button sprites to test
-button1_image, button1_image_rect = load_image(r'./Sprites/button.png', (100, 100), (loci[0]))
-button2_image, button2_image_rect = load_image(r'./Sprites/button.png', (100, 100), (loci[1]))
-button3_image, button3_image_rect = load_image(r'./Sprites/button.png', (100, 100), (loci[2]))
-button4_image, button4_image_rect = load_image(r'./Sprites/button.png', (100, 100), (loci[3]))
+button1_image, button1_image_rect = load_image(r'./Sprites/button.png', (75, 75), (loci[0]))
+button2_image, button2_image_rect = load_image(r'./Sprites/button.png', (75, 75), (loci[1]))
+button3_image, button3_image_rect = load_image(r'./Sprites/button.png', (75, 75), (loci[2]))
+button4_image, button4_image_rect = load_image(r'./Sprites/button.png', (75, 75), (loci[3]))
 
 #load yes and no sprite
 yes_image, yes_image_rect = load_image(r'./Sprites/YES.png', (100, 100), (loci[1]))
@@ -235,13 +247,18 @@ while running:
         screen.blit(settings_image, settings_image_rect)  # draw settings image
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         screen.blit(button1_image, button1_image_rect)  # draw button 1
+        screen.blit(two_component_text, two_component_text_rect)  # draw two component text
         screen.blit(button2_image, button2_image_rect)  # draw button 2
+        screen.blit(four_component_text, four_component_text_rect)  # draw four component text
         screen.blit(button3_image, button3_image_rect)  # draw button 3
+        screen.blit(mixing_settings_text, mixing_settings_text_rect)  # draw mixing settings text
+        screen.blit(replace_cartridge_text, replace_cartridge_text_rect)  # draw replace cartridge text
     if menu == 1:
         screen.blit(menu1_text, menu1_text_rect)  # draw menu text in the center of the screen
-        screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         if location == 4:
             screen.blit(selection_image, selection_image_rect)  # draw cursor
+        screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
+        
         weight_bar_width = abs(weight_progress)*width/2//100
         weight_bar_image_use = pygame.transform.scale(weight_bar_image, (int(weight_bar_width), 50))  # scale loading bar based on selected weight
         weight_bar_image_use_rect = weight_bar_image_use.get_rect(midleft=(200, 3/4*height))  # update loading bar position
