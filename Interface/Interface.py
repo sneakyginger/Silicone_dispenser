@@ -176,7 +176,7 @@ menu9_text, menu9_text_rect = create_text("Time between mixes", (width // 2, 25)
 #Text menu 10
 menu10_text, menu10_text_rect = create_text("Select mixing duration", (width // 2, 25), (0,0,0))
 #Text menu 11
-menu11_text, menu11_text_rect = create_text("Select mixing start time", (width // 2, 25), (0,0,0))
+menu11_text, menu11_text_rect = create_text("Select time until next mix", (width // 2, 25), (0,0,0))
 #Text menu 12
 menu12_text, menu12_text_rect = create_text("Select component to dispense", (width // 2, 25), (0,0,0))
 #Text menu 13
@@ -200,7 +200,9 @@ loci = locus(3)
 #mixing settings options text
 frequency_text, frequency_text_rect = create_text("Mixing frequency", (loci[0][0], loci[0][1]+50), (0,0,0), "small")
 duration_text, duration_text_rect = create_text("Mixing duration", (loci[1][0], loci[1][1]+50), (0,0,0), "small")
-mixing_start_time_text, mixing_start_time_text_rect = create_text("Mixing start time", (loci[2][0], loci[2][1]+50), (0,0,0), "small")
+mixing_start_time_text, mixing_start_time_text_rect = create_text("Time until", (loci[2][0], loci[2][1]+50), (0,0,0), "small")
+mixing_start_time_line2_text, mixing_start_time_line2_text_rect = create_text("next mix", (loci[2][0], loci[2][1]+75), (0,0,0), "small")
+
 
 #cartridge replacement options text
 select_cartridge_text, select_cartridge_text_rect = create_text("Select cartridge that is replaced", (width/2, height/2+50), (0,0,0), "small")
@@ -284,6 +286,13 @@ while running:
                     if location == 2:
                         location = 0
                 elif menu == 8:
+                    if weight_replacement_progress < 100:
+                        location  = 0
+                        weight_replacement_progress += 1
+                    else:
+                        weight_replacement_progress = 100
+                        location = sprites
+                elif menu == 14:
                     if hardness_replacement_progress < 50:
                         location  = 0
                         hardness_replacement_progress += 1
@@ -291,15 +300,12 @@ while running:
                         hardness_replacement_progress = 50
                         location = sprites
                 elif menu == 9:
-                    location = available_locations(location, "right", 4)
                     if start_time_selection:
                         time_frequency = select_time(time_frequency, "right", time_increment_selection)
                 elif menu == 10:
-                    location = available_locations(location, "right", 4)
                     if start_time_selection:
                         time_duration = select_time(time_duration, "right", time_increment_selection)
                 elif menu == 11:
-                    location = available_locations(location, "right", 4)
                     if start_time_selection:
                         time_start_time = select_time(time_start_time, "right", time_increment_selection)
                 elif menu == 13:
@@ -338,6 +344,13 @@ while running:
                     if location == 2:
                         location = 1
                 elif menu == 8:
+                    if weight_replacement_progress > 0:
+                        location  = 0
+                        weight_replacement_progress -= 1
+                    else:
+                        weight_replacement_progress = 0
+                        location = sprites
+                elif menu == 14:
                     if hardness_replacement_progress > 0:
                         location  = 0
                         hardness_replacement_progress -= 1
@@ -424,6 +437,11 @@ while running:
                 elif menu == 8:
                     if location == sprites:
                         menu = 7
+                    else:
+                        menu = 14
+                elif menu == 14:
+                    if location == sprites:
+                        menu = 8
                     else:
                         menu = -1
                 elif menu == 9:
@@ -568,6 +586,8 @@ while running:
         screen.blit(frequency_text, frequency_text_rect)  # draw frequency text
         screen.blit(duration_text, duration_text_rect)  # draw duration text
         screen.blit(mixing_start_time_text, mixing_start_time_text_rect)  # draw mixing start time text
+        screen.blit(mixing_start_time_line2_text, mixing_start_time_line2_text_rect)  # draw mixing start time text
+
 
     if menu == 9: #draw frequency of mixing menu
         sprites = 3
@@ -600,8 +620,23 @@ while running:
         screen.blit(button3_image, button3_image_rect)  # draw button 3
         screen.blit(button4_image, button4_image_rect)  # draw button 4
 
-    if menu == 8: #Select replacement hardness
-        sprites = 4
+
+    if menu == 8: #Select replacement weight
+        sprites = 1
+        screen.blit(menu7_text, menu7_text_rect)  # draw menu text in the center of the screen
+        screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
+        if location == sprites:
+            screen.blit(selection_image, selection_image_rect)  # draw cursor
+
+        weight_bar_width = abs(weight_replacement_progress)*width/2//100
+        weight_bar_image_use = pygame.transform.scale(weight_bar_image, (int(weight_bar_width), 50))  # scale loading bar based on selected weight
+        weight_bar_image_use_rect = weight_bar_image_use.get_rect(midleft=(200, 3/4*height))  # update loading bar position
+        screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
+        cartridge_weight_text, cartridge_weight_text_rect = create_text(f"Weight of new cartridge: {weight_replacement_progress}", (width // 2, height // 2), (0,0,0))
+        screen.blit(cartridge_weight_text, cartridge_weight_text_rect)  # draw hardness text in the center
+
+    if menu == 14: #Select replacement hardness
+        sprites = 1
         screen.blit(menu7_text, menu7_text_rect)  # draw menu text in the center of the screen
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         if location == sprites:
