@@ -147,6 +147,7 @@ time_frequency, time_duration, time_start_time = [0,0,0], [0,0,0], [0,0,0]
 start_time_selection = False
 sprites = 4
 previous_menu = 0
+button_size = (75,75)
 
 
 
@@ -211,11 +212,18 @@ loci = locus(4)
 #load in selection sprite
 selection_image, selection_image_rect = load_image(r'./Sprites/dispenser.png', (100, 100), loci[0])
 
+#loud in 2 component mixing sprite
+two_component_image, two_component_image_rect = load_image(r'./Sprites/button_2comp.png',(175,175),loci[0])
+
+#loud in 4 component mixing sprite
+four_component_image, four_component_image_rect = load_image(r'./Sprites/button_4comp.png',(175,175),loci[1])
+
 #load in settings sprite
-settings_image, settings_image_rect = load_image(r'./Sprites/settings.png', (75, 75), loci[3])
+settings_image, settings_image_rect = load_image(r'./Sprites/settings.png', button_size, loci[3])
 
 #load in return sprite
-return_image, return_image_rect = load_image(r'./Sprites/return.png', (75, 75), loci[-1])
+return_image, return_image_rect = load_image(r'./Sprites/return.png', button_size, loci[-1])
+
 #load in loading bar sprite
 loading_bar_image, loading_bar_image_rect = load_image(r'./Sprites/white.png',(8,150) ,(200, height//2))
 loading_progress = 0
@@ -234,15 +242,15 @@ hardness_bar_image, hardness_bar_image_rect = load_image(r'./Sprites/black.png',
 
 
 #load button sprites to test
-button1_image, button1_image_rect = load_image(r'./Sprites/button.png', (75, 75), (loci[0]))
-button2_image, button2_image_rect = load_image(r'./Sprites/button.png', (75, 75), (loci[1]))
-button3_image, button3_image_rect = load_image(r'./Sprites/button.png', (75, 75), (loci[2]))
-button4_image, button4_image_rect = load_image(r'./Sprites/button.png', (75, 75), (loci[3]))
+button1_image, button1_image_rect = load_image(r'./Sprites/button.png', button_size, (loci[0]))
+button2_image, button2_image_rect = load_image(r'./Sprites/button.png', button_size, (loci[1]))
+button3_image, button3_image_rect = load_image(r'./Sprites/button.png', button_size, (loci[2]))
+button4_image, button4_image_rect = load_image(r'./Sprites/button.png', button_size, (loci[3]))
 
 loci = locus(2)
 #load yes and no sprite
-yes_image, yes_image_rect = load_image(r'./Sprites/YES.png', (75, 75), (loci[0]))
-no_image, no_image_rect = load_image(r'./Sprites/no.png', (75, 75), (loci[1]))
+yes_image, yes_image_rect = load_image(r'./Sprites/YES.png', button_size, (loci[0]))
+no_image, no_image_rect = load_image(r'./Sprites/no.png', button_size, (loci[1]))
 
 
 
@@ -511,9 +519,9 @@ while running:
         screen.blit(selection_image, selection_image_rect)  # draw cursor
         screen.blit(settings_image, settings_image_rect)  # draw settings image
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
-        screen.blit(button1_image, button1_image_rect)  # draw button 1
+        screen.blit(two_component_image, two_component_image_rect)  # draw button 1
         screen.blit(two_component_text, two_component_text_rect)  # draw two component text
-        screen.blit(button2_image, button2_image_rect)  # draw button 2
+        screen.blit(four_component_image, four_component_image_rect)  # draw button 2
         screen.blit(four_component_text, four_component_text_rect)  # draw four component text
         screen.blit(button3_image, button3_image_rect)  # draw button 3
         screen.blit(mixing_menu_text, mixing_menu_text_rect)  # draw mixing menu text
