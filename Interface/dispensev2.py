@@ -21,9 +21,9 @@ comps_dispensed = [0, 0, 0, 0]  # in gram # for testing, to keep track of how mu
 
 
 # to simulate dispensing, we will add noise to the process
-dispensing_noise_factor = 0.10  # 10% noise in dispensing, for testing purposes
+dispensing_noise_factor = 15/100  # in %,  noise in dispensing, for testing purposes
 
-measurement_noise_factor = 0.04  # 0.04g noise in measurement, for testing purposes
+measurement_noise_factor = 0.04  # in g, noise in measurement, for testing purposes
 
 
 density_of_liquid = 1.06  # in g/ml, density of the liquid being dispensed
