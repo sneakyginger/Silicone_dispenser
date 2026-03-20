@@ -36,6 +36,7 @@ def create_text(text, position, color=(255,255,255), font_type="normal"):
     surface_text_rect = surface_text.get_rect()
     surface_text_rect.center = position
     return surface_text, surface_text_rect
+
 def select_time(selected_time,direction,selection):
     day = selected_time[0]
     hour = selected_time[1]
@@ -92,7 +93,7 @@ def display_time_selection(width, height,selected_time, location, time_selecting
         elif location == 2:
             selection_image_rect.center = (width /6*5, height // 2)
             screen.blit(selection_image, selection_image_rect)  # draw cursor
-        elif location == 4:
+        elif location == 3:
             selection_image_rect.center = (width-50, height-50)
             screen.blit(selection_image, selection_image_rect)  # draw cursor
     #draw days hours and minutes
@@ -125,7 +126,14 @@ def locus(amount_sprites):
         loci.append((width/(amount_sprites+1)*(i+1), height/2))
     loci.append((width-50, height-50)) #return sprite location
     return loci
-
+def available_locations(current_location, direction, options):
+    if direction == "right":
+        if current_location >= options+1:
+            current_location = 0
+    elif direction == "left":
+        if current_location < 0:
+            current_location = options
+    return current_location
 
 pygame.init()
 #screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
@@ -138,15 +146,9 @@ location = 0
 time_frequency, time_duration, time_start_time = [0,0,0], [0,0,0], [0,0,0]
 start_time_selection = False
 sprites = 4
+previous_menu = 0
 
-def available_locations(current_location, direction, options):
-    if direction == "right":
-        if location >= options:
-            current_location = 0
-    elif direction == "left":
-        if location < 0:
-            current_location = options-1
-    return current_location
+
 
 #Maak teks voor tijdens mengen
 mengen_bezig, mengen_bezig_rect = create_text("MIXING", (width // 2, height // 2), (255,255,255))
@@ -175,6 +177,10 @@ menu9_text, menu9_text_rect = create_text("Time between mixes", (width // 2, 25)
 menu10_text, menu10_text_rect = create_text("Select mixing duration", (width // 2, 25), (0,0,0))
 #Text menu 11
 menu11_text, menu11_text_rect = create_text("Select mixing start time", (width // 2, 25), (0,0,0))
+#Text menu 12
+menu12_text, menu12_text_rect = create_text("Select component to dispense", (width // 2, 25), (0,0,0))
+#Text menu 13
+menu13_text, menu13_text_rect = create_text("Select desired weight", (width // 2, 25), (0,0,0))
 
 loci = locus(4)
 #menus names text
@@ -183,19 +189,18 @@ four_component_text, four_component_text_rect = create_text("4 component", (loci
 mixing_menu_text, mixing_menu_text_rect = create_text("Mixing", (loci[2][0], loci[2][1]+50), (0,0,0), "small")
 settings_text, settings_text_rect = create_text("Settings", (loci[3][0], loci[3][1]+50), (0,0,0), "small")
 
-loci = locus(2)
+loci = locus(3)
 #Setting options text
 mixing_settings_text, mixing_settings_text_rect = create_text("Mixing settings", (loci[0][0], loci[0][1]+50), (0,0,0), "small")
 replace_cartridge_text, replace_cartridge_text_rect = create_text("Replace cartridge", (loci[1][0], loci[1][1]+50), (0,0,0), "small")
+one_component_dispensing_text, one_component_dispensing_text_rect = create_text("One component", (loci[2][0], loci[2][1]+50), (0,0,0), "small")
+one_component_dispensing_line2_text, one_component_dispensing_line2_text_rect = create_text("dispensing", (loci[2][0], loci[2][1]+75), (0,0,0), "small")
 
 loci = locus(3)
 #mixing settings options text
 frequency_text, frequency_text_rect = create_text("Mixing frequency", (loci[0][0], loci[0][1]+50), (0,0,0), "small")
 duration_text, duration_text_rect = create_text("Mixing duration", (loci[1][0], loci[1][1]+50), (0,0,0), "small")
 mixing_start_time_text, mixing_start_time_text_rect = create_text("Mixing start time", (loci[2][0], loci[2][1]+50), (0,0,0), "small")
-
-
-
 
 #cartridge replacement options text
 select_cartridge_text, select_cartridge_text_rect = create_text("Select cartridge that is replaced", (width/2, height/2+50), (0,0,0), "small")
@@ -213,12 +218,17 @@ return_image, return_image_rect = load_image(r'./Sprites/return.png', (75, 75), 
 loading_bar_image, loading_bar_image_rect = load_image(r'./Sprites/white.png',(8,150) ,(200, height//2))
 loading_progress = 0
 loading_bar_width = 8
-weight_bar_image, weight_bar_image_rect = load_image(r'./Sprites/black.png',(8,150) ,(200, height//2))
-weight_progress = 50
+weight_1component_progress = 50
+weight_2component_progress = 50
+weight_4component_progress = 50
+weight_replacement_progress = 50
 weight_bar_width = 8
-hardness_bar_image, hardness_bar_image_rect = load_image(r'./Sprites/black.png',(8,150) ,(200, height//2))
-hardness_progress = 25
+weight_bar_image, weight_bar_image_rect = load_image(r'./Sprites/black.png',(weight_bar_width,weight_1component_progress) ,(200, height//2))
+hardness_4component_progress = 25
+hardness_replacement_progress = 25
 hardness_bar_width = 8
+hardness_bar_image, hardness_bar_image_rect = load_image(r'./Sprites/black.png',(hardness_bar_width,hardness_4component_progress) ,(200, height//2))
+
 
 
 #load button sprites to test
@@ -247,45 +257,39 @@ while running:
                 running = False
             if event.key == pygame.K_RIGHT: #changing location
                 location += 1
-                if location == 5:
-                    location = 0
+                location = available_locations(location, "right", sprites)
                 if menu == 1:
-                    if weight_progress < 100:
+                    if weight_2component_progress < 100:
                         location  = 0
-                        weight_progress += 1
+                        weight_2component_progress += 1
                     else:
-                        weight_progress = 100
-                        location = 4
+                        weight_2component_progress = 100
+                        location = sprites
 
                 elif menu == 2:
-                    if weight_progress < 100:
+                    if weight_4component_progress < 100:
                         location  = 0
-                        weight_progress += 1
+                        weight_4component_progress += 1
                     else:
-                        weight_progress = 100
-                        location = 4
+                        weight_4component_progress = 100
+                        location = sprites
                 elif menu == 3:
-                    if hardness_progress < 50:
+                    if hardness_4component_progress < 50:
                         location  = 0
-                        hardness_progress += 1
+                        hardness_4component_progress += 1
                     else:
-                        hardness_progress = 50
-                        location = 4
+                        hardness_4component_progress = 50
+                        location = sprites
                 elif menu == 4:
-                    location = available_locations(location, "right", 3)
                     if location == 2:
                         location = 0
-                elif menu == 5:  
-                    location = available_locations(location, "right", 3)
-                elif menu == 6:
-                    location = available_locations(location, "right", 4)
                 elif menu == 8:
-                    if hardness_progress < 50:
+                    if hardness_replacement_progress < 50:
                         location  = 0
-                        hardness_progress += 1
+                        hardness_replacement_progress += 1
                     else:
-                        hardness_progress = 50
-                        location = 4
+                        hardness_replacement_progress = 50
+                        location = sprites
                 elif menu == 9:
                     location = available_locations(location, "right", 4)
                     if start_time_selection:
@@ -298,48 +302,48 @@ while running:
                     location = available_locations(location, "right", 4)
                     if start_time_selection:
                         time_start_time = select_time(time_start_time, "right", time_increment_selection)
-
+                elif menu == 13:
+                    if weight_1component_progress < 100:
+                        location  = 0
+                        weight_1component_progress += 1
+                    else:
+                        weight_1component_progress = 100
+                        location = sprites
 
             elif event.key == pygame.K_LEFT:
                 location -= 1
-                if location == -1:
-                    location = 4
+                location = available_locations(location, "left", sprites)
                 if menu == 1:
-                    if weight_progress > 0:
+                    if weight_2component_progress > 0:
                         location  = 0
-                        weight_progress -= 1
+                        weight_2component_progress -= 1
                     else:
-                        weight_progress = 0
-                        location = 4
+                        weight_2component_progress = 0
+                        location = sprites
                 elif menu == 2:
-                    if weight_progress > 0:
+                    if weight_4component_progress > 0:
                         location  = 0
-                        weight_progress -= 1
+                        weight_4component_progress -= 1
                     else:
-                        weight_progress = 0
-                        location = 4
+                        weight_4component_progress = 0
+                        location = sprites
                 elif menu == 3:
-                    if hardness_progress > 0:
+                    if hardness_4component_progress > 0:
                         location  = 0
-                        hardness_progress -= 1
+                        hardness_4component_progress -= 1
                     else:
-                        hardness_progress = 0
-                        location = 4
+                        hardness_4component_progress = 0
+                        location = sprites
                 elif menu == 4:
-                    location = available_locations(location, "left", 3)
                     if location == 2:
                         location = 1
-                elif menu == 5:
-                    location = available_locations(location, "left", 3)
-                elif menu == 6:
-                    location = available_locations(location, "left", 4)
                 elif menu == 8:
-                    if hardness_progress > 0:
+                    if hardness_replacement_progress > 0:
                         location  = 0
-                        hardness_progress -= 1
+                        hardness_replacement_progress -= 1
                     else:
-                        hardness_progress = 0
-                        location = 4
+                        hardness_replacement_progress = 0
+                        location = sprites
                 elif menu == 9:
                     location = available_locations(location, "left", 4)
                     if start_time_selection:
@@ -352,6 +356,13 @@ while running:
                     location = available_locations(location, "left", 4)
                     if start_time_selection:
                         time_start_time = select_time(time_start_time, "left", time_increment_selection)
+                elif menu == 13:
+                    if weight_1component_progress > 0:
+                        location  = 0
+                        weight_1component_progress -= 1
+                    else:
+                        weight_1component_progress = 0
+                        location = sprites
 
             elif event.key == pygame.K_RETURN: #state machine for menu navigation
                 if menu == 0:
@@ -392,6 +403,8 @@ while running:
                         menu = 6
                     elif location == 1:
                         menu = 7
+                    elif location == 2:
+                        menu = 12
                     elif location == sprites:
                         menu = 0
                 elif menu == 6:
@@ -463,6 +476,16 @@ while running:
                         elif location == 2:
                             time_increment_selection = 2
                             start_time_selection = True
+                elif menu == 12:
+                    if location == sprites:
+                        menu = 5
+                    else:
+                        menu = 13
+                elif menu == 13:
+                    if location == sprites:
+                        menu = 12
+                    else:
+                        menu = -1
 
     if menu == 0: #draw start menu
         sprites = 4
@@ -479,41 +502,41 @@ while running:
         screen.blit(settings_text, settings_text_rect)  # draw settings text
 
     if menu == 1: #draw 2 component weight selection menu
-        sprites = 4
+        sprites = 1
         screen.blit(menu1_text, menu1_text_rect)  # draw menu text in the center of the screen
         if location == sprites:
             screen.blit(selection_image, selection_image_rect)  # draw cursor
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
-        weight_bar_width = abs(weight_progress)*width/2//100
+        weight_bar_width = abs(weight_2component_progress)*width/2//100
         weight_bar_image_use = pygame.transform.scale(weight_bar_image, (int(weight_bar_width), 50))  # scale loading bar based on selected weight
         weight_bar_image_use_rect = weight_bar_image_use.get_rect(midleft=(200, 3/4*height))  # update loading bar position
         screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
-        weight_text,weight_rect = create_text(f"Desired weight: {weight_progress} g", (width // 2, height // 2), (0,0,0))
+        weight_text,weight_rect = create_text(f"Desired weight: {weight_2component_progress} g", (width // 2, height // 2), (0,0,0))
         screen.blit(weight_text, weight_rect)  # draw weight text in the center
 
     if menu == 2: #draw 4 component weight selection menu
-        sprites = 4
+        sprites = 1
         screen.blit(menu2_text, menu2_text_rect)  # draw menu text in the center of the screen
         if location == sprites:
             screen.blit(selection_image, selection_image_rect)  # draw cursor
-        weight_bar_width = abs(weight_progress)*width/2//100
+        weight_bar_width = abs(weight_4component_progress)*width/2//100
         weight_bar_image_use = pygame.transform.scale(weight_bar_image, (int(weight_bar_width), 50))  # scale loading bar based on selected weight
         weight_bar_image_use_rect = weight_bar_image_use.get_rect(midleft=(200, 3/4*height))  # update loading bar position
         screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
-        weight_text,weight_rect = create_text(f"Desired weight: {weight_progress} g", (width // 2, height // 2), (0,0,0))
+        weight_text,weight_rect = create_text(f"Total desired weight: {weight_4component_progress} g", (width // 2, height // 2), (0,0,0))
         screen.blit(weight_text, weight_rect)  # draw weight text in the center
 
     if menu == 3: #draw 4 component hardness selection menu
-        sprites = 4
+        sprites = 1
         screen.blit(menu3_text, menu3_text_rect)  # draw menu text in the center of the screen
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         if location == sprites:
             screen.blit(selection_image, selection_image_rect)  # draw cursor
-        hardness_bar_width = abs(hardness_progress)*width/2//50
+        hardness_bar_width = abs(hardness_4component_progress)*width/2//50
         hardness_bar_image_use = pygame.transform.scale(hardness_bar_image, (int(hardness_bar_width), 50))  # scale loading bar based on selected weight
         hardness_bar_image_use_rect = hardness_bar_image_use.get_rect(midleft=(200, 3/4*height))  # update loading bar position
         screen.blit(hardness_bar_image_use, hardness_bar_image_use_rect)  # draw loading bar
-        hardness_text,hardness_rect = create_text(f"Desired hardness: {hardness_progress}", (width // 2, height // 2), (0,0,0))
+        hardness_text,hardness_rect = create_text(f"Desired hardness: {hardness_4component_progress}", (width // 2, height // 2), (0,0,0))
         screen.blit(hardness_text, hardness_rect)  # draw hardness text in the center
 
     
@@ -526,15 +549,16 @@ while running:
         screen.blit(yes_image, yes_image_rect)  # draw yes image
         screen.blit(no_image, no_image_rect)  # draw no image
 
-    
 
     if menu == 5: #draw settings menu
-        sprites = 2
+        sprites = 3
         screen.blit(menu5_text, menu5_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw cursor
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner   
         screen.blit(mixing_settings_text, mixing_settings_text_rect)  # draw mixing settings text
         screen.blit(replace_cartridge_text, replace_cartridge_text_rect)  # draw replace cartridge text
+        screen.blit(one_component_dispensing_text, one_component_dispensing_text_rect)  # draw settings image
+        screen.blit(one_component_dispensing_line2_text, one_component_dispensing_line2_text_rect)  # draw settings image
 
     if menu == 6: #draw mixing settings menu
         sprites = 3
@@ -582,20 +606,44 @@ while running:
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         if location == sprites:
             screen.blit(selection_image, selection_image_rect)  # draw cursor
-        hardness_bar_width = abs(hardness_progress)*width/2//50
+
+        hardness_bar_width = abs(hardness_replacement_progress)*width/2//50
         hardness_bar_image_use = pygame.transform.scale(hardness_bar_image, (int(hardness_bar_width), 50))  # scale loading bar based on selected weight
         hardness_bar_image_use_rect = hardness_bar_image_use.get_rect(midleft=(200, 3/4*height))  # update loading bar position
         screen.blit(hardness_bar_image_use, hardness_bar_image_use_rect)  # draw loading bar
-        cartridge_hardness_text, cartridge_hardness_text_rect = create_text(f"Hardness of new cartridge: {hardness_progress}", (width // 2, height // 2), (0,0,0))
+        cartridge_hardness_text, cartridge_hardness_text_rect = create_text(f"Hardness of new cartridge: {hardness_replacement_progress}", (width // 2, height // 2), (0,0,0))
         screen.blit(cartridge_hardness_text, cartridge_hardness_text_rect)  # draw hardness text in the center
 
+    if menu == 12: #draw one component component selection menu
+        sprites = 4
+        screen.blit(menu12_text, menu12_text_rect)  # draw menu text in the center of the screen
+        screen.blit(selection_image, selection_image_rect)  # draw cursor
+        screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
 
+        screen.blit(button1_image, button1_image_rect)  # draw button 1
+        screen.blit(button2_image, button2_image_rect)  # draw button 2
+        screen.blit(button3_image, button3_image_rect)  # draw button 3
+        screen.blit(button4_image, button4_image_rect)  # draw button 4
+    if menu == 13: #draw one component dispensing amount selection menu
+        sprites = 1
+        screen.blit(menu13_text, menu13_text_rect)  # draw menu text in the center of the screen
+        screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
+        if location == sprites:
+            screen.blit(selection_image, selection_image_rect)  # draw cursor
 
+        weight_bar_width = abs(weight_1component_progress)*width/2//100
+        weight_bar_image_use = pygame.transform.scale(weight_bar_image, (int(weight_bar_width), 50))  # scale loading bar based on selected weight
+        weight_bar_image_use_rect = weight_bar_image_use.get_rect(midleft=(200, 3/4*height))  # update loading bar position
+        screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
+        weight_text,weight_rect = create_text(f"Desired weight: {weight_1component_progress} g", (width // 2, height // 2), (0,0,0))
+        screen.blit(weight_text, weight_rect)  # draw weight text in the center
     if menu == -1: #draw loading bar
+        sprites = 4
         if threading.active_count() == 1:  # check if the work thread is not already running
             threading.Thread(target=doWork).start()  # start the work in a separate thread
         screen.fill((0,0,0))          # clear screen (black background)
         screen.blit(mengen_bezig, mengen_bezig_rect)  # draw "mengen bezig" text in the center of the screen
+        #progress bar for loading
         if loading_progress < 100:
             loading_bar_width = loading_progress*width/2//100
             loading_bar_image = pygame.transform.scale(loading_bar_image, (int(loading_bar_width), 50))  # scale loading bar based on progress
@@ -604,9 +652,20 @@ while running:
         elif loading_progress >= 100:
             menu = 0
             location = 0
+        #resetting variables for next mixing session
+        weight_1component_progress = 50
+        weight_2component_progress = 50
+        weight_4component_progress = 50
+        weight_replacement_progress = 50
+        hardness_4component_progress = 25
+        hardness_replacement_progress = 25
+
+    if menu != previous_menu:
+        if menu != 4:
+            location = 0
+        else: 
+            location = 1
+
+        previous_menu = menu
     pygame.display.flip()           # update display
-
-    
-
 pygame.quit()
-
