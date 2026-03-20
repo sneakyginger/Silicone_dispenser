@@ -2,14 +2,15 @@ import random
 import math
 import time
 
-#import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
 
 
-RASPBERRY = False
+RASPBERRY = True
+# GPIO pins [7, 11, 13, 15] -> [26, 23, 33, 10]
+#control_pins = [26, 23, 33, 10]  # BOARD pin numbers, one per motor
+control_pins = [7, 11, 13, 15]
 
-control_pins = [7, 11, 13, 15]  # BOARD pin numbers, one per motor
-
-step_delay = 0.001  # in seconds, delay between each microstep pulse
+step_delay = 0.01  # in seconds, delay between each microstep pulse1
 
 servo_pins = [12, 32, 35, 33]  # BOARD pin numbers for servos 1–4 (hardware PWM, RPi 5)
 
