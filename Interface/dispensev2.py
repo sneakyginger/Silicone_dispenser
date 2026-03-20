@@ -114,7 +114,7 @@ def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, ma
     # otherwise any overshoot caused by noise would raise the target and trigger a runaway chain reaction
     target_ratio = max_ratio
     iterations_used = 0
-    for iteration in range(max_iterations):
+    while iterations_used < max_iterations:
         to_correct = under_tolerance_components(measured_results, amounts, relative_tolerance, target_ratio=target_ratio)
 
         if not to_correct:
@@ -137,10 +137,13 @@ def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, ma
     print(f"Biggest % difference: Component {i+1} ({ratios[i]*100:.2f}% of target) vs Component {j+1} ({ratios[j]*100:.2f}% of target): {max_diff_pct:.2f}%")
 
 
-def mix():
+def mix(rotations=10):
+    """Run all motors in mix position for a given number of rotations."""
     print("Mixing components...")
-    set_servo_positions([1, 1, 1, 1])  # set all to mix position
-    multi_dispense([1000, 1000, 1000, 1000], relative_tolerance=1000000)  # mix by dispensing small amounts from each motor
+    set_servo_positions([1, 1, 1, 1])  # all servos in mix position — stays throughout
+    steps = rotations * microsteps_per_revolution
+    for motor_id in range(1, 5):
+        move_motor(motor_id, steps)  # move_motor is servo-agnostic, servos stay in mix
     print("Mixing complete.")
 
 
@@ -153,6 +156,7 @@ def show_dispensed_amounts():
 
 
 def measure_weight():
+    # TODO: replace with real scale read once hardware is available
     noise = random.uniform(-measurement_noise_factor, measurement_noise_factor)
     return sum(comps_dispensed) + noise  # fixed absolute noise, not % of total
 
@@ -160,16 +164,18 @@ def measure_weight():
 def dispense(component_id, weight):
     amount = weight / density_of_liquid  # convert weight to volume
     print(f"Dispensing component {component_id}, amount: {amount:.4f} ml")
+
+    positions = [0 if i == component_id - 1 else 1 for i in range(4)]  # only this component's servo to dispense
+    set_servo_positions(positions)
+
     amount_with_noise = amount * (1 + random.uniform(-dispensing_noise_factor, dispensing_noise_factor))
     move_motor(component_id, amount_with_noise / volume_per_step)
+
+    set_servo_positions([1, 1, 1, 1])  # return all servos to mix position after dispensing
 
 
 def move_motor(motor_id, steps):
     assert motor_id in [1, 2, 3, 4], "Invalid motor ID. Must be 1, 2, 3, or 4."
-
-    
-    positions = [0 if i == motor_id - 1 else 1 for i in range(4)]  # only this motor's servo to dispense
-    set_servo_positions(positions)
 
     microsteps = int(steps * microsteps_per_step)
     pin = control_pins[motor_id - 1]
@@ -189,9 +195,6 @@ def move_motor(motor_id, steps):
         GPIO.cleanup(pin)
     else:
         comps_dispensed[motor_id - 1] += steps * volume_per_step * density_of_liquid  # in gram
-    
-    
-    set_servo_positions([1, 1, 1, 1])  # reset all to mix position
 
 
 def _angle_to_duty(angle):
@@ -262,7 +265,7 @@ def set_servo_positions(positions):
             pwm.ChangeDutyCycle(0)  # stop PWM signal to prevent jitter
             pwm.stop()
 
-        GPIO.cleanup()
+        GPIO.cleanup(servo_pins)
 
 
 if __name__ == "__main__":
