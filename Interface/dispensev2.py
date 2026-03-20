@@ -137,6 +137,14 @@ def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, ma
     print(f"Biggest % difference: Component {i+1} ({ratios[i]*100:.2f}% of target) vs Component {j+1} ({ratios[j]*100:.2f}% of target): {max_diff_pct:.2f}%")
 
 
+def mix():
+    print("Mixing components...")
+    set_servo_positions([1, 1, 1, 1])  # set all to mix position
+    multi_dispense([1000, 1000, 1000, 1000], relative_tolerance=1000000)  # mix by dispensing small amounts from each motor
+    print("Mixing complete.")
+
+
+
 def show_dispensed_amounts():
     print("")
     print("Dispensed amounts:")
@@ -158,6 +166,11 @@ def dispense(component_id, weight):
 
 def move_motor(motor_id, steps):
     assert motor_id in [1, 2, 3, 4], "Invalid motor ID. Must be 1, 2, 3, or 4."
+
+    
+    positions = [0 if i == motor_id - 1 else 1 for i in range(4)]  # only this motor's servo to dispense
+    set_servo_positions(positions)
+
     microsteps = int(steps * microsteps_per_step)
     pin = control_pins[motor_id - 1]
     print(f"Moving motor {motor_id} on pin {pin}: {microsteps} microsteps.")
@@ -176,14 +189,20 @@ def move_motor(motor_id, steps):
         GPIO.cleanup(pin)
     else:
         comps_dispensed[motor_id - 1] += steps * volume_per_step * density_of_liquid  # in gram
+    
+    
+    set_servo_positions([1, 1, 1, 1])  # reset all to mix position
 
 
 def _angle_to_duty(angle):
     """Convert a servo angle in degrees to a PWM duty cycle percentage (for 50 Hz signal).
 
     Standard mapping: 2.5% = 0°, 7.5% = 90°, 12.5% = 180°.
+    Adjust min_duty/max_duty here if the servo doesn't reach its physical limits.
     """
-    return 2.5 + (angle / 180.0) * 10.0
+    min_duty = 2.5   # duty cycle at 0°  → increase if servo doesn't reach full left
+    max_duty = 12.5  # duty cycle at 180° → increase if servo doesn't reach full right
+    return min_duty + (angle / 180) * (max_duty - min_duty)
 
 
 def set_servo_positions(positions):
@@ -237,9 +256,10 @@ def set_servo_positions(positions):
         for pwm, angle in zip(pwms, angles):
             pwm.ChangeDutyCycle(_angle_to_duty(angle))
 
-        time.sleep(0.5)  # allow servos to physically reach their position
+        time.sleep(2)  # allow servos to physically reach their position
 
         for pwm in pwms:
+            pwm.ChangeDutyCycle(0)  # stop PWM signal to prevent jitter
             pwm.stop()
 
         GPIO.cleanup()
