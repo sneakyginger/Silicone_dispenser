@@ -3,6 +3,7 @@
 
 import pygame
 from pygame.locals import *
+import pygame.gfxdraw
 import time
 import threading
 
@@ -10,7 +11,7 @@ import threading
 
 def load_image(path, size, location):
     image = pygame.image.load(path)
-    image.convert_alpha()
+    image = pygame.Surface.convert_alpha(image)
     image = pygame.transform.scale(image, size)
     image_rect = image.get_rect()
     image_rect.center = location
@@ -210,7 +211,7 @@ select_cartridge_text, select_cartridge_text_rect = create_text("Select cartridg
 
 loci = locus(4)
 #load in selection sprite
-selection_image, selection_image_rect = load_image(r'./Sprites/dispenser.png', (100, 100), loci[0])
+selection_image, selection_image_rect = load_image(r'./Sprites/rond.png', (100, 100), loci[0])
 
 #loud in 2 component mixing sprite
 two_component_image, two_component_image_rect = load_image(r'./Sprites/button_2comp.png',(175,175),loci[0])
@@ -247,6 +248,13 @@ button2_image, button2_image_rect = load_image(r'./Sprites/button.png', button_s
 button3_image, button3_image_rect = load_image(r'./Sprites/button.png', button_size, (loci[2]))
 button4_image, button4_image_rect = load_image(r'./Sprites/button.png', button_size, (loci[3]))
 
+bottle_img_size = (116,626)
+bottle_img_size = (bottle_img_size[0]//4,bottle_img_size[1]//4)
+button_bottle_a_image, button_bottle_a_image_rect = load_image(r'./Sprites/button_bottle_a.png', bottle_img_size, (loci[0]))
+button_bottle_b_image, button_bottle_b_image_rect = load_image(r'./Sprites/button_bottle_b.png', bottle_img_size, (loci[1]))
+button_bottle_c_image, button_bottle_c_image_rect = load_image(r'./Sprites/button_bottle_c.png', bottle_img_size, (loci[2]))
+button_bottle_d_image, button_bottle_d_image_rect = load_image(r'./Sprites/button_bottle_d.png', bottle_img_size, (loci[3]))
+
 loci = locus(2)
 #load yes and no sprite
 yes_image, yes_image_rect = load_image(r'./Sprites/YES.png', button_size, (loci[0]))
@@ -258,6 +266,7 @@ running = True
 while running:
     loci = locus(sprites)
     selection_image_rect.center = (loci[location]) 
+
     screen.fill((255, 255, 255))          # clear screen (white background)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -623,11 +632,10 @@ while running:
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         screen.blit(select_cartridge_text, select_cartridge_text_rect)  # draw select cartridge text
 
-        screen.blit(button1_image, button1_image_rect)  # draw button 1
-        screen.blit(button2_image, button2_image_rect)  # draw button 2
-        screen.blit(button3_image, button3_image_rect)  # draw button 3
-        screen.blit(button4_image, button4_image_rect)  # draw button 4
-
+        screen.blit(button_bottle_a_image, button_bottle_a_image_rect)  # draw button 1
+        screen.blit(button_bottle_b_image, button_bottle_b_image_rect)  # draw button 2
+        screen.blit(button_bottle_c_image, button_bottle_c_image_rect)  # draw button 3
+        screen.blit(button_bottle_d_image, button_bottle_d_image_rect)  # draw button 4
 
     if menu == 8: #Select replacement weight
         sprites = 1
@@ -663,10 +671,11 @@ while running:
         screen.blit(selection_image, selection_image_rect)  # draw cursor
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
 
-        screen.blit(button1_image, button1_image_rect)  # draw button 1
-        screen.blit(button2_image, button2_image_rect)  # draw button 2
-        screen.blit(button3_image, button3_image_rect)  # draw button 3
-        screen.blit(button4_image, button4_image_rect)  # draw button 4
+        screen.blit(button_bottle_a_image, button_bottle_a_image_rect)  # draw button 1
+        screen.blit(button_bottle_b_image, button_bottle_b_image_rect)  # draw button 2
+        screen.blit(button_bottle_c_image, button_bottle_c_image_rect)  # draw button 3
+        screen.blit(button_bottle_d_image, button_bottle_d_image_rect)  # draw button 4
+
     if menu == 13: #draw one component dispensing amount selection menu
         sprites = 1
         screen.blit(menu13_text, menu13_text_rect)  # draw menu text in the center of the screen
@@ -680,6 +689,7 @@ while running:
         screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
         weight_text,weight_rect = create_text(f"Desired weight: {weight_1component_progress} g", (width // 2, height // 2), (0,0,0))
         screen.blit(weight_text, weight_rect)  # draw weight text in the center
+    
     if menu == -1: #draw loading bar
         sprites = 4
         if threading.active_count() == 1:  # check if the work thread is not already running
@@ -699,9 +709,7 @@ while running:
         weight_1component_progress = 50
         weight_2component_progress = 50
         weight_4component_progress = 50
-        weight_replacement_progress = 50
         hardness_4component_progress = 25
-        hardness_replacement_progress = 25
 
     if menu != previous_menu:
         if menu != 4:
