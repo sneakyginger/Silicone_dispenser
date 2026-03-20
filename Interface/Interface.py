@@ -119,6 +119,12 @@ def doWork():
     global loading_progress
     for ii in range(work):
         loading_progress = int((ii / work) * 100)+1
+def locus(amount_sprites):
+    loci = []
+    for i in range(amount_sprites):
+        loci.append((width/(amount_sprites+1)*(i+1), height/2))
+    loci.append((width-50, height-50)) #return sprite location
+    return loci
 
 
 pygame.init()
@@ -127,23 +133,19 @@ screen = pygame.display.set_mode((960, 240))
 width, height = screen.get_size()
 
 pygame.display.set_caption('Dispenser Interface')
-loci = [(width/5, height/2), (width/5*2, height/2), (width/5*3, height/2), (width/5*4, height/2), (width-50, height-50)]
 menu = 0
 location = 0
 time_frequency, time_duration, time_start_time = [0,0,0], [0,0,0], [0,0,0]
 start_time_selection = False
+sprites = 4
 
 def available_locations(current_location, direction, options):
     if direction == "right":
-        while not current_location in options:
-            current_location += 1
-            if current_location > 4:
-                current_location = 0
+        if location >= options:
+            current_location = 0
     elif direction == "left":
-        while not current_location in options:
-            current_location -= 1
-            if current_location < 0:
-                current_location = 4
+        if location < 0:
+            current_location = options-1
     return current_location
 
 #Maak teks voor tijdens mengen
@@ -174,14 +176,19 @@ menu10_text, menu10_text_rect = create_text("Select mixing duration", (width // 
 #Text menu 11
 menu11_text, menu11_text_rect = create_text("Select mixing start time", (width // 2, 25), (0,0,0))
 
+loci = locus(4)
 #menus names text
 two_component_text,two_component_text_rect = create_text("2 component", (loci[0][0], loci[0][1]+50), (0,0,0), "small")
 four_component_text, four_component_text_rect = create_text("4 component", (loci[1][0], loci[1][1]+50), (0,0,0), "small")
 mixing_menu_text, mixing_menu_text_rect = create_text("Mixing", (loci[2][0], loci[2][1]+50), (0,0,0), "small")
 settings_text, settings_text_rect = create_text("Settings", (loci[3][0], loci[3][1]+50), (0,0,0), "small")
+
+loci = locus(2)
 #Setting options text
-mixing_settings_text, mixing_settings_text_rect = create_text("Mixing settings", (loci[1][0], loci[1][1]+50), (0,0,0), "small")
-replace_cartridge_text, replace_cartridge_text_rect = create_text("Replace cartridge", (loci[2][0], loci[2][1]+50), (0,0,0), "small")
+mixing_settings_text, mixing_settings_text_rect = create_text("Mixing settings", (loci[0][0], loci[0][1]+50), (0,0,0), "small")
+replace_cartridge_text, replace_cartridge_text_rect = create_text("Replace cartridge", (loci[1][0], loci[1][1]+50), (0,0,0), "small")
+
+loci = locus(3)
 #mixing settings options text
 frequency_text, frequency_text_rect = create_text("Mixing frequency", (loci[0][0], loci[0][1]+50), (0,0,0), "small")
 duration_text, duration_text_rect = create_text("Mixing duration", (loci[1][0], loci[1][1]+50), (0,0,0), "small")
@@ -193,6 +200,7 @@ mixing_start_time_text, mixing_start_time_text_rect = create_text("Mixing start 
 #cartridge replacement options text
 select_cartridge_text, select_cartridge_text_rect = create_text("Select cartridge that is replaced", (width/2, height/2+50), (0,0,0), "small")
 
+loci = locus(4)
 #load in selection sprite
 selection_image, selection_image_rect = load_image(r'./Sprites/dispenser.png', (100, 100), loci[0])
 
@@ -200,7 +208,7 @@ selection_image, selection_image_rect = load_image(r'./Sprites/dispenser.png', (
 settings_image, settings_image_rect = load_image(r'./Sprites/settings.png', (75, 75), loci[3])
 
 #load in return sprite
-return_image, return_image_rect = load_image(r'./Sprites/return.png', (75, 75), loci[4])
+return_image, return_image_rect = load_image(r'./Sprites/return.png', (75, 75), loci[-1])
 #load in loading bar sprite
 loading_bar_image, loading_bar_image_rect = load_image(r'./Sprites/white.png',(8,150) ,(200, height//2))
 loading_progress = 0
@@ -219,14 +227,16 @@ button2_image, button2_image_rect = load_image(r'./Sprites/button.png', (75, 75)
 button3_image, button3_image_rect = load_image(r'./Sprites/button.png', (75, 75), (loci[2]))
 button4_image, button4_image_rect = load_image(r'./Sprites/button.png', (75, 75), (loci[3]))
 
+loci = locus(2)
 #load yes and no sprite
-yes_image, yes_image_rect = load_image(r'./Sprites/YES.png', (75, 75), (loci[1]))
-no_image, no_image_rect = load_image(r'./Sprites/no.png', (75, 75), (loci[2]))
+yes_image, yes_image_rect = load_image(r'./Sprites/YES.png', (75, 75), (loci[0]))
+no_image, no_image_rect = load_image(r'./Sprites/no.png', (75, 75), (loci[1]))
 
 
 
 running = True
 while running:
+    loci = locus(sprites)
     selection_image_rect.center = (loci[location]) 
     screen.fill((255, 255, 255))          # clear screen (white background)
     for event in pygame.event.get():
@@ -262,9 +272,13 @@ while running:
                         hardness_progress = 50
                         location = 4
                 elif menu == 4:
-                    location = available_locations(location, "right", [1,2,4])
+                    location = available_locations(location, "right", 3)
+                    if location == 2:
+                        location = 0
                 elif menu == 5:  
-                    location = available_locations(location, "right", [1,2,4])
+                    location = available_locations(location, "right", 3)
+                elif menu == 6:
+                    location = available_locations(location, "right", 4)
                 elif menu == 8:
                     if hardness_progress < 50:
                         location  = 0
@@ -273,15 +287,15 @@ while running:
                         hardness_progress = 50
                         location = 4
                 elif menu == 9:
-                    location = available_locations(location, "right", [0,1,2,4])
+                    location = available_locations(location, "right", 4)
                     if start_time_selection:
                         time_frequency = select_time(time_frequency, "right", time_increment_selection)
                 elif menu == 10:
-                    location = available_locations(location, "right", [0,1,2,4])
+                    location = available_locations(location, "right", 4)
                     if start_time_selection:
                         time_duration = select_time(time_duration, "right", time_increment_selection)
                 elif menu == 11:
-                    location = available_locations(location, "right", [0,1,2,4])
+                    location = available_locations(location, "right", 4)
                     if start_time_selection:
                         time_start_time = select_time(time_start_time, "right", time_increment_selection)
 
@@ -312,9 +326,13 @@ while running:
                         hardness_progress = 0
                         location = 4
                 elif menu == 4:
-                    location = available_locations(location, "left", [1,2,4])
+                    location = available_locations(location, "left", 3)
+                    if location == 2:
+                        location = 1
                 elif menu == 5:
-                    location = available_locations(location, "left", [1,2,4])
+                    location = available_locations(location, "left", 3)
+                elif menu == 6:
+                    location = available_locations(location, "left", 4)
                 elif menu == 8:
                     if hardness_progress > 0:
                         location  = 0
@@ -323,15 +341,15 @@ while running:
                         hardness_progress = 0
                         location = 4
                 elif menu == 9:
-                    location = available_locations(location, "left", [0,1,2,4])
+                    location = available_locations(location, "left", 4)
                     if start_time_selection:
                         time_frequency = select_time(time_frequency, "left", time_increment_selection)
                 elif menu == 10:
-                    location = available_locations(location, "left", [0,1,2,4])
+                    location = available_locations(location, "left", 4)
                     if start_time_selection:
                         time_duration = select_time(time_duration, "left", time_increment_selection)
                 elif menu == 11:
-                    location = available_locations(location, "left", [0,1,2,4])
+                    location = available_locations(location, "left", 4)
                     if start_time_selection:
                         time_start_time = select_time(time_start_time, "left", time_increment_selection)
 
@@ -347,7 +365,7 @@ while running:
                     elif location == 3:
                         menu = 5
                         location = 2
-                    elif location == 4:
+                    elif location == sprites:
                         menu = 0
                 elif menu == 1:
                     if location == 4:
@@ -355,26 +373,26 @@ while running:
                     else:
                         menu = -1
                 elif menu == 2:
-                    if location == 4:
+                    if location == sprites:
                         menu = 0
                     else:
                         menu = 3
                 elif menu == 3:
-                    if location == 4:
+                    if location == sprites:
                         menu = 0
                     else:
                         menu = -1
                 elif menu == 4:
-                    if location == 1:
+                    if location == 0:
                         menu = -1
-                    elif location == 2:
+                    elif location == 1:
                         menu = 0
                 elif menu == 5:
-                    if location == 1:
+                    if location == 0:
                         menu = 6
-                    elif location == 2:
+                    elif location == 1:
                         menu = 7
-                    elif location == 4:
+                    elif location == sprites:
                         menu = 0
                 elif menu == 6:
                     if location == 0:
@@ -383,15 +401,15 @@ while running:
                         menu = 10
                     elif location == 2:
                         menu = 11
-                    elif location == 4:
+                    elif location == sprites:
                         menu = 5
                 elif menu == 7:
-                    if location == 4:
+                    if location == sprites:
                         menu = 5
                     else:
                         menu = 8
                 elif menu == 8:
-                    if location == 4:
+                    if location == sprites:
                         menu = 7
                     else:
                         menu = -1
@@ -400,7 +418,7 @@ while running:
                         start_time_selection = False
                         location = time_increment_selection
                     else:
-                        if location == 4:
+                        if location == sprites:
                             menu = 6
                         elif location == 0:
                             time_increment_selection = 0
@@ -418,7 +436,7 @@ while running:
                         start_time_selection = False
                         location = time_increment_selection
                     else:
-                        if location == 4:
+                        if location == sprites:
                             menu = 6
                         elif location == 0:
                             time_increment_selection = 0
@@ -434,7 +452,7 @@ while running:
                         start_time_selection = False
                         location = time_increment_selection
                     else:
-                        if location == 4:
+                        if location == sprites:
                             menu = 6
                         elif location == 0:
                             time_increment_selection = 0
@@ -447,6 +465,7 @@ while running:
                             start_time_selection = True
 
     if menu == 0: #draw start menu
+        sprites = 4
         screen.blit(menu0_text, menu0_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw cursor
         screen.blit(settings_image, settings_image_rect)  # draw settings image
@@ -460,22 +479,22 @@ while running:
         screen.blit(settings_text, settings_text_rect)  # draw settings text
 
     if menu == 1: #draw 2 component weight selection menu
+        sprites = 4
         screen.blit(menu1_text, menu1_text_rect)  # draw menu text in the center of the screen
-        if location == 4:
+        if location == sprites:
             screen.blit(selection_image, selection_image_rect)  # draw cursor
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
-        
         weight_bar_width = abs(weight_progress)*width/2//100
         weight_bar_image_use = pygame.transform.scale(weight_bar_image, (int(weight_bar_width), 50))  # scale loading bar based on selected weight
         weight_bar_image_use_rect = weight_bar_image_use.get_rect(midleft=(200, 3/4*height))  # update loading bar position
         screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
         weight_text,weight_rect = create_text(f"Desired weight: {weight_progress} g", (width // 2, height // 2), (0,0,0))
         screen.blit(weight_text, weight_rect)  # draw weight text in the center
-
 
     if menu == 2: #draw 4 component weight selection menu
+        sprites = 4
         screen.blit(menu2_text, menu2_text_rect)  # draw menu text in the center of the screen
-        if location == 4:
+        if location == sprites:
             screen.blit(selection_image, selection_image_rect)  # draw cursor
         weight_bar_width = abs(weight_progress)*width/2//100
         weight_bar_image_use = pygame.transform.scale(weight_bar_image, (int(weight_bar_width), 50))  # scale loading bar based on selected weight
@@ -484,11 +503,11 @@ while running:
         weight_text,weight_rect = create_text(f"Desired weight: {weight_progress} g", (width // 2, height // 2), (0,0,0))
         screen.blit(weight_text, weight_rect)  # draw weight text in the center
 
-
     if menu == 3: #draw 4 component hardness selection menu
+        sprites = 4
         screen.blit(menu3_text, menu3_text_rect)  # draw menu text in the center of the screen
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
-        if location == 4:
+        if location == sprites:
             screen.blit(selection_image, selection_image_rect)  # draw cursor
         hardness_bar_width = abs(hardness_progress)*width/2//50
         hardness_bar_image_use = pygame.transform.scale(hardness_bar_image, (int(hardness_bar_width), 50))  # scale loading bar based on selected weight
@@ -499,6 +518,9 @@ while running:
 
     
     if menu == 4: #draw start mixing confirmation menu
+        if location == 2:
+            location = 1
+        sprites = 2
         screen.blit(menu4_text, menu4_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw cursor
         screen.blit(yes_image, yes_image_rect)  # draw yes image
@@ -507,6 +529,7 @@ while running:
     
 
     if menu == 5: #draw settings menu
+        sprites = 2
         screen.blit(menu5_text, menu5_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw cursor
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner   
@@ -514,6 +537,7 @@ while running:
         screen.blit(replace_cartridge_text, replace_cartridge_text_rect)  # draw replace cartridge text
 
     if menu == 6: #draw mixing settings menu
+        sprites = 3
         screen.blit(menu6_text, menu6_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw cursor
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
@@ -522,22 +546,26 @@ while running:
         screen.blit(mixing_start_time_text, mixing_start_time_text_rect)  # draw mixing start time text
 
     if menu == 9: #draw frequency of mixing menu
+        sprites = 3
         screen.blit(menu9_text, menu9_text_rect)  # draw menu text in the center of the screen
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         display_time_selection(width, height, time_frequency, location, start_time_selection)  # draw time selection
 
     if menu == 10: #draw duration of mixing menu
+        sprites = 3
         screen.blit(menu10_text, menu10_text_rect)  # draw menu text in the center of the screen
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         display_time_selection(width, height, time_duration, location, start_time_selection)  # draw time selection
 
     if menu == 11: #draw start time of mixing menu
+        sprites = 3
         screen.blit(menu11_text, menu11_text_rect)  # draw menu text in the center of the screen
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         display_time_selection(width, height, time_start_time, location, start_time_selection)  # draw time selection
     
 
     if menu == 7: #draw cartridge replacement menu
+        sprites = 4
         screen.blit(menu7_text, menu7_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw cursor
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
@@ -549,9 +577,10 @@ while running:
         screen.blit(button4_image, button4_image_rect)  # draw button 4
 
     if menu == 8: #Select replacement hardness
+        sprites = 4
         screen.blit(menu7_text, menu7_text_rect)  # draw menu text in the center of the screen
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
-        if location == 4:
+        if location == sprites:
             screen.blit(selection_image, selection_image_rect)  # draw cursor
         hardness_bar_width = abs(hardness_progress)*width/2//50
         hardness_bar_image_use = pygame.transform.scale(hardness_bar_image, (int(hardness_bar_width), 50))  # scale loading bar based on selected weight
