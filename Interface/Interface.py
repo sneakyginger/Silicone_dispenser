@@ -80,22 +80,30 @@ menu5_text, menu5_text_rect = create_text("Settings", (width // 2, 25), (0,0,0))
 menu6_text, menu6_text_rect = create_text("Mixing Settings", (width // 2, 25), (0,0,0))
 #Text menu 7
 menu7_text, menu7_text_rect = create_text("Replace cartridge", (width // 2, 25), (0,0,0))
-#menu names text
+#menus names text
 two_component_text,two_component_text_rect = create_text("2 component", (loci[0][0], loci[0][1]+50), (0,0,0), "small")
 four_component_text, four_component_text_rect = create_text("4 component", (loci[1][0], loci[1][1]+50), (0,0,0), "small")
-mixing_settings_text, mixing_settings_text_rect = create_text("Mixing", (loci[2][0], loci[2][1]+50), (0,0,0), "small")
-replace_cartridge_text, replace_cartridge_text_rect = create_text("Settings", (loci[3][0], loci[3][1]+50), (0,0,0), "small")
+mixing_menu_text, mixing_menu_text_rect = create_text("Mixing", (loci[2][0], loci[2][1]+50), (0,0,0), "small")
+settings_text, settings_text_rect = create_text("Settings", (loci[3][0], loci[3][1]+50), (0,0,0), "small")
+#Setting options text
+mixing_settings_text, mixing_settings_text_rect = create_text("Mixing settings", (loci[1][0], loci[1][1]+50), (0,0,0), "small")
+replace_cartridge_text, replace_cartridge_text_rect = create_text("Replace cartridge", (loci[2][0], loci[2][1]+50), (0,0,0), "small")
+#mixing settings options text
+frequency_text, frequency_text_rect = create_text("Mixing frequency", (loci[0][0], loci[0][1]+50), (0,0,0), "small")
+duration_text, duration_text_rect = create_text("Mixing duration", (loci[1][0], loci[1][1]+50), (0,0,0), "small")
+mixing_start_time_text, mixing_start_time_text_rect = create_text("Mixing start time", (loci[2][0], loci[2][1]+50), (0,0,0), "small")
 
-
+#cartridge replacement options text
+select_cartridge_text, select_cartridge_text_rect = create_text("Select cartridge that is replaced", (width/2, height/2+50), (0,0,0), "small")
 
 #load in selection sprite
-selection_image, selection_image_rect = load_image(r'./Sprites/dispenser.png', (125, 125), loci[0])
+selection_image, selection_image_rect = load_image(r'./Sprites/dispenser.png', (100, 100), loci[0])
 
 #load in settings sprite
 settings_image, settings_image_rect = load_image(r'./Sprites/settings.png', (75, 75), loci[3])
 
 #load in return sprite
-return_image, return_image_rect = load_image(r'./Sprites/return.png', (100, 100), loci[4])
+return_image, return_image_rect = load_image(r'./Sprites/return.png', (75, 75), loci[4])
 #load in loading bar sprite
 loading_bar_image, loading_bar_image_rect = load_image(r'./Sprites/white.png',(8,150) ,(200, height//2))
 loading_progress = 0
@@ -115,8 +123,8 @@ button3_image, button3_image_rect = load_image(r'./Sprites/button.png', (75, 75)
 button4_image, button4_image_rect = load_image(r'./Sprites/button.png', (75, 75), (loci[3]))
 
 #load yes and no sprite
-yes_image, yes_image_rect = load_image(r'./Sprites/YES.png', (100, 100), (loci[1]))
-no_image, no_image_rect = load_image(r'./Sprites/no.png', (100, 100), (loci[2]))
+yes_image, yes_image_rect = load_image(r'./Sprites/YES.png', (75, 75), (loci[1]))
+no_image, no_image_rect = load_image(r'./Sprites/no.png', (75, 75), (loci[2]))
 
 
 
@@ -150,16 +158,23 @@ while running:
                         weight_progress = 100
                         location = 4
                 elif menu == 3:
-                    if weight_progress > 50:
+                    if hardness_progress < 50:
                         location  = 0
                         hardness_progress += 1
                     else:
-                        hardness_progress = 0
+                        hardness_progress = 50
                         location = 4
                 elif menu == 4:
                     location = available_locations(location, "right", [1,2,4])
                 elif menu == 5:  
                     location = available_locations(location, "right", [1,2,4])
+                elif menu == 8:
+                    if hardness_progress < 50:
+                        location  = 0
+                        hardness_progress += 1
+                    else:
+                        hardness_progress = 50
+                        location = 4
 
 
             elif event.key == pygame.K_LEFT:
@@ -181,7 +196,7 @@ while running:
                         weight_progress = 0
                         location = 4
                 elif menu == 3:
-                    if weight_progress > 0:
+                    if hardness_progress > 0:
                         location  = 0
                         hardness_progress -= 1
                     else:
@@ -191,6 +206,13 @@ while running:
                     location = available_locations(location, "left", [1,2,4])
                 elif menu == 5:
                     location = available_locations(location, "left", [1,2,4])
+                elif menu == 8:
+                    if hardness_progress > 0:
+                        location  = 0
+                        hardness_progress -= 1
+                    else:
+                        hardness_progress = 0
+                        location = 4
 
             elif event.key == pygame.K_RETURN: #state machine for menu navigation
                 if menu == 0:
@@ -239,9 +261,15 @@ while running:
                 elif menu == 7:
                     if location == 4:
                         menu = 5
+                    else:
+                        menu = 8
+                elif menu == 8:
+                    if location == 4:
+                        menu = 7
+                    else:
+                        menu = -1
 
-                
-    if menu == 0:
+    if menu == 0: #draw start menu
         screen.blit(menu0_text, menu0_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw cursor
         screen.blit(settings_image, settings_image_rect)  # draw settings image
@@ -251,9 +279,10 @@ while running:
         screen.blit(button2_image, button2_image_rect)  # draw button 2
         screen.blit(four_component_text, four_component_text_rect)  # draw four component text
         screen.blit(button3_image, button3_image_rect)  # draw button 3
-        screen.blit(mixing_settings_text, mixing_settings_text_rect)  # draw mixing settings text
-        screen.blit(replace_cartridge_text, replace_cartridge_text_rect)  # draw replace cartridge text
-    if menu == 1:
+        screen.blit(mixing_menu_text, mixing_menu_text_rect)  # draw mixing menu text
+        screen.blit(settings_text, settings_text_rect)  # draw settings text
+
+    if menu == 1: #draw 2 component weight selection menu
         screen.blit(menu1_text, menu1_text_rect)  # draw menu text in the center of the screen
         if location == 4:
             screen.blit(selection_image, selection_image_rect)  # draw cursor
@@ -265,7 +294,9 @@ while running:
         screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
         weight_text,weight_rect = create_text(f"Desired weight: {weight_progress} g", (width // 2, height // 2), (0,0,0))
         screen.blit(weight_text, weight_rect)  # draw weight text in the center
-    if menu == 2:
+
+
+    if menu == 2: #draw 4 component weight selection menu
         screen.blit(menu2_text, menu2_text_rect)  # draw menu text in the center of the screen
         if location == 4:
             screen.blit(selection_image, selection_image_rect)  # draw cursor
@@ -275,7 +306,9 @@ while running:
         screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
         weight_text,weight_rect = create_text(f"Desired weight: {weight_progress} g", (width // 2, height // 2), (0,0,0))
         screen.blit(weight_text, weight_rect)  # draw weight text in the center
-    if menu == 3:
+
+
+    if menu == 3: #draw 4 component hardness selection menu
         screen.blit(menu3_text, menu3_text_rect)  # draw menu text in the center of the screen
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         if location == 4:
@@ -286,24 +319,55 @@ while running:
         screen.blit(hardness_bar_image_use, hardness_bar_image_use_rect)  # draw loading bar
         hardness_text,hardness_rect = create_text(f"Desired hardness: {hardness_progress}", (width // 2, height // 2), (0,0,0))
         screen.blit(hardness_text, hardness_rect)  # draw hardness text in the center
-    if menu == 4:
+
+    
+    if menu == 4: #draw start mixing confirmation menu
         screen.blit(menu4_text, menu4_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw cursor
         screen.blit(yes_image, yes_image_rect)  # draw yes image
         screen.blit(no_image, no_image_rect)  # draw no image
-    if menu == 5:
+
+    
+
+    if menu == 5: #draw settings menu
         screen.blit(menu5_text, menu5_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw cursor
-        screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner    
-    if menu == 6:
+        screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner   
+        screen.blit(mixing_settings_text, mixing_settings_text_rect)  # draw mixing settings text
+        screen.blit(replace_cartridge_text, replace_cartridge_text_rect)  # draw replace cartridge text
+
+    if menu == 6: #draw mixing settings menu
         screen.blit(menu6_text, menu6_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw cursor
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
-    if menu == 7:
+    
+
+    if menu == 7: #draw cartridge replacement menu
         screen.blit(menu7_text, menu7_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw cursor
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
-    if menu == -1:
+        screen.blit(select_cartridge_text, select_cartridge_text_rect)  # draw select cartridge text
+
+        screen.blit(button1_image, button1_image_rect)  # draw button 1
+        screen.blit(button2_image, button2_image_rect)  # draw button 2
+        screen.blit(button3_image, button3_image_rect)  # draw button 3
+        screen.blit(button4_image, button4_image_rect)  # draw button 4
+
+    if menu == 8: #Select replacement hardness
+        screen.blit(menu7_text, menu7_text_rect)  # draw menu text in the center of the screen
+        screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
+        if location == 4:
+            screen.blit(selection_image, selection_image_rect)  # draw cursor
+        hardness_bar_width = abs(hardness_progress)*width/2//50
+        hardness_bar_image_use = pygame.transform.scale(hardness_bar_image, (int(hardness_bar_width), 50))  # scale loading bar based on selected weight
+        hardness_bar_image_use_rect = hardness_bar_image_use.get_rect(midleft=(200, 3/4*height))  # update loading bar position
+        screen.blit(hardness_bar_image_use, hardness_bar_image_use_rect)  # draw loading bar
+        cartridge_hardness_text, cartridge_hardness_text_rect = create_text(f"Hardness of new cartridge: {hardness_progress}", (width // 2, height // 2), (0,0,0))
+        screen.blit(cartridge_hardness_text, cartridge_hardness_text_rect)  # draw hardness text in the center
+
+
+
+    if menu == -1: #draw loading bar
         if threading.active_count() == 1:  # check if the work thread is not already running
             threading.Thread(target=doWork).start()  # start the work in a separate thread
         screen.fill((0,0,0))          # clear screen (black background)
