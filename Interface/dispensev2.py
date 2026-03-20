@@ -2,14 +2,15 @@ import random
 import math
 import time
 
-#import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
 
 
-RASPBERRY = False
+RASPBERRY = True
+# GPIO pins [7, 11, 13, 15] -> [26, 23, 33, 10]
+#control_pins = [26, 23, 33, 10]  # BOARD pin numbers, one per motor
+control_pins = [7, 11, 13, 15]
 
-control_pins = [7, 11, 13, 15]  # BOARD pin numbers, one per motor
-
-step_delay = 0.001  # in seconds, delay between each microstep pulse
+step_delay = 0.01  # in seconds, delay between each microstep pulse1
 
 servo_pins = [12, 32, 35, 33]  # BOARD pin numbers for servos 1–4 (hardware PWM, RPi 5)
 
@@ -21,9 +22,9 @@ comps_dispensed = [0, 0, 0, 0]  # in gram # for testing, to keep track of how mu
 
 
 # to simulate dispensing, we will add noise to the process
-dispensing_noise_factor = 0.10  # 10% noise in dispensing, for testing purposes
+dispensing_noise_factor = 15/100  # in %,  noise in dispensing, for testing purposes
 
-measurement_noise_factor = 0.04  # 0.04g noise in measurement, for testing purposes
+measurement_noise_factor = 0.04  # in g, noise in measurement, for testing purposes
 
 
 density_of_liquid = 1.06  # in g/ml, density of the liquid being dispensed
@@ -113,7 +114,7 @@ def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, ma
     # otherwise any overshoot caused by noise would raise the target and trigger a runaway chain reaction
     target_ratio = max_ratio
     iterations_used = 0
-    for iteration in range(max_iterations):
+    while iterations_used < max_iterations:
         to_correct = under_tolerance_components(measured_results, amounts, relative_tolerance, target_ratio=target_ratio)
 
         if not to_correct:
@@ -136,6 +137,17 @@ def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, ma
     print(f"Biggest % difference: Component {i+1} ({ratios[i]*100:.2f}% of target) vs Component {j+1} ({ratios[j]*100:.2f}% of target): {max_diff_pct:.2f}%")
 
 
+def mix(rotations=10):
+    """Run all motors in mix position for a given number of rotations."""
+    print("Mixing components...")
+    set_servo_positions([1, 1, 1, 1])  # all servos in mix position — stays throughout
+    steps = rotations * microsteps_per_revolution
+    for motor_id in range(1, 5):
+        move_motor(motor_id, steps)  # move_motor is servo-agnostic, servos stay in mix
+    print("Mixing complete.")
+
+
+
 def show_dispensed_amounts():
     print("")
     print("Dispensed amounts:")
@@ -144,6 +156,7 @@ def show_dispensed_amounts():
 
 
 def measure_weight():
+    # TODO: replace with real scale read once hardware is available
     noise = random.uniform(-measurement_noise_factor, measurement_noise_factor)
     return sum(comps_dispensed) + noise  # fixed absolute noise, not % of total
 
@@ -151,12 +164,19 @@ def measure_weight():
 def dispense(component_id, weight):
     amount = weight / density_of_liquid  # convert weight to volume
     print(f"Dispensing component {component_id}, amount: {amount:.4f} ml")
+
+    positions = [0 if i == component_id - 1 else 1 for i in range(4)]  # only this component's servo to dispense
+    set_servo_positions(positions)
+
     amount_with_noise = amount * (1 + random.uniform(-dispensing_noise_factor, dispensing_noise_factor))
     move_motor(component_id, amount_with_noise / volume_per_step)
+
+    set_servo_positions([1, 1, 1, 1])  # return all servos to mix position after dispensing
 
 
 def move_motor(motor_id, steps):
     assert motor_id in [1, 2, 3, 4], "Invalid motor ID. Must be 1, 2, 3, or 4."
+
     microsteps = int(steps * microsteps_per_step)
     pin = control_pins[motor_id - 1]
     print(f"Moving motor {motor_id} on pin {pin}: {microsteps} microsteps.")
@@ -181,8 +201,11 @@ def _angle_to_duty(angle):
     """Convert a servo angle in degrees to a PWM duty cycle percentage (for 50 Hz signal).
 
     Standard mapping: 2.5% = 0°, 7.5% = 90°, 12.5% = 180°.
+    Adjust min_duty/max_duty here if the servo doesn't reach its physical limits.
     """
-    return 2.5 + (angle / 180.0) * 10.0
+    min_duty = 2.5   # duty cycle at 0°  → increase if servo doesn't reach full left
+    max_duty = 12.5  # duty cycle at 180° → increase if servo doesn't reach full right
+    return min_duty + (angle / 180) * (max_duty - min_duty)
 
 
 def set_servo_positions(positions):
@@ -236,12 +259,13 @@ def set_servo_positions(positions):
         for pwm, angle in zip(pwms, angles):
             pwm.ChangeDutyCycle(_angle_to_duty(angle))
 
-        time.sleep(0.5)  # allow servos to physically reach their position
+        time.sleep(2)  # allow servos to physically reach their position
 
         for pwm in pwms:
+            pwm.ChangeDutyCycle(0)  # stop PWM signal to prevent jitter
             pwm.stop()
 
-        GPIO.cleanup()
+        GPIO.cleanup(servo_pins)
 
 
 if __name__ == "__main__":
