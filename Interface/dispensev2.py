@@ -2,14 +2,15 @@ import random
 import math
 import time
 
-#import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
 
 
-RASPBERRY = False
+RASPBERRY = True
+# GPIO pins [7, 11, 13, 15] -> [26, 23, 33, 10]
+#control_pins = [26, 23, 33, 10]  # BOARD pin numbers, one per motor
+control_pins = [7, 11, 13, 15]
 
-control_pins = [7, 11, 13, 15]  # BOARD pin numbers, one per motor
-
-step_delay = 0.001  # in seconds, delay between each microstep pulse
+step_delay = 0.01  # in seconds, delay between each microstep pulse1
 
 servo_pins = [12, 32, 35, 33]  # BOARD pin numbers for servos 1–4 (hardware PWM, RPi 5)
 
@@ -21,9 +22,9 @@ comps_dispensed = [0, 0, 0, 0]  # in gram # for testing, to keep track of how mu
 
 
 # to simulate dispensing, we will add noise to the process
-dispensing_noise_factor = 0.10  # 10% noise in dispensing, for testing purposes
+dispensing_noise_factor = 15/100  # in %,  noise in dispensing, for testing purposes
 
-measurement_noise_factor = 0.04  # 0.04g noise in measurement, for testing purposes
+measurement_noise_factor = 0.04  # in g, noise in measurement, for testing purposes
 
 
 density_of_liquid = 1.06  # in g/ml, density of the liquid being dispensed
