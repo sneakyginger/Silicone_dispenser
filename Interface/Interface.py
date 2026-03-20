@@ -36,18 +36,21 @@ def create_text(text, position, color=(255,255,255), font_type="normal"):
     surface_text_rect = surface_text.get_rect()
     surface_text_rect.center = position
     return surface_text, surface_text_rect
-def select_time(day,hour,minute,direction,selection):
+def select_time(selected_time,direction,selection):
+    day = selected_time[0]
+    hour = selected_time[1]
+    minute = selected_time[2]
     if selection == 0:
         if direction == "left":
             if day > 0:
                 day -= 1
             elif day == 0:
                 day = 30
-    elif direction == "right":
-        if hour < 24:
-            hour += 1
-        elif hour == 24:
-            hour = 0
+        elif direction == "right":
+            if day < 30:
+                day += 1
+            elif day == 30:
+                day = 0
 
     elif selection == 1:
         if direction == "left":
@@ -73,9 +76,12 @@ def select_time(day,hour,minute,direction,selection):
             elif minute == 60:
                 minute = 0
     
-    return day, hour, minute
+    return [day, hour, minute]
 
-def display_time_selection(day, hour, minute,width,height,location,time_selecting):
+def display_time_selection(width, height,selected_time, location, time_selecting ):
+    day = selected_time[0]
+    hour = selected_time[1]
+    minute = selected_time[2]
     if not time_selecting:
         if location == 0:
             selection_image_rect.center = (width /6, height // 2)
@@ -89,23 +95,31 @@ def display_time_selection(day, hour, minute,width,height,location,time_selectin
         elif location == 4:
             selection_image_rect.center = (width-50, height-50)
             screen.blit(selection_image, selection_image_rect)  # draw cursor
-    day_text, day_text_rect = create_text(f"{day}", (width /6, height // 2), (0,0,0),"big")
-    screen.blit(day_text, day_text_rect)  # draw frequency text in the center
-    hour_text, hour_text_rect = create_text(f"{hour}", (width/6*3, height // 2), (0,0,0),"big")
-    screen.blit(hour_text, hour_text_rect)  # draw frequency text in the center
-    minute_text, minute_text_rect = create_text(f"{minute}", (width /6*5, height // 2), (0,0,0),"big")
-    screen.blit(minute_text, minute_text_rect)  # draw frequency text in the center
-    partition_text, partition_text_rect = create_text(":", (width/6*2, height // 2), (0,0,0),"big")
-    screen.blit(partition_text, partition_text_rect)  # draw frequency text in the center
-    partition_text, partition_text_rect = create_text(":", (width/6*4, height // 2), (0,0,0),"big")
-    screen.blit(partition_text, partition_text_rect)  # draw frequency text in the center
-    
+    #draw days hours and minutes
+    day_text, day_text_rect = create_text(f"{day}", (width /6, height // 2+25), (0,0,0),"big")
+    screen.blit(day_text, day_text_rect)  # draw days
+    hour_text, hour_text_rect = create_text(f"{hour}", (width/6*3, height // 2+25), (0,0,0),"big")
+    screen.blit(hour_text, hour_text_rect)  # draw hours
+    minute_text, minute_text_rect = create_text(f"{minute}", (width /6*5, height // 2+25), (0,0,0),"big")
+    screen.blit(minute_text, minute_text_rect)  # draw minutes
+    partition_text, partition_text_rect = create_text(":", (width/6*2, height // 2+25), (0,0,0),"big")
+    screen.blit(partition_text, partition_text_rect)  # draw :
+    partition_text, partition_text_rect = create_text(":", (width/6*4, height // 2+25), (0,0,0),"big")
+    screen.blit(partition_text, partition_text_rect)  # draw :
+    # annotate days hours and minutes
+    day_annotate_text, day_annotate_text_rect = create_text("DAYS", (width /6, height // 2-25), (0,0,0),"small")
+    screen.blit(day_annotate_text, day_annotate_text_rect)  # draw annotation day
+    hour_annotate_text, hour_annotate_text_rect = create_text("HOURS", (width/6*3, height // 2-25), (0,0,0),"small")
+    screen.blit(hour_annotate_text, hour_annotate_text_rect)  # draw annotation hour
+    minute_annotate_text, minute_annotate_text_rect = create_text("MINUTES", (width /6*5, height // 2-25), (0,0,0),"small")
+    screen.blit(minute_annotate_text, minute_annotate_text_rect)  # draw annotation minute
     return
 work = 5000000
 def doWork():
     global loading_progress
     for ii in range(work):
         loading_progress = int((ii / work) * 100)+1
+
 
 pygame.init()
 #screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
@@ -116,9 +130,8 @@ pygame.display.set_caption('Dispenser Interface')
 loci = [(width/5, height/2), (width/5*2, height/2), (width/5*3, height/2), (width/5*4, height/2), (width-50, height-50)]
 menu = 0
 location = 0
-day, hour, minute = 0, 0, 0
+time_frequency, time_duration, time_start_time = [0,0,0], [0,0,0], [0,0,0]
 start_time_selection = False
-time_increment_selection = 0
 
 def available_locations(current_location, direction, options):
     if direction == "right":
@@ -152,6 +165,15 @@ menu5_text, menu5_text_rect = create_text("Settings", (width // 2, 25), (0,0,0))
 menu6_text, menu6_text_rect = create_text("Mixing Settings", (width // 2, 25), (0,0,0))
 #Text menu 7
 menu7_text, menu7_text_rect = create_text("Replace cartridge", (width // 2, 25), (0,0,0))
+#Text menu 8
+menu8_text, menu8_text_rect = create_text("Select hardness of new cartridge", (width // 2, 25), (0,0,0))
+#Text menu 9
+menu9_text, menu9_text_rect = create_text("Time between mixes", (width // 2, 25), (0,0,0))
+#Text menu 10
+menu10_text, menu10_text_rect = create_text("Select mixing duration", (width // 2, 25), (0,0,0))
+#Text menu 11
+menu11_text, menu11_text_rect = create_text("Select mixing start time", (width // 2, 25), (0,0,0))
+
 #menus names text
 two_component_text,two_component_text_rect = create_text("2 component", (loci[0][0], loci[0][1]+50), (0,0,0), "small")
 four_component_text, four_component_text_rect = create_text("4 component", (loci[1][0], loci[1][1]+50), (0,0,0), "small")
@@ -164,6 +186,9 @@ replace_cartridge_text, replace_cartridge_text_rect = create_text("Replace cartr
 frequency_text, frequency_text_rect = create_text("Mixing frequency", (loci[0][0], loci[0][1]+50), (0,0,0), "small")
 duration_text, duration_text_rect = create_text("Mixing duration", (loci[1][0], loci[1][1]+50), (0,0,0), "small")
 mixing_start_time_text, mixing_start_time_text_rect = create_text("Mixing start time", (loci[2][0], loci[2][1]+50), (0,0,0), "small")
+
+
+
 
 #cartridge replacement options text
 select_cartridge_text, select_cartridge_text_rect = create_text("Select cartridge that is replaced", (width/2, height/2+50), (0,0,0), "small")
@@ -250,7 +275,15 @@ while running:
                 elif menu == 9:
                     location = available_locations(location, "right", [0,1,2,4])
                     if start_time_selection:
-                        day, hour, minute = select_time(day, hour, minute, "right", time_increment_selection)
+                        time_frequency = select_time(time_frequency, "right", time_increment_selection)
+                elif menu == 10:
+                    location = available_locations(location, "right", [0,1,2,4])
+                    if start_time_selection:
+                        time_duration = select_time(time_duration, "right", time_increment_selection)
+                elif menu == 11:
+                    location = available_locations(location, "right", [0,1,2,4])
+                    if start_time_selection:
+                        time_start_time = select_time(time_start_time, "right", time_increment_selection)
 
 
             elif event.key == pygame.K_LEFT:
@@ -292,7 +325,15 @@ while running:
                 elif menu == 9:
                     location = available_locations(location, "left", [0,1,2,4])
                     if start_time_selection:
-                        day, hour, minute = select_time(day, hour, minute, "left", time_increment_selection)
+                        time_frequency = select_time(time_frequency, "left", time_increment_selection)
+                elif menu == 10:
+                    location = available_locations(location, "left", [0,1,2,4])
+                    if start_time_selection:
+                        time_duration = select_time(time_duration, "left", time_increment_selection)
+                elif menu == 11:
+                    location = available_locations(location, "left", [0,1,2,4])
+                    if start_time_selection:
+                        time_start_time = select_time(time_start_time, "left", time_increment_selection)
 
             elif event.key == pygame.K_RETURN: #state machine for menu navigation
                 if menu == 0:
@@ -355,33 +396,55 @@ while running:
                     else:
                         menu = -1
                 elif menu == 9:
-                    if not start_time_selection and location == 4:
-                        menu = 6
-                    elif start_time_selection and location == 4:
-                        start_time_selection = False
-                    elif not start_time_selection and location == 0:
-                        time_increment_selection = 0
-                        start_time_selection = True
-                    elif not start_time_selection and location == 1:
-                        time_increment_selection = 1
-                        start_time_selection = True
-                    elif not start_time_selection and location == 2:
-                        time_increment_selection = 2
-                        start_time_selection = True
-                    elif start_time_selection:
+                    if start_time_selection:
                         start_time_selection = False
                         location = time_increment_selection
+                    else:
+                        if location == 4:
+                            menu = 6
+                        elif location == 0:
+                            time_increment_selection = 0
+                            start_time_selection = True
+                        elif location == 1:
+                            time_increment_selection = 1
+                            start_time_selection = True
+                        elif location == 2:
+                            time_increment_selection = 2
+                            start_time_selection = True
+
                     
                 elif menu == 10:
-                    if location == 4:
-                        menu = 6
+                    if start_time_selection:
+                        start_time_selection = False
+                        location = time_increment_selection
                     else:
-                        menu = -1
+                        if location == 4:
+                            menu = 6
+                        elif location == 0:
+                            time_increment_selection = 0
+                            start_time_selection = True
+                        elif location == 1:
+                            time_increment_selection = 1
+                            start_time_selection = True
+                        elif location == 2:
+                            time_increment_selection = 2
+                            start_time_selection = True
                 elif menu == 11:
-                    if location == 4:
-                        menu = 6
+                    if start_time_selection:
+                        start_time_selection = False
+                        location = time_increment_selection
                     else:
-                        menu = -1
+                        if location == 4:
+                            menu = 6
+                        elif location == 0:
+                            time_increment_selection = 0
+                            start_time_selection = True
+                        elif location == 1:
+                            time_increment_selection = 1
+                            start_time_selection = True
+                        elif location == 2:
+                            time_increment_selection = 2
+                            start_time_selection = True
 
     if menu == 0: #draw start menu
         screen.blit(menu0_text, menu0_text_rect)  # draw menu text in the center of the screen
@@ -459,19 +522,19 @@ while running:
         screen.blit(mixing_start_time_text, mixing_start_time_text_rect)  # draw mixing start time text
 
     if menu == 9: #draw frequency of mixing menu
-        screen.blit(menu6_text, menu6_text_rect)  # draw menu text in the center of the screen
+        screen.blit(menu9_text, menu9_text_rect)  # draw menu text in the center of the screen
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
-        display_time_selection(day, hour, minute,width,height,location,start_time_selection)  # draw time selection
-        
+        display_time_selection(width, height, time_frequency, location, start_time_selection)  # draw time selection
 
     if menu == 10: #draw duration of mixing menu
-        screen.blit(menu6_text, menu6_text_rect)  # draw menu text in the center of the screen
-        screen.blit(selection_image, selection_image_rect)  # draw cursor
+        screen.blit(menu10_text, menu10_text_rect)  # draw menu text in the center of the screen
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
+        display_time_selection(width, height, time_duration, location, start_time_selection)  # draw time selection
+
     if menu == 11: #draw start time of mixing menu
-        screen.blit(menu6_text, menu6_text_rect)  # draw menu text in the center of the screen
-        screen.blit(selection_image, selection_image_rect)  # draw cursor
+        screen.blit(menu11_text, menu11_text_rect)  # draw menu text in the center of the screen
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
+        display_time_selection(width, height, time_start_time, location, start_time_selection)  # draw time selection
     
 
     if menu == 7: #draw cartridge replacement menu
