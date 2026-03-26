@@ -1,5 +1,5 @@
 const int PIN = 13;
-const float FREQ = 50.0;  // Frequency in Hz
+const float FREQ = 40.0;  // Frequency in Hz
 
 void setup() {
   pinMode(PIN, OUTPUT);
