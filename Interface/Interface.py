@@ -626,20 +626,21 @@ while running:
     if menu == MENU_MIXING_FREQUENCY: #draw frequency of mixing menu
         sprites = 3
         screen.blit(menu9_text, menu9_text_rect)  # draw menu text in the center of the screen
-        screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         display_time_selection(width, height, time_frequency, location, start_time_selection)  # draw time selection
+        screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
 
     if menu == MENU_MIXING_DURATION: #draw duration of mixing menu
         sprites = 3
         screen.blit(menu10_text, menu10_text_rect)  # draw menu text in the center of the screen
-        screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         display_time_selection(width, height, time_duration, location, start_time_selection)  # draw time selection
+        screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
+
 
     if menu == MENU_MIXING_START_TIME: #draw start time of mixing menu
         sprites = 3
         screen.blit(menu11_text, menu11_text_rect)  # draw menu text in the center of the screen
-        screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         display_time_selection(width, height, time_start_time, location, start_time_selection)  # draw time selection
+        screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
     
 
     if menu == MENU_REPLACE_CARTRIDGE: #draw cartridge replacement menu
