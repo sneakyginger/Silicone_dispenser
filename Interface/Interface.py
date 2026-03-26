@@ -7,6 +7,23 @@ import pygame.gfxdraw
 import time
 import threading
 
+# Menu constants
+MENU_START = 0
+MENU_2COMPONENT_WEIGHT = 1
+MENU_4COMPONENT_WEIGHT = 2
+MENU_4COMPONENT_HARDNESS = 3
+MENU_MIX_CONFIRM = 4
+MENU_SETTINGS = 5
+MENU_MIXING_SETTINGS = 6
+MENU_REPLACE_CARTRIDGE = 7
+MENU_REPLACE_WEIGHT = 8
+MENU_MIXING_FREQUENCY = 9
+MENU_MIXING_DURATION = 10
+MENU_MIXING_START_TIME = 11
+MENU_1COMPONENT_SELECT = 12
+MENU_1COMPONENT_WEIGHT = 13
+MENU_REPLACE_HARDNESS = 14
+MENU_DISPENSING = -1
 
 
 def load_image(path, size, location):
@@ -142,46 +159,46 @@ screen = pygame.display.set_mode((960, 240))
 width, height = screen.get_size()
 
 pygame.display.set_caption('Dispenser Interface')
-menu = 0
+menu = MENU_START
 location = 0
 time_frequency, time_duration, time_start_time = [0,0,0], [0,0,0], [0,0,0]
 start_time_selection = False
 sprites = 4
-previous_menu = 0
+previous_menu = MENU_START
 button_size = (75,75)
 
 
 
 #Maak teks voor tijdens mengen
 mengen_bezig, mengen_bezig_rect = create_text("MIXING", (width // 2, height // 2), (255,255,255))
-#Text menu 0
+#Text menu MENU_START
 menu0_text, menu0_text_rect = create_text("START", (width // 2, 25), (0,0,0))
 
-#Text menu 1
+#Text menu MENU_2COMPONENT_WEIGHT
 menu1_text, menu1_text_rect = create_text("2 component dispensing", (width // 2, 25), (0,0,0))
-#Text menu 2
+#Text menu MENU_4COMPONENT_WEIGHT
 menu2_text, menu2_text_rect = create_text("4 component dispensing", (width //2, 25), (0,0,0))
-#Text menu 3
+#Text menu MENU_4COMPONENT_HARDNESS
 menu3_text, menu3_text_rect = create_text("4 component dispensing", (width // 2, 25), (0,0,0))
-#Text menu 4
+#Text menu MENU_MIX_CONFIRM
 menu4_text, menu4_text_rect = create_text("Would you like to start mixing?", (width // 2, 25), (0,0,0))
-#Text menu 5
+#Text menu MENU_SETTINGS
 menu5_text, menu5_text_rect = create_text("Settings", (width // 2, 25), (0,0,0))
-#Text menu 6
+#Text menu MENU_MIXING_SETTINGS
 menu6_text, menu6_text_rect = create_text("Mixing Settings", (width // 2, 25), (0,0,0))
-#Text menu 7
+#Text menu MENU_REPLACE_CARTRIDGE
 menu7_text, menu7_text_rect = create_text("Replace cartridge", (width // 2, 25), (0,0,0))
-#Text menu 8
+#Text menu MENU_REPLACE_WEIGHT
 menu8_text, menu8_text_rect = create_text("Select hardness of new cartridge", (width // 2, 25), (0,0,0))
-#Text menu 9
+#Text menu MENU_MIXING_FREQUENCY
 menu9_text, menu9_text_rect = create_text("Time between mixes", (width // 2, 25), (0,0,0))
-#Text menu 10
+#Text menu MENU_MIXING_DURATION
 menu10_text, menu10_text_rect = create_text("Select mixing duration", (width // 2, 25), (0,0,0))
-#Text menu 11
+#Text menu MENU_MIXING_START_TIME
 menu11_text, menu11_text_rect = create_text("Select time until next mix", (width // 2, 25), (0,0,0))
-#Text menu 12
+#Text menu MENU_1COMPONENT_SELECT
 menu12_text, menu12_text_rect = create_text("Select component to dispense", (width // 2, 25), (0,0,0))
-#Text menu 13
+#Text menu MENU_1COMPONENT_WEIGHT
 menu13_text, menu13_text_rect = create_text("Select desired weight", (width // 2, 25), (0,0,0))
 
 loci = locus(4)
@@ -277,7 +294,7 @@ while running:
             if event.key == pygame.K_RIGHT: #changing location
                 location += 1
                 location = available_locations(location, "right", sprites)
-                if menu == 1:
+                if menu == MENU_2COMPONENT_WEIGHT:
                     if weight_2component_progress < 100:
                         location  = 0
                         weight_2component_progress += 1
@@ -285,47 +302,47 @@ while running:
                         weight_2component_progress = 100
                         location = sprites
 
-                elif menu == 2:
+                elif menu == MENU_4COMPONENT_WEIGHT:
                     if weight_4component_progress < 100:
                         location  = 0
                         weight_4component_progress += 1
                     else:
                         weight_4component_progress = 100
                         location = sprites
-                elif menu == 3:
+                elif menu == MENU_4COMPONENT_HARDNESS:
                     if hardness_4component_progress < 50:
                         location  = 0
                         hardness_4component_progress += 1
                     else:
                         hardness_4component_progress = 50
                         location = sprites
-                elif menu == 4:
+                elif menu == MENU_MIX_CONFIRM:
                     if location == 2:
                         location = 0
-                elif menu == 8:
+                elif menu == MENU_REPLACE_WEIGHT:
                     if weight_replacement_progress < 100:
                         location  = 0
                         weight_replacement_progress += 1
                     else:
                         weight_replacement_progress = 100
                         location = sprites
-                elif menu == 14:
+                elif menu == MENU_REPLACE_HARDNESS:
                     if hardness_replacement_progress < 50:
                         location  = 0
                         hardness_replacement_progress += 1
                     else:
                         hardness_replacement_progress = 50
                         location = sprites
-                elif menu == 9:
+                elif menu == MENU_MIXING_FREQUENCY:
                     if start_time_selection:
                         time_frequency = select_time(time_frequency, "right", time_increment_selection)
-                elif menu == 10:
+                elif menu == MENU_MIXING_DURATION:
                     if start_time_selection:
                         time_duration = select_time(time_duration, "right", time_increment_selection)
-                elif menu == 11:
+                elif menu == MENU_MIXING_START_TIME:
                     if start_time_selection:
                         time_start_time = select_time(time_start_time, "right", time_increment_selection)
-                elif menu == 13:
+                elif menu == MENU_1COMPONENT_WEIGHT:
                     if weight_1component_progress < 100:
                         location  = 0
                         weight_1component_progress += 1
@@ -336,57 +353,57 @@ while running:
             elif event.key == pygame.K_LEFT:
                 location -= 1
                 location = available_locations(location, "left", sprites)
-                if menu == 1:
+                if menu == MENU_2COMPONENT_WEIGHT:
                     if weight_2component_progress > 0:
                         location  = 0
                         weight_2component_progress -= 1
                     else:
                         weight_2component_progress = 0
                         location = sprites
-                elif menu == 2:
+                elif menu == MENU_4COMPONENT_WEIGHT:
                     if weight_4component_progress > 0:
                         location  = 0
                         weight_4component_progress -= 1
                     else:
                         weight_4component_progress = 0
                         location = sprites
-                elif menu == 3:
+                elif menu == MENU_4COMPONENT_HARDNESS:
                     if hardness_4component_progress > 0:
                         location  = 0
                         hardness_4component_progress -= 1
                     else:
                         hardness_4component_progress = 0
                         location = sprites
-                elif menu == 4:
+                elif menu == MENU_MIX_CONFIRM:
                     if location == 2:
                         location = 1
-                elif menu == 8:
+                elif menu == MENU_REPLACE_WEIGHT:
                     if weight_replacement_progress > 0:
                         location  = 0
                         weight_replacement_progress -= 1
                     else:
                         weight_replacement_progress = 0
                         location = sprites
-                elif menu == 14:
+                elif menu == MENU_REPLACE_HARDNESS:
                     if hardness_replacement_progress > 0:
                         location  = 0
                         hardness_replacement_progress -= 1
                     else:
                         hardness_replacement_progress = 0
                         location = sprites
-                elif menu == 9:
+                elif menu == MENU_MIXING_FREQUENCY:
                     location = available_locations(location, "left", 4)
                     if start_time_selection:
                         time_frequency = select_time(time_frequency, "left", time_increment_selection)
-                elif menu == 10:
+                elif menu == MENU_MIXING_DURATION:
                     location = available_locations(location, "left", 4)
                     if start_time_selection:
                         time_duration = select_time(time_duration, "left", time_increment_selection)
-                elif menu == 11:
+                elif menu == MENU_MIXING_START_TIME:
                     location = available_locations(location, "left", 4)
                     if start_time_selection:
                         time_start_time = select_time(time_start_time, "left", time_increment_selection)
-                elif menu == 13:
+                elif menu == MENU_1COMPONENT_WEIGHT:
                     if weight_1component_progress > 0:
                         location  = 0
                         weight_1component_progress -= 1
@@ -395,79 +412,79 @@ while running:
                         location = sprites
 
             elif event.key == pygame.K_RETURN: #state machine for menu navigation
-                if menu == 0:
+                if menu == MENU_START:
                     if location == 0:
-                        menu = 1
+                        menu = MENU_2COMPONENT_WEIGHT
                         location = 1
                     elif location == 1:
-                        menu = 2
+                        menu = MENU_4COMPONENT_WEIGHT
                     elif location == 2:
-                        menu = 4
+                        menu = MENU_MIX_CONFIRM
                     elif location == 3:
-                        menu = 5
+                        menu = MENU_SETTINGS
                         location = 2
                     elif location == sprites:
-                        menu = 0
-                elif menu == 1:
+                        menu = MENU_START
+                elif menu == MENU_2COMPONENT_WEIGHT:
                     if location == 4:
-                        menu = 0
+                        menu = MENU_START
                     else:
-                        menu = -1
-                elif menu == 2:
+                        menu = MENU_DISPENSING
+                elif menu == MENU_4COMPONENT_WEIGHT:
                     if location == sprites:
-                        menu = 0
+                        menu = MENU_START
                     else:
-                        menu = 3
-                elif menu == 3:
+                        menu = MENU_4COMPONENT_HARDNESS
+                elif menu == MENU_4COMPONENT_HARDNESS:
                     if location == sprites:
-                        menu = 0
+                        menu = MENU_START
                     else:
-                        menu = -1
-                elif menu == 4:
+                        menu = MENU_DISPENSING
+                elif menu == MENU_MIX_CONFIRM:
                     if location == 0:
-                        menu = -1
+                        menu = MENU_DISPENSING
                     elif location == 1:
-                        menu = 0
-                elif menu == 5:
+                        menu = MENU_START
+                elif menu == MENU_SETTINGS:
                     if location == 0:
-                        menu = 6
+                        menu = MENU_MIXING_SETTINGS
                     elif location == 1:
-                        menu = 7
+                        menu = MENU_REPLACE_CARTRIDGE
                     elif location == 2:
-                        menu = 12
+                        menu = MENU_1COMPONENT_SELECT
                     elif location == sprites:
-                        menu = 0
-                elif menu == 6:
+                        menu = MENU_START
+                elif menu == MENU_MIXING_SETTINGS:
                     if location == 0:
-                        menu = 9
+                        menu = MENU_MIXING_FREQUENCY
                     elif location == 1:
-                        menu = 10
+                        menu = MENU_MIXING_DURATION
                     elif location == 2:
-                        menu = 11
+                        menu = MENU_MIXING_START_TIME
                     elif location == sprites:
-                        menu = 5
-                elif menu == 7:
+                        menu = MENU_SETTINGS
+                elif menu == MENU_REPLACE_CARTRIDGE:
                     if location == sprites:
-                        menu = 5
+                        menu = MENU_SETTINGS
                     else:
-                        menu = 8
-                elif menu == 8:
+                        menu = MENU_REPLACE_WEIGHT
+                elif menu == MENU_REPLACE_WEIGHT:
                     if location == sprites:
-                        menu = 7
+                        menu = MENU_REPLACE_CARTRIDGE
                     else:
-                        menu = 14
-                elif menu == 14:
+                        menu = MENU_REPLACE_HARDNESS
+                elif menu == MENU_REPLACE_HARDNESS:
                     if location == sprites:
-                        menu = 8
+                        menu = MENU_REPLACE_WEIGHT
                     else:
-                        menu = -1
-                elif menu == 9:
+                        menu = MENU_DISPENSING
+                elif menu == MENU_MIXING_FREQUENCY:
                     if start_time_selection:
                         start_time_selection = False
                         location = time_increment_selection
                     else:
                         if location == sprites:
-                            menu = 6
+                            menu = MENU_MIXING_SETTINGS
                         elif location == 0:
                             time_increment_selection = 0
                             start_time_selection = True
@@ -479,13 +496,13 @@ while running:
                             start_time_selection = True
 
                     
-                elif menu == 10:
+                elif menu == MENU_MIXING_DURATION:
                     if start_time_selection:
                         start_time_selection = False
                         location = time_increment_selection
                     else:
                         if location == sprites:
-                            menu = 6
+                            menu = MENU_MIXING_SETTINGS
                         elif location == 0:
                             time_increment_selection = 0
                             start_time_selection = True
@@ -495,13 +512,13 @@ while running:
                         elif location == 2:
                             time_increment_selection = 2
                             start_time_selection = True
-                elif menu == 11:
+                elif menu == MENU_MIXING_START_TIME:
                     if start_time_selection:
                         start_time_selection = False
                         location = time_increment_selection
                     else:
                         if location == sprites:
-                            menu = 6
+                            menu = MENU_MIXING_SETTINGS
                         elif location == 0:
                             time_increment_selection = 0
                             start_time_selection = True
@@ -511,18 +528,18 @@ while running:
                         elif location == 2:
                             time_increment_selection = 2
                             start_time_selection = True
-                elif menu == 12:
+                elif menu == MENU_1COMPONENT_SELECT:
                     if location == sprites:
-                        menu = 5
+                        menu = MENU_SETTINGS
                     else:
-                        menu = 13
-                elif menu == 13:
+                        menu = MENU_1COMPONENT_WEIGHT
+                elif menu == MENU_1COMPONENT_WEIGHT:
                     if location == sprites:
-                        menu = 12
+                        menu = MENU_1COMPONENT_SELECT
                     else:
-                        menu = -1
+                        menu = MENU_DISPENSING
 
-    if menu == 0: #draw start menu
+    if menu == MENU_START: #draw start menu
         sprites = 4
         screen.blit(menu0_text, menu0_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw cursor
@@ -536,7 +553,7 @@ while running:
         screen.blit(mixing_menu_text, mixing_menu_text_rect)  # draw mixing menu text
         screen.blit(settings_text, settings_text_rect)  # draw settings text
 
-    if menu == 1: #draw 2 component weight selection menu
+    if menu == MENU_2COMPONENT_WEIGHT: #draw 2 component weight selection menu
         sprites = 1
         screen.blit(menu1_text, menu1_text_rect)  # draw menu text in the center of the screen
         if location == sprites:
@@ -549,7 +566,7 @@ while running:
         weight_text,weight_rect = create_text(f"Desired weight: {weight_2component_progress} g", (width // 2, height // 2), (0,0,0))
         screen.blit(weight_text, weight_rect)  # draw weight text in the center
 
-    if menu == 2: #draw 4 component weight selection menu
+    if menu == MENU_4COMPONENT_WEIGHT: #draw 4 component weight selection menu
         sprites = 1
         screen.blit(menu2_text, menu2_text_rect)  # draw menu text in the center of the screen
         if location == sprites:
@@ -561,7 +578,7 @@ while running:
         weight_text,weight_rect = create_text(f"Total desired weight: {weight_4component_progress} g", (width // 2, height // 2), (0,0,0))
         screen.blit(weight_text, weight_rect)  # draw weight text in the center
 
-    if menu == 3: #draw 4 component hardness selection menu
+    if menu == MENU_4COMPONENT_HARDNESS: #draw 4 component hardness selection menu
         sprites = 1
         screen.blit(menu3_text, menu3_text_rect)  # draw menu text in the center of the screen
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
@@ -575,7 +592,7 @@ while running:
         screen.blit(hardness_text, hardness_rect)  # draw hardness text in the center
 
     
-    if menu == 4: #draw start mixing confirmation menu
+    if menu == MENU_MIX_CONFIRM: #draw start mixing confirmation menu
         if location == 2:
             location = 1
         sprites = 2
@@ -585,7 +602,7 @@ while running:
         screen.blit(no_image, no_image_rect)  # draw no image
 
 
-    if menu == 5: #draw settings menu
+    if menu == MENU_SETTINGS: #draw settings menu
         sprites = 3
         screen.blit(menu5_text, menu5_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw cursor
@@ -595,7 +612,7 @@ while running:
         screen.blit(one_component_dispensing_text, one_component_dispensing_text_rect)  # draw settings image
         screen.blit(one_component_dispensing_line2_text, one_component_dispensing_line2_text_rect)  # draw settings image
 
-    if menu == 6: #draw mixing settings menu
+    if menu == MENU_MIXING_SETTINGS: #draw mixing settings menu
         sprites = 3
         screen.blit(menu6_text, menu6_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw cursor
@@ -606,26 +623,26 @@ while running:
         screen.blit(mixing_start_time_line2_text, mixing_start_time_line2_text_rect)  # draw mixing start time text
 
 
-    if menu == 9: #draw frequency of mixing menu
+    if menu == MENU_MIXING_FREQUENCY: #draw frequency of mixing menu
         sprites = 3
         screen.blit(menu9_text, menu9_text_rect)  # draw menu text in the center of the screen
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         display_time_selection(width, height, time_frequency, location, start_time_selection)  # draw time selection
 
-    if menu == 10: #draw duration of mixing menu
+    if menu == MENU_MIXING_DURATION: #draw duration of mixing menu
         sprites = 3
         screen.blit(menu10_text, menu10_text_rect)  # draw menu text in the center of the screen
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         display_time_selection(width, height, time_duration, location, start_time_selection)  # draw time selection
 
-    if menu == 11: #draw start time of mixing menu
+    if menu == MENU_MIXING_START_TIME: #draw start time of mixing menu
         sprites = 3
         screen.blit(menu11_text, menu11_text_rect)  # draw menu text in the center of the screen
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         display_time_selection(width, height, time_start_time, location, start_time_selection)  # draw time selection
     
 
-    if menu == 7: #draw cartridge replacement menu
+    if menu == MENU_REPLACE_CARTRIDGE: #draw cartridge replacement menu
         sprites = 4
         screen.blit(menu7_text, menu7_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw cursor
@@ -637,7 +654,7 @@ while running:
         screen.blit(button_bottle_c_image, button_bottle_c_image_rect)  # draw button 3
         screen.blit(button_bottle_d_image, button_bottle_d_image_rect)  # draw button 4
 
-    if menu == 8: #Select replacement weight
+    if menu == MENU_REPLACE_WEIGHT: #Select replacement weight
         sprites = 1
         screen.blit(menu7_text, menu7_text_rect)  # draw menu text in the center of the screen
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
@@ -651,7 +668,7 @@ while running:
         cartridge_weight_text, cartridge_weight_text_rect = create_text(f"Weight of new cartridge: {weight_replacement_progress}", (width // 2, height // 2), (0,0,0))
         screen.blit(cartridge_weight_text, cartridge_weight_text_rect)  # draw hardness text in the center
 
-    if menu == 14: #Select replacement hardness
+    if menu == MENU_REPLACE_HARDNESS: #Select replacement hardness
         sprites = 1
         screen.blit(menu7_text, menu7_text_rect)  # draw menu text in the center of the screen
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
@@ -665,7 +682,7 @@ while running:
         cartridge_hardness_text, cartridge_hardness_text_rect = create_text(f"Hardness of new cartridge: {hardness_replacement_progress}", (width // 2, height // 2), (0,0,0))
         screen.blit(cartridge_hardness_text, cartridge_hardness_text_rect)  # draw hardness text in the center
 
-    if menu == 12: #draw one component component selection menu
+    if menu == MENU_1COMPONENT_SELECT: #draw one component component selection menu
         sprites = 4
         screen.blit(menu12_text, menu12_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw cursor
@@ -676,7 +693,7 @@ while running:
         screen.blit(button_bottle_c_image, button_bottle_c_image_rect)  # draw button 3
         screen.blit(button_bottle_d_image, button_bottle_d_image_rect)  # draw button 4
 
-    if menu == 13: #draw one component dispensing amount selection menu
+    if menu == MENU_1COMPONENT_WEIGHT: #draw one component dispensing amount selection menu
         sprites = 1
         screen.blit(menu13_text, menu13_text_rect)  # draw menu text in the center of the screen
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
@@ -690,7 +707,7 @@ while running:
         weight_text,weight_rect = create_text(f"Desired weight: {weight_1component_progress} g", (width // 2, height // 2), (0,0,0))
         screen.blit(weight_text, weight_rect)  # draw weight text in the center
     
-    if menu == -1: #draw loading bar
+    if menu == MENU_DISPENSING: #draw loading bar
         sprites = 4
         if threading.active_count() == 1:  # check if the work thread is not already running
             threading.Thread(target=doWork).start()  # start the work in a separate thread
@@ -703,7 +720,7 @@ while running:
             loading_bar_image_rect = loading_bar_image.get_rect(midleft=(200, 3/4*height))  # update loading bar position
             screen.blit(loading_bar_image, loading_bar_image_rect)  # draw loading bar
         elif loading_progress >= 100:
-            menu = 0
+            menu = MENU_START
             location = 0
         #resetting variables for next mixing session
         weight_1component_progress = 50
@@ -712,7 +729,7 @@ while running:
         hardness_4component_progress = 25
 
     if menu != previous_menu:
-        if menu != 4:
+        if menu != MENU_MIX_CONFIRM:
             location = 0
         else: 
             location = 1
