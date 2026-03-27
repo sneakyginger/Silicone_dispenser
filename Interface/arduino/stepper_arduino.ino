@@ -1,6 +1,6 @@
 const int PIN = 13;
 //zet hier u RPM
-const float RPM = 5;
+const float RPM = 50;
 float steps = RPM*200/60;
 //schrijf hier hoeveel microsteps aanstaan
 int microsteps = 16;
