@@ -2,10 +2,10 @@ import random
 import math
 import time
 
-import RPi.GPIO as GPIO
+#import RPi.GPIO as GPIO
 
 
-RASPBERRY = True
+RASPBERRY = False
 # GPIO pins [7, 11, 13, 15] -> [26, 23, 33, 10]
 #control_pins = [26, 23, 33, 10]  # BOARD pin numbers, one per motor
 control_pins = [7, 11, 13, 15]
@@ -20,6 +20,7 @@ SERVO_ANGLE_MIX      = 90  # degrees — change here to recalibrate the mix posi
 
 comps_dispensed = [0, 0, 0, 0]  # in gram # for testing, to keep track of how much has been dispensed from each motor
 
+manual_sensor = True  # if True, prompts the user to enter the scale reading manually instead of simulating it
 
 # to simulate dispensing, we will add noise to the process
 dispensing_noise_factor = 15/100  # in %,  noise in dispensing, for testing purposes
@@ -156,6 +157,8 @@ def show_dispensed_amounts():
 
 
 def measure_weight():
+    if manual_sensor:
+        return float(input("Enter current scale reading (g): "))
     # TODO: replace with real scale read once hardware is available
     noise = random.uniform(-measurement_noise_factor, measurement_noise_factor)
     return sum(comps_dispensed) + noise  # fixed absolute noise, not % of total
