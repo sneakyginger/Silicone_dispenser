@@ -6,8 +6,8 @@ ID_bearing = 8;
 OD_bearing = 22;
 OD_Rotor = 56;
 OD_Pegsupport = 10;
-OD_Tube = 10;
-ID_Tube = 5;
+OD_Tube = 12;
+ID_Tube = 6;
 Occlusion = 0.1;
 Rest_Tube = ID_Tube - Occlusion*ID_Tube 
 %% Dimensions pump housing
