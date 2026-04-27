@@ -1,14 +1,18 @@
-const int PIN = 13;
+const int PIN = 11;
+const int DR_PIN = 12;
+const int MF_PIN = 13;
 //zet hier u RPM
-const float RPM = 50;
+const float RPM = 20;
 float steps = RPM*200/60;
 //schrijf hier hoeveel microsteps aanstaan
-int microsteps = 16;
+int microsteps = 1;
 float halfPeriod;
 float state;
 float FREQ;
 void setup() {
   pinMode(PIN, OUTPUT);
+  pinMode(MF_PIN, OUTPUT);
+  pinMode(DR_PIN, OUTPUT);
   FREQ = steps*microsteps;
   halfPeriod = (1000 / FREQ) / 2;  // Half period in ms
   state = 0;
@@ -19,7 +23,8 @@ void setup() {
 }
 
 void loop() {
-  
+  digitalWrite(MF_PIN, HIGH);
+  digitalWrite(DR_PIN, HIGH);
   if(state == 0){
     digitalWrite(PIN, HIGH);
     delay(halfPeriod);

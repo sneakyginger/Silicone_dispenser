@@ -15,13 +15,14 @@ density = 1030; %kg/m³
 minimum_displaced_V = motor_arm_radius*Surface_tube*10^6 %ml/step
 minimum_dislpaced_m = minimum_displaced_V*1.03
 motor_speed_max = 1000;%RPM
-
+Min_needed_flow = 0.5; %ml/s
+Rotational_speed = 60*(Min_needed_flow/minimum_displaced_V)/200
 %% Torques
 
 %Friction force if dispensing 100g/min, assuming linear scale between Tmax
 %and Tmin and assuming density ~= 1.g/ml
-RPS = ((1000/2700)*100)/60
-Q = 0.1/(60*1000) %m³/s
+RPS = ((100/2700)*100)/60
+Q = 0.05*10^6/(60*1000) %m³/s
 V_avg = Q/Surface_tube %m/s
 Re = density*V_avg*Tube_diameter/viscosity;
 Pressure_Drop = (128*viscosity*Tube_Length*Q/(pi*Tube_diameter^4))/10^6; %MPa
