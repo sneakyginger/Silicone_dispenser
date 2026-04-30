@@ -25,8 +25,13 @@ def encoder_callback(channel):
             return "Right"
         if GPIO.input(Pin_right) == GPIO.LOW:
             return "Left"
-def __main__():
-    
+def def_encoder(Pin_left, Pin_right, Pin_click):
     while True:
-        print(encoder_rot(Pin_left, Pin_right))
-        print(encoder_click(Pin_click))
+        #print(encoder_rot(Pin_left, Pin_right))
+        #print(encoder_click(Pin_click))
+        if encoder_click(Pin_click) == "Click":
+            return "Click"
+        elif encoder_rot(Pin_left, Pin_right) == "Right":
+            return "Right"
+        elif encoder_rot(Pin_left, Pin_right) == "Left":
+            return "Left"
