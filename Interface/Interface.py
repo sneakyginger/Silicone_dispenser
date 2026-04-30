@@ -216,6 +216,9 @@ menu11_text, menu11_text_rect = create_text("Select time until next mix", (width
 menu12_text, menu12_text_rect = create_text("Select component to dispense", (width // 2, 25), (0,0,0))
 #Text menu MENU_1COMPONENT_WEIGHT
 menu13_text, menu13_text_rect = create_text("Select desired weight", (width // 2, 25), (0,0,0))
+#text return
+return_, return_rect = create_text("Return to previous menu", (width // 2, height // 2), (0,0,0), "normal")
+
 
 loci = locus(4)
 #menus names text
@@ -334,7 +337,7 @@ while running:
                         location  = 0
                         weight_2component_progress += 1
                     else:
-                        weight_2component_progress = max_weight_2component
+                        weight_2component_progress = max_weight_2component+1
                         location = sprites
 
                 elif menu == MENU_4COMPONENT_WEIGHT:
@@ -342,14 +345,14 @@ while running:
                         location  = 0
                         weight_4component_progress += 1
                     else:
-                        weight_4component_progress = max_weight_4component
+                        weight_4component_progress = max_weight_4component+1
                         location = sprites
                 elif menu == MENU_4COMPONENT_HARDNESS:
                     if hardness_4component_progress < max_hardness_4component:
                         location  = 0
                         hardness_4component_progress += 1
                     else:
-                        hardness_4component_progress = max_hardness_4component
+                        hardness_4component_progress = max_hardness_4component+1
                         location = sprites
                 elif menu == MENU_MIX_CONFIRM:
                     if location == 2:
@@ -389,25 +392,25 @@ while running:
                 location -= 1
                 location = available_locations(location, "left", sprites)
                 if menu == MENU_2COMPONENT_WEIGHT:
-                    if weight_2component_progress > 1:
+                    if weight_2component_progress > 0:
                         location  = 0
                         weight_2component_progress -= 1
                     else:
-                        weight_2component_progress = 1
+                        weight_2component_progress = 0
                         location = sprites
                 elif menu == MENU_4COMPONENT_WEIGHT:
-                    if weight_4component_progress > 1:
+                    if weight_4component_progress > 0:
                         location  = 0
                         weight_4component_progress -= 1
                     else:
-                        weight_4component_progress = 1
+                        weight_4component_progress = 0
                         location = sprites
                 elif menu == MENU_4COMPONENT_HARDNESS:
-                    if hardness_4component_progress > 1:
+                    if hardness_4component_progress > 0:
                         location  = 0
                         hardness_4component_progress -= 1
                     else:
-                        hardness_4component_progress = 1
+                        hardness_4component_progress = 0
                         location = sprites
                 elif menu == MENU_MIX_CONFIRM:
                     if location == 2:
@@ -439,11 +442,11 @@ while running:
                     if start_time_selection:
                         time_start_time = select_time(time_start_time, "left", time_increment_selection)
                 elif menu == MENU_1COMPONENT_WEIGHT:
-                    if weight_1component_progress > 1:
+                    if weight_1component_progress > 0:
                         location  = 0
                         weight_1component_progress -= 1
                     else:
-                        weight_1component_progress = 1
+                        weight_1component_progress = 0
                         location = sprites
 
             elif event.key == pygame.K_RETURN: #state machine for menu navigation
@@ -645,9 +648,12 @@ while running:
         weight_bar_width = abs(weight_2component_progress)*scaling_weight_2
         weight_bar_image_use = pygame.transform.scale(weight_bar_image, (int(weight_bar_width), 50))  # scale loading bar based on selected weight
         weight_bar_image_use_rect = weight_bar_image_use.get_rect(midleft=(x_bar_weight_2, 3/4*height))  # update loading bar position
-        screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
-        weight_text,weight_rect = create_text(f"Desired weight: {weight_2component_progress} g", (width // 2, height // 2), (0,0,0))
-        screen.blit(weight_text, weight_rect)  # draw weight text in the center
+        if weight_2component_progress <= max_weight_2component and weight_2component_progress >= 0:
+            screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
+            weight_text,weight_rect = create_text(f"Desired weight: {weight_2component_progress} g", (width // 2, height // 2), (0,0,0))
+            screen.blit(weight_text, weight_rect)  # draw weight text in the center
+        else:
+            screen.blit(return_,return_rect)
 
     if menu == MENU_4COMPONENT_WEIGHT: #draw 4 component weight selection menu
         sprites = 1
@@ -659,9 +665,12 @@ while running:
         weight_bar_width = abs(weight_4component_progress)*scaling_weight_4
         weight_bar_image_use = pygame.transform.scale(weight_bar_image, (int(weight_bar_width), 50))  # scale loading bar based on selected weight
         weight_bar_image_use_rect = weight_bar_image_use.get_rect(midleft=(x_bar_weight_4, 3/4*height))  # update loading bar position
-        screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
-        weight_text,weight_rect = create_text(f"Total desired weight: {weight_4component_progress} g", (width // 2, height // 2), (0,0,0))
-        screen.blit(weight_text, weight_rect)  # draw weight text in the center
+        if weight_4component_progress <= max_weight_4component and weight_4component_progress >= 0:
+            screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
+            weight_text,weight_rect = create_text(f"Total desired weight: {weight_4component_progress} g", (width // 2, height // 2), (0,0,0))
+            screen.blit(weight_text, weight_rect)  # draw weight text in the center
+        else:
+            screen.blit(return_,return_rect)
 
     if menu == MENU_4COMPONENT_HARDNESS: #draw 4 component hardness selection menu
         sprites = 1
@@ -673,9 +682,14 @@ while running:
         hardness_bar_width = abs(hardness_4component_progress)*scaling_hardness_4
         hardness_bar_image_use = pygame.transform.scale(hardness_bar_image, (int(hardness_bar_width), 50))  # scale loading bar based on selected weight
         hardness_bar_image_use_rect = hardness_bar_image_use.get_rect(midleft=(x_bar_har_4, 3/4*height))  # update loading bar position
-        screen.blit(hardness_bar_image_use, hardness_bar_image_use_rect)  # draw loading bar
-        hardness_text,hardness_rect = create_text(f"Desired hardness: {hardness_4component_progress}", (width // 2, height // 2), (0,0,0))
-        screen.blit(hardness_text, hardness_rect)  # draw hardness text in the center
+        if hardness_4component_progress <= max_hardness_4component and hardness_4component_progress >= 0:
+            screen.blit(hardness_bar_image_use, hardness_bar_image_use_rect)  # draw loading bar
+            hardness_text,hardness_rect = create_text(f"Desired hardness: {hardness_4component_progress}", (width // 2, height // 2), (0,0,0))
+            screen.blit(hardness_text, hardness_rect)  # draw hardness text in the center
+        else:
+            screen.blit(return_,return_rect)
+
+        
 
     
     if menu == MENU_MIX_CONFIRM: #draw start mixing confirmation menu
@@ -751,9 +765,12 @@ while running:
         weight_bar_width = abs(weight_replacement_progress)*scaling_weight_replacement
         weight_bar_image_use = pygame.transform.scale(weight_bar_image, (int(weight_bar_width), 50))  # scale loading bar based on selected weight
         weight_bar_image_use_rect = weight_bar_image_use.get_rect(midleft=(x_bar_weight_re, 3/4*height))  # update loading bar position
-        screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
-        cartridge_weight_text, cartridge_weight_text_rect = create_text(f"Weight of new cartridge: {weight_replacement_progress}", (width // 2, height // 2), (0,0,0))
-        screen.blit(cartridge_weight_text, cartridge_weight_text_rect)  # draw hardness text in the center
+        if weight_replacement_progress <= max_weight_replacement and weight_replacement_progress >= 0:
+            cartridge_weight_text, cartridge_weight_text_rect = create_text(f"Weight of new cartridge: {weight_replacement_progress}", (width // 2, height // 2), (0,0,0))
+            screen.blit(cartridge_weight_text, cartridge_weight_text_rect)  # draw hardness text in the center
+            screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
+        else:
+            screen.blit(return_,return_rect)
 
     if menu == MENU_REPLACE_HARDNESS: #Select replacement hardness
         sprites = 1
@@ -765,9 +782,12 @@ while running:
         hardness_bar_width = abs(hardness_replacement_progress)*scaling_hardness_re
         hardness_bar_image_use = pygame.transform.scale(hardness_bar_image, (int(hardness_bar_width), 50))  # scale loading bar based on selected weight
         hardness_bar_image_use_rect = hardness_bar_image_use.get_rect(midleft=(x_bar_har_re, 3/4*height))  # update loading bar position
-        screen.blit(hardness_bar_image_use, hardness_bar_image_use_rect)  # draw loading bar
-        cartridge_hardness_text, cartridge_hardness_text_rect = create_text(f"Hardness of new cartridge: {hardness_replacement_progress}", (width // 2, height // 2), (0,0,0))
-        screen.blit(cartridge_hardness_text, cartridge_hardness_text_rect)  # draw hardness text in the center
+        if hardness_replacement_progress <= max_hardness_replacement and hardness_replacement_progress >= 0:
+            screen.blit(hardness_bar_image_use, hardness_bar_image_use_rect)  # draw loading bar
+            cartridge_hardness_text, cartridge_hardness_text_rect = create_text(f"Hardness of new cartridge: {hardness_replacement_progress}", (width // 2, height // 2), (0,0,0))
+            screen.blit(cartridge_hardness_text, cartridge_hardness_text_rect)  # draw hardness text in the center
+        else:
+            screen.blit(return_,return_rect)
 
     if menu == MENU_1COMPONENT_SELECT: #draw one component component selection menu
         sprites = 4
@@ -790,9 +810,12 @@ while running:
         weight_bar_width = abs(weight_1component_progress)*scaling_weight_1
         weight_bar_image_use = pygame.transform.scale(weight_bar_image, (int(weight_bar_width), 50))  # scale loading bar based on selected weight
         weight_bar_image_use_rect = weight_bar_image_use.get_rect(midleft=(x_bar_weight_1, 3/4*height))  # update loading bar position
-        screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
-        weight_text,weight_rect = create_text(f"Desired weight: {weight_1component_progress} g", (width // 2, height // 2), (0,0,0))
-        screen.blit(weight_text, weight_rect)  # draw weight text in the center
+        if weight_1component_progress <= max_weight_1component and weight_1component_progress >= 0:
+            screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
+            weight_text,weight_rect = create_text(f"Desired weight: {weight_1component_progress} g", (width // 2, height // 2), (0,0,0))
+            screen.blit(weight_text, weight_rect)  # draw weight text in the center
+        else:
+            screen.blit(return_,return_rect)
     
     if menu == MENU_DISPENSING: #draw loading bar
         sprites = 4
