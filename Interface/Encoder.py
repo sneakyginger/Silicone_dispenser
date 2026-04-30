@@ -1,7 +1,7 @@
 import RPi.GPIO as GPIO
-Pin_left = 17
-Pin_right = 27
-Pin_click = 22
+Pin_left = 17 #CLK
+Pin_right = 27 #DT
+Pin_click = 22 #SW
 
 def encoder_rot(Pin_left, Pin_right):
     pos = 0
