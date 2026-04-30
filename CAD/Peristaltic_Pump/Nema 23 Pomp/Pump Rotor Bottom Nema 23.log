@@ -1,0 +1,37 @@
+Solid Edge Translation To 3MF
+Date: Wednesday,April 29,2026 12:02PM
+Output File: C:\Users\david\Desktop\Git\Silicone_dispenser\CAD\Peristaltic_Pump\Nema 23 Pomp\Pump Rotor Bottom Nema 23.3mf
+Author: Unknown
+Organization: Unknown
+Source System: SOLID EDGE
+
+Hardware:
+Processor: AMD Ryzen 5 7640U w/ Radeon 760M Graphics      
+Operating System: Windows 10
+Installed Memory: 15.3 GB
+
+Software Information:
+Parasolid Version: 37.0.118
+PSBodyshop Version: 37.0.94
+3MF Adapter Version: 15.0.142
+Solid Edge Version: 225.00.00.114 x64
+
+3MF Export Options
+Export Construction Solids:Off
+Export Displayed Parts:Off
+Enable Logging:On
+AllowInvalid3mfObjects:Off
+Export Flatten Assembly:On
+Export Units:Millimeters
+Export Tolerance Value:0.001000
+Export Tolerance Type:Fine
+Export Surface Plane Angle Value:0.523599
+Export Author:Unknown
+Export Description:Unknown
+Export Organization:Unknown
+Export Program Name:Unknown
+
+Translation progress:
+Phase 1 of 1 Translating Parasolid to foreign data types...
+Translation process completed
+Time required to translate:00 : 00 : 00
