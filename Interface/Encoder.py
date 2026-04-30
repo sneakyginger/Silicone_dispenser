@@ -27,11 +27,11 @@ def encoder_callback(channel):
             return "Left"
 def def_encoder(Pin_left, Pin_right, Pin_click):
     while True:
-        #print(encoder_rot(Pin_left, Pin_right))
-        #print(encoder_click(Pin_click))
-        if encoder_click(Pin_click) == "Click":
-            return "Click"
-        elif encoder_rot(Pin_left, Pin_right) == "Right":
-            return "Right"
-        elif encoder_rot(Pin_left, Pin_right) == "Left":
-            return "Left"
+        print(encoder_rot(Pin_left, Pin_right))
+        print(encoder_click(Pin_click))
+        #if encoder_click(Pin_click) == "Click":
+        #    return "Click"
+        #elif encoder_rot(Pin_left, Pin_right) == "Right":
+        #    return "Right"
+        #elif encoder_rot(Pin_left, Pin_right) == "Left":
+        #    return "Left"
