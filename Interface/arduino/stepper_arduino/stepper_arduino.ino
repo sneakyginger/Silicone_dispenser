@@ -24,7 +24,7 @@ void setup() {
 
 void loop() {
   digitalWrite(MF_PIN, HIGH);
-  digitalWrite(DR_PIN, HIGH);
+  digitalWrite(DR_PIN, LOW);
   if(state == 0){
     digitalWrite(PIN, HIGH);
     delay(halfPeriod);
