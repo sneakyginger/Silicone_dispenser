@@ -20,7 +20,7 @@ def set_angle(angle):
 
 while True:
 	print("heen")
-	set_angle(-90)
+	#set_angle(-90)
 	time.sleep(1)
 	print("weer")
 	set_angle(90)
