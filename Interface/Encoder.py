@@ -1,40 +1,41 @@
 import RPi.GPIO as GPIO
-Pin_left = 17 #CLK
-Pin_right = 27 #DT
-Pin_click = 22 #SW
+import queue
 
-def encoder_rot(Pin_left, Pin_right):
-    pos = 0
+Pin_left  = 17  # CLK
+Pin_right = 27  # DT
+Pin_click = 22  # SW
 
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(Pin_left, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-    GPIO.setup(Pin_right, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-
-    GPIO.add_event_detect(Pin_left, GPIO.RISING, callback=encoder_callback)
-
-def encoder_click(Pin_click):
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(Pin_click, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-    GPIO.add_event_detect(Pin_click, GPIO.RISING, callback=encoder_callback)
+event_queue = queue.Queue()
 
 def encoder_callback(channel):
     if channel == Pin_click:
-        return "Click"
-    if channel == Pin_left:
+        event_queue.put("Click")
+    elif channel == Pin_left:
         if GPIO.input(Pin_right) == GPIO.HIGH:
-            return "Right"
-        if GPIO.input(Pin_right) == GPIO.LOW:
-            return "Left"
-def def_encoder(Pin_left, Pin_right, Pin_click):
-    while True:
-        print(encoder_rot(Pin_left, Pin_right))
-        print(encoder_click(Pin_click))
-        #if encoder_click(Pin_click) == "Click":
-        #    return "Click"
-        #elif encoder_rot(Pin_left, Pin_right) == "Right":
-        #    return "Right"
-        #elif encoder_rot(Pin_left, Pin_right) == "Left":
-        #    return "Left"
+            event_queue.put("Right")
+        else:
+            event_queue.put("Left")
+
+def setup_encoder(pin_left, pin_right, pin_click):
+    GPIO.setmode(GPIO.BCM)  # Call once, not per function
+
+    GPIO.setup(pin_left,  GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    GPIO.setup(pin_right, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    GPIO.setup(pin_click, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
+    GPIO.add_event_detect(pin_left,  GPIO.RISING, callback=encoder_callback, bouncetime=50)
+    GPIO.add_event_detect(pin_click, GPIO.RISING, callback=encoder_callback, bouncetime=50)
+
+def run_encoder(pin_left, pin_right, pin_click):
+    setup_encoder(pin_left, pin_right, pin_click)
+    try:
+        while True:
+            event = event_queue.get()  # Blocks here until an event arrives
+            print(event)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        GPIO.cleanup()
 
 if __name__ == "__main__":
-    def_encoder(Pin_left, Pin_right, Pin_click)
+    run_encoder(Pin_left, Pin_right, Pin_click)
