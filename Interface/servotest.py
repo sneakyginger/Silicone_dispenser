@@ -23,5 +23,5 @@ while True:
 	set_angle(0)
 	time.sleep(1)
 	print("weer")
-	set_angle(180)
+	#set_angle(180)
 	time.sleep(1)
