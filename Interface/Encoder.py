@@ -40,6 +40,10 @@ def setup_encoder(pin_left, pin_right, pin_click):
     GPIO.setup(pin_right, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.setup(pin_click, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
+    GPIO.remove_event_detect(pin_left)
+    GPIO.remove_event_detect(pin_right)
+    GPIO.remove_event_detect(pin_click)
+
     # Detect ALL edges on both encoder pins — no bouncetime
     GPIO.add_event_detect(pin_left,  GPIO.BOTH, callback=encoder_callback)
     GPIO.add_event_detect(pin_right, GPIO.BOTH, callback=encoder_callback)
