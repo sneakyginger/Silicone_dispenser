@@ -342,6 +342,7 @@ while running:
 
     if is_raspberry_pi():
         pygame.event.pump()
+        time.sleep(0.005)
         encoder = Encoder.def_encoder(Pin_left, Pin_right, Pin_click)
 
         if encoder == "Right": #changing location
