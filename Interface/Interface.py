@@ -341,7 +341,7 @@ while running:
     screen.fill((255, 255, 255))          # clear screen (white background)
 
     if is_raspberry_pi():
-        
+        pygame.event.pump()
         encoder = Encoder.def_encoder(Pin_left, Pin_right, Pin_click)
 
         if encoder == "Right": #changing location
