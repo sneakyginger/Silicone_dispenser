@@ -35,3 +35,6 @@ def def_encoder(Pin_left, Pin_right, Pin_click):
         #    return "Right"
         #elif encoder_rot(Pin_left, Pin_right) == "Left":
         #    return "Left"
+
+if __name__ == "__main__":
+    def_encoder(Pin_left, Pin_right, Pin_click)
