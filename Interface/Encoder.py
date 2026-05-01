@@ -62,13 +62,16 @@ def run_encoder(pin_left, pin_right, pin_click):
 
 _setup_done = False
 
-def def_encoder(pin_left, pin_right, pin_click):
+def def_encoder(pin_left, pin_right, pin_click, timeout=0.05):
     global _setup_done
     if not _setup_done:
         setup_encoder(pin_left, pin_right, pin_click)
         _setup_done = True
+        print(f"[Encoder] setup done on pins L={pin_left} R={pin_right} C={pin_click}")
     try:
-        return event_queue.get_nowait()
+        ev = event_queue.get(timeout=timeout)
+        print(f"[Encoder] event: {ev}")
+        return ev
     except queue.Empty:
         return None
 
