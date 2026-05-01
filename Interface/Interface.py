@@ -12,13 +12,11 @@ import dispense
 #import Weight_sensor
 
 is_rpi = False
-def is_raspberry_pi():
-    try:
-        with open("/proc/device-tree/model", "r") as f:
-            is_rpi = True
-    except FileNotFoundError:
-        is_rpi = False
-
+try:
+    with open("/proc/device-tree/model", "r") as f:
+        is_rpi = True
+except FileNotFoundError:
+    is_rpi = False
 
 def is_raspberry_pi():
     return is_rpi
