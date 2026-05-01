@@ -1,6 +1,7 @@
 #python -m venv dispenser_venv
 #dispenser_venv\Scripts\activate
 
+import os
 import pygame
 from pygame.locals import *
 import pygame.gfxdraw
@@ -9,6 +10,22 @@ import threading
 import dispense
 #import Encoder
 #import Weight_sensor
+
+is_rpi = False
+def is_raspberry_pi():
+    try:
+        with open("/proc/device-tree/model", "r") as f:
+            is_rpi = True
+    except FileNotFoundError:
+        is_rpi = False
+
+
+def is_raspberry_pi():
+    return is_rpi
+
+if is_raspberry_pi():
+    import Encoder
+    Pin_left, Pin_right, Pin_click = 17, 27, 22
 
 
 # Menu constants
@@ -321,301 +338,593 @@ running = True
 while running:
     loci = locus(sprites)
     selection_image_rect.center = (loci[location]) 
-
     screen.fill((255, 255, 255))          # clear screen (white background)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        if event.type == pygame.KEYUP:
-            if event.key == pygame.K_ESCAPE:
-                running = False
-            if event.key == pygame.K_RIGHT: #changing location
-                location += 1
-                location = available_locations(location, "right", sprites)
-                if menu == MENU_2COMPONENT_WEIGHT:
-                    if weight_2component_progress < max_weight_2component:
-                        location  = 0
-                        weight_2component_progress += 1
-                    else:
-                        weight_2component_progress = max_weight_2component+1
-                        location = sprites
 
-                elif menu == MENU_4COMPONENT_WEIGHT:
-                    if weight_4component_progress < max_weight_4component:
-                        location  = 0
-                        weight_4component_progress += 1
-                    else:
-                        weight_4component_progress = max_weight_4component+1
-                        location = sprites
-                elif menu == MENU_4COMPONENT_HARDNESS:
-                    if hardness_4component_progress < max_hardness_4component:
-                        location  = 0
-                        hardness_4component_progress += 1
-                    else:
-                        hardness_4component_progress = max_hardness_4component+1
-                        location = sprites
-                elif menu == MENU_MIX_CONFIRM:
-                    if location == 2:
-                        location = 0
-                elif menu == MENU_REPLACE_WEIGHT:
-                    if weight_replacement_progress < max_weight_replacement:
-                        location  = 0
-                        weight_replacement_progress += 1
-                    else:
-                        weight_replacement_progress = max_weight_replacement+1
-                        location = sprites
-                elif menu == MENU_REPLACE_HARDNESS:
-                    if hardness_replacement_progress < max_hardness_replacement:
-                        location  = 0
-                        hardness_replacement_progress += 1
-                    else:
-                        hardness_replacement_progress = max_hardness_replacement+1
-                        location = sprites
-                elif menu == MENU_MIXING_FREQUENCY:
-                    if start_time_selection:
-                        time_frequency = select_time(time_frequency, "right", time_increment_selection)
-                elif menu == MENU_MIXING_DURATION:
-                    if start_time_selection:
-                        time_duration = select_time(time_duration, "right", time_increment_selection)
-                elif menu == MENU_MIXING_START_TIME:
-                    if start_time_selection:
-                        time_start_time = select_time(time_start_time, "right", time_increment_selection)
-                elif menu == MENU_1COMPONENT_WEIGHT:
-                    if weight_1component_progress < max_weight_1component:
-                        location  = 0
-                        weight_1component_progress += 1
-                    else:
-                        weight_1component_progress = max_weight_1component+1
-                        location = sprites
+    if is_raspberry_pi():
+        
+        encoder = Encoder.def_encoder(Pin_left, Pin_right, Pin_click)
 
-            elif event.key == pygame.K_LEFT:
-                location -= 1
-                location = available_locations(location, "left", sprites)
-                if menu == MENU_2COMPONENT_WEIGHT:
-                    if weight_2component_progress > 0:
-                        location  = 0
-                        weight_2component_progress -= 1
-                    else:
-                        weight_2component_progress = 0
-                        location = sprites
-                elif menu == MENU_4COMPONENT_WEIGHT:
-                    if weight_4component_progress > 0:
-                        location  = 0
-                        weight_4component_progress -= 1
-                    else:
-                        weight_4component_progress = 0
-                        location = sprites
-                elif menu == MENU_4COMPONENT_HARDNESS:
-                    if hardness_4component_progress > 0:
-                        location  = 0
-                        hardness_4component_progress -= 1
-                    else:
-                        hardness_4component_progress = 0
-                        location = sprites
-                elif menu == MENU_MIX_CONFIRM:
-                    if location == 2:
-                        location = 1
-                elif menu == MENU_REPLACE_WEIGHT:
-                    if weight_replacement_progress > 0:
-                        location  = 0
-                        weight_replacement_progress -= 1
-                    else:
-                        weight_replacement_progress = 0
-                        location = sprites
-                elif menu == MENU_REPLACE_HARDNESS:
-                    if hardness_replacement_progress > 0:
-                        location  = 0
-                        hardness_replacement_progress -= 1
-                    else:
-                        hardness_replacement_progress = 0
-                        location = sprites
-                elif menu == MENU_MIXING_FREQUENCY:
-                    location = available_locations(location, "left", 4)
-                    if start_time_selection:
-                        time_frequency = select_time(time_frequency, "left", time_increment_selection)
-                elif menu == MENU_MIXING_DURATION:
-                    location = available_locations(location, "left", 4)
-                    if start_time_selection:
-                        time_duration = select_time(time_duration, "left", time_increment_selection)
-                elif menu == MENU_MIXING_START_TIME:
-                    location = available_locations(location, "left", 4)
-                    if start_time_selection:
-                        time_start_time = select_time(time_start_time, "left", time_increment_selection)
-                elif menu == MENU_1COMPONENT_WEIGHT:
-                    if weight_1component_progress > 0:
-                        location  = 0
-                        weight_1component_progress -= 1
-                    else:
-                        weight_1component_progress = 0
-                        location = sprites
+        if encoder == "Right": #changing location
+            location += 1
+            location = available_locations(location, "right", sprites)
+            if menu == MENU_2COMPONENT_WEIGHT:
+                if weight_2component_progress < max_weight_2component:
+                    location  = 0
+                    weight_2component_progress += 1
+                else:
+                    weight_2component_progress = max_weight_2component+1
+                    location = sprites
 
-            elif event.key == pygame.K_RETURN: #state machine for menu navigation
-                if menu == MENU_START:
-                    if location == 0:
-                        menu = MENU_2COMPONENT_SELECTION
-                        location = 1
-                    elif location == 1:
-                        menu = MENU_4COMPONENT_WEIGHT
-                    elif location == 2:
-                        menu = MENU_MIX_CONFIRM
-                    elif location == 3:
-                        menu = MENU_SETTINGS
-                        location = 2
-                    elif location == sprites:
-                        menu = MENU_START
+            elif menu == MENU_4COMPONENT_WEIGHT:
+                if weight_4component_progress < max_weight_4component:
+                    location  = 0
+                    weight_4component_progress += 1
+                else:
+                    weight_4component_progress = max_weight_4component+1
+                    location = sprites
+            elif menu == MENU_4COMPONENT_HARDNESS:
+                if hardness_4component_progress < max_hardness_4component:
+                    location  = 0
+                    hardness_4component_progress += 1
+                else:
+                    hardness_4component_progress = max_hardness_4component+1
+                    location = sprites
+            elif menu == MENU_MIX_CONFIRM:
+                if location == 2:
+                    location = 0
+            elif menu == MENU_REPLACE_WEIGHT:
+                if weight_replacement_progress < max_weight_replacement:
+                    location  = 0
+                    weight_replacement_progress += 1
+                else:
+                    weight_replacement_progress = max_weight_replacement+1
+                    location = sprites
+            elif menu == MENU_REPLACE_HARDNESS:
+                if hardness_replacement_progress < max_hardness_replacement:
+                    location  = 0
+                    hardness_replacement_progress += 1
+                else:
+                    hardness_replacement_progress = max_hardness_replacement+1
+                    location = sprites
+            elif menu == MENU_MIXING_FREQUENCY:
+                if start_time_selection:
+                    time_frequency = select_time(time_frequency, "right", time_increment_selection)
+            elif menu == MENU_MIXING_DURATION:
+                if start_time_selection:
+                    time_duration = select_time(time_duration, "right", time_increment_selection)
+            elif menu == MENU_MIXING_START_TIME:
+                if start_time_selection:
+                    time_start_time = select_time(time_start_time, "right", time_increment_selection)
+            elif menu == MENU_1COMPONENT_WEIGHT:
+                if weight_1component_progress < max_weight_1component:
+                    location  = 0
+                    weight_1component_progress += 1
+                else:
+                    weight_1component_progress = max_weight_1component+1
+                    location = sprites
+
+        elif encoder == "Left":
+            location -= 1
+            location = available_locations(location, "left", sprites)
+            if menu == MENU_2COMPONENT_WEIGHT:
+                if weight_2component_progress > 0:
+                    location  = 0
+                    weight_2component_progress -= 1
+                else:
+                    weight_2component_progress = 0
+                    location = sprites
+            elif menu == MENU_4COMPONENT_WEIGHT:
+                if weight_4component_progress > 0:
+                    location  = 0
+                    weight_4component_progress -= 1
+                else:
+                    weight_4component_progress = 0
+                    location = sprites
+            elif menu == MENU_4COMPONENT_HARDNESS:
+                if hardness_4component_progress > 0:
+                    location  = 0
+                    hardness_4component_progress -= 1
+                else:
+                    hardness_4component_progress = 0
+                    location = sprites
+            elif menu == MENU_MIX_CONFIRM:
+                if location == 2:
+                    location = 1
+            elif menu == MENU_REPLACE_WEIGHT:
+                if weight_replacement_progress > 0:
+                    location  = 0
+                    weight_replacement_progress -= 1
+                else:
+                    weight_replacement_progress = 0
+                    location = sprites
+            elif menu == MENU_REPLACE_HARDNESS:
+                if hardness_replacement_progress > 0:
+                    location  = 0
+                    hardness_replacement_progress -= 1
+                else:
+                    hardness_replacement_progress = 0
+                    location = sprites
+            elif menu == MENU_MIXING_FREQUENCY:
+                location = available_locations(location, "left", 4)
+                if start_time_selection:
+                    time_frequency = select_time(time_frequency, "left", time_increment_selection)
+            elif menu == MENU_MIXING_DURATION:
+                location = available_locations(location, "left", 4)
+                if start_time_selection:
+                    time_duration = select_time(time_duration, "left", time_increment_selection)
+            elif menu == MENU_MIXING_START_TIME:
+                location = available_locations(location, "left", 4)
+                if start_time_selection:
+                    time_start_time = select_time(time_start_time, "left", time_increment_selection)
+            elif menu == MENU_1COMPONENT_WEIGHT:
+                if weight_1component_progress > 0:
+                    location  = 0
+                    weight_1component_progress -= 1
+                else:
+                    weight_1component_progress = 0
+                    location = sprites
+
+        elif encoder == "Click": #state machine for menu navigation
+            if menu == MENU_START:
+                if location == 0:
+                    menu = MENU_2COMPONENT_SELECTION
+                    location = 1
+                elif location == 1:
+                    menu = MENU_4COMPONENT_WEIGHT
+                elif location == 2:
+                    menu = MENU_MIX_CONFIRM
+                elif location == 3:
+                    menu = MENU_SETTINGS
+                    location = 2
+                elif location == sprites:
+                    menu = MENU_START
 
 
-                elif menu == MENU_2COMPONENT_SELECTION:
-                    if location == 0:
-                        component = 0
-                        menu = MENU_2COMPONENT_WEIGHT
-                    elif location == 1:
-                        component = 1
-                        menu = MENU_2COMPONENT_WEIGHT
-                    elif location == sprites:
-                        menu = MENU_START
+            elif menu == MENU_2COMPONENT_SELECTION:
+                if location == 0:
+                    component = 0
+                    menu = MENU_2COMPONENT_WEIGHT
+                elif location == 1:
+                    component = 1
+                    menu = MENU_2COMPONENT_WEIGHT
+                elif location == sprites:
+                    menu = MENU_START
 
-                elif menu == MENU_2COMPONENT_WEIGHT:
+            elif menu == MENU_2COMPONENT_WEIGHT:
+                if location == sprites:
+                    menu = MENU_START
+                else:
+                    components_amount = 2
+                    weight = weight_2component_progress
+                    menu = MENU_DISPENSING
+
+            elif menu == MENU_4COMPONENT_WEIGHT:
+                if location == sprites:
+                    menu = MENU_START
+                else:
+                    weight = weight_4component_progress
+                    components_amount = 4
+                    menu = MENU_4COMPONENT_HARDNESS
+
+            elif menu == MENU_4COMPONENT_HARDNESS:
+                if location == sprites:
+                    menu = MENU_START
+                else:
+                    hardness = hardness_4component_progress
+                    menu = MENU_DISPENSING
+
+
+            elif menu == MENU_MIX_CONFIRM:
+                if location == 0:
+                    menu = MENU_DISPENSING
+                elif location == 1:
+                    menu = MENU_START
+
+
+            elif menu == MENU_SETTINGS:
+                if location == 0:
+                    menu = MENU_MIXING_SETTINGS
+                elif location == 1:
+                    menu = MENU_REPLACE_CARTRIDGE
+                elif location == 2:
+                    menu = MENU_1COMPONENT_SELECT
+                elif location == sprites:
+                    menu = MENU_START
+
+
+            elif menu == MENU_MIXING_SETTINGS:
+                if location == 0:
+                    menu = MENU_MIXING_FREQUENCY
+                elif location == 1:
+                    menu = MENU_MIXING_DURATION
+                elif location == 2:
+                    menu = MENU_MIXING_START_TIME
+                elif location == sprites:
+                    menu = MENU_SETTINGS
+
+
+            elif menu == MENU_REPLACE_CARTRIDGE:
+                if location == sprites:
+                    menu = MENU_SETTINGS
+                else:
+                    menu = MENU_REPLACE_WEIGHT
+
+            elif menu == MENU_REPLACE_WEIGHT:
+                if location == sprites:
+                    menu = MENU_REPLACE_CARTRIDGE
+                else:
+                    menu = MENU_REPLACE_HARDNESS
+
+            elif menu == MENU_REPLACE_HARDNESS:
+                if location == sprites:
+                    menu = MENU_REPLACE_WEIGHT
+                else:
+                    menu = MENU_DISPENSING
+
+
+            elif menu == MENU_MIXING_FREQUENCY:
+                if start_time_selection:
+                    start_time_selection = False
+                    location = time_increment_selection
+                else:
                     if location == sprites:
-                        menu = MENU_START
-                    else:
-                        components_amount = 2
-                        weight = weight_2component_progress
-                        menu = MENU_DISPENSING
-
-                elif menu == MENU_4COMPONENT_WEIGHT:
-                    if location == sprites:
-                        menu = MENU_START
-                    else:
-                        weight = weight_4component_progress
-                        components_amount = 4
-                        menu = MENU_4COMPONENT_HARDNESS
-
-                elif menu == MENU_4COMPONENT_HARDNESS:
-                    if location == sprites:
-                        menu = MENU_START
-                    else:
-                        hardness = hardness_4component_progress
-                        menu = MENU_DISPENSING
-
-
-                elif menu == MENU_MIX_CONFIRM:
-                    if location == 0:
-                        menu = MENU_DISPENSING
-                    elif location == 1:
-                        menu = MENU_START
-
-
-                elif menu == MENU_SETTINGS:
-                    if location == 0:
                         menu = MENU_MIXING_SETTINGS
+                    elif location == 0:
+                        time_increment_selection = 0
+                        start_time_selection = True
                     elif location == 1:
-                        menu = MENU_REPLACE_CARTRIDGE
+                        time_increment_selection = 1
+                        start_time_selection = True
                     elif location == 2:
-                        menu = MENU_1COMPONENT_SELECT
-                    elif location == sprites:
-                        menu = MENU_START
+                        time_increment_selection = 2
+                        start_time_selection = True
 
-
-                elif menu == MENU_MIXING_SETTINGS:
-                    if location == 0:
-                        menu = MENU_MIXING_FREQUENCY
+                
+            elif menu == MENU_MIXING_DURATION:
+                if start_time_selection:
+                    start_time_selection = False
+                    location = time_increment_selection
+                else:
+                    if location == sprites:
+                        menu = MENU_MIXING_SETTINGS
+                    elif location == 0:
+                        time_increment_selection = 0
+                        start_time_selection = True
                     elif location == 1:
-                        menu = MENU_MIXING_DURATION
+                        time_increment_selection = 1
+                        start_time_selection = True
                     elif location == 2:
-                        menu = MENU_MIXING_START_TIME
-                    elif location == sprites:
-                        menu = MENU_SETTINGS
+                        time_increment_selection = 2
+                        start_time_selection = True
 
 
-                elif menu == MENU_REPLACE_CARTRIDGE:
+            elif menu == MENU_MIXING_START_TIME:
+                if start_time_selection:
+                    start_time_selection = False
+                    location = time_increment_selection
+                else:
                     if location == sprites:
-                        menu = MENU_SETTINGS
-                    else:
-                        menu = MENU_REPLACE_WEIGHT
-
-                elif menu == MENU_REPLACE_WEIGHT:
-                    if location == sprites:
-                        menu = MENU_REPLACE_CARTRIDGE
-                    else:
-                        menu = MENU_REPLACE_HARDNESS
-
-                elif menu == MENU_REPLACE_HARDNESS:
-                    if location == sprites:
-                        menu = MENU_REPLACE_WEIGHT
-                    else:
-                        menu = MENU_DISPENSING
+                        menu = MENU_MIXING_SETTINGS
+                    elif location == 0:
+                        time_increment_selection = 0
+                        start_time_selection = True
+                    elif location == 1:
+                        time_increment_selection = 1
+                        start_time_selection = True
+                    elif location == 2:
+                        time_increment_selection = 2
+                        start_time_selection = True
 
 
-                elif menu == MENU_MIXING_FREQUENCY:
-                    if start_time_selection:
-                        start_time_selection = False
-                        location = time_increment_selection
-                    else:
-                        if location == sprites:
-                            menu = MENU_MIXING_SETTINGS
-                        elif location == 0:
-                            time_increment_selection = 0
-                            start_time_selection = True
+            elif menu == MENU_1COMPONENT_SELECT:
+                if location == sprites:
+                    menu = MENU_SETTINGS
+                else:
+                    components_amount = 1
+                    component = location
+                    menu = MENU_1COMPONENT_WEIGHT
+                    component = location
+            elif menu == MENU_1COMPONENT_WEIGHT:
+                if location == sprites:
+                    menu = MENU_1COMPONENT_SELECT
+                else:
+                    weight = weight_1component_progress
+                    menu = MENU_DISPENSING
+            location = 0
+    else: 
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+                if event.key == pygame.K_RIGHT: #changing location
+                    location += 1
+                    location = available_locations(location, "right", sprites)
+                    if menu == MENU_2COMPONENT_WEIGHT:
+                        if weight_2component_progress < max_weight_2component:
+                            location  = 0
+                            weight_2component_progress += 1
+                        else:
+                            weight_2component_progress = max_weight_2component+1
+                            location = sprites
+
+                    elif menu == MENU_4COMPONENT_WEIGHT:
+                        if weight_4component_progress < max_weight_4component:
+                            location  = 0
+                            weight_4component_progress += 1
+                        else:
+                            weight_4component_progress = max_weight_4component+1
+                            location = sprites
+                    elif menu == MENU_4COMPONENT_HARDNESS:
+                        if hardness_4component_progress < max_hardness_4component:
+                            location  = 0
+                            hardness_4component_progress += 1
+                        else:
+                            hardness_4component_progress = max_hardness_4component+1
+                            location = sprites
+                    elif menu == MENU_MIX_CONFIRM:
+                        if location == 2:
+                            location = 0
+                    elif menu == MENU_REPLACE_WEIGHT:
+                        if weight_replacement_progress < max_weight_replacement:
+                            location  = 0
+                            weight_replacement_progress += 1
+                        else:
+                            weight_replacement_progress = max_weight_replacement+1
+                            location = sprites
+                    elif menu == MENU_REPLACE_HARDNESS:
+                        if hardness_replacement_progress < max_hardness_replacement:
+                            location  = 0
+                            hardness_replacement_progress += 1
+                        else:
+                            hardness_replacement_progress = max_hardness_replacement+1
+                            location = sprites
+                    elif menu == MENU_MIXING_FREQUENCY:
+                        if start_time_selection:
+                            time_frequency = select_time(time_frequency, "right", time_increment_selection)
+                    elif menu == MENU_MIXING_DURATION:
+                        if start_time_selection:
+                            time_duration = select_time(time_duration, "right", time_increment_selection)
+                    elif menu == MENU_MIXING_START_TIME:
+                        if start_time_selection:
+                            time_start_time = select_time(time_start_time, "right", time_increment_selection)
+                    elif menu == MENU_1COMPONENT_WEIGHT:
+                        if weight_1component_progress < max_weight_1component:
+                            location  = 0
+                            weight_1component_progress += 1
+                        else:
+                            weight_1component_progress = max_weight_1component+1
+                            location = sprites
+
+                elif event.key == pygame.K_LEFT:
+                    location -= 1
+                    location = available_locations(location, "left", sprites)
+                    if menu == MENU_2COMPONENT_WEIGHT:
+                        if weight_2component_progress > 0:
+                            location  = 0
+                            weight_2component_progress -= 1
+                        else:
+                            weight_2component_progress = 0
+                            location = sprites
+                    elif menu == MENU_4COMPONENT_WEIGHT:
+                        if weight_4component_progress > 0:
+                            location  = 0
+                            weight_4component_progress -= 1
+                        else:
+                            weight_4component_progress = 0
+                            location = sprites
+                    elif menu == MENU_4COMPONENT_HARDNESS:
+                        if hardness_4component_progress > 0:
+                            location  = 0
+                            hardness_4component_progress -= 1
+                        else:
+                            hardness_4component_progress = 0
+                            location = sprites
+                    elif menu == MENU_MIX_CONFIRM:
+                        if location == 2:
+                            location = 1
+                    elif menu == MENU_REPLACE_WEIGHT:
+                        if weight_replacement_progress > 0:
+                            location  = 0
+                            weight_replacement_progress -= 1
+                        else:
+                            weight_replacement_progress = 0
+                            location = sprites
+                    elif menu == MENU_REPLACE_HARDNESS:
+                        if hardness_replacement_progress > 0:
+                            location  = 0
+                            hardness_replacement_progress -= 1
+                        else:
+                            hardness_replacement_progress = 0
+                            location = sprites
+                    elif menu == MENU_MIXING_FREQUENCY:
+                        location = available_locations(location, "left", 4)
+                        if start_time_selection:
+                            time_frequency = select_time(time_frequency, "left", time_increment_selection)
+                    elif menu == MENU_MIXING_DURATION:
+                        location = available_locations(location, "left", 4)
+                        if start_time_selection:
+                            time_duration = select_time(time_duration, "left", time_increment_selection)
+                    elif menu == MENU_MIXING_START_TIME:
+                        location = available_locations(location, "left", 4)
+                        if start_time_selection:
+                            time_start_time = select_time(time_start_time, "left", time_increment_selection)
+                    elif menu == MENU_1COMPONENT_WEIGHT:
+                        if weight_1component_progress > 0:
+                            location  = 0
+                            weight_1component_progress -= 1
+                        else:
+                            weight_1component_progress = 0
+                            location = sprites
+
+                elif event.key == pygame.K_RETURN: #state machine for menu navigation
+                    if menu == MENU_START:
+                        if location == 0:
+                            menu = MENU_2COMPONENT_SELECTION
+                            location = 1
                         elif location == 1:
-                            time_increment_selection = 1
-                            start_time_selection = True
+                            menu = MENU_4COMPONENT_WEIGHT
                         elif location == 2:
-                            time_increment_selection = 2
-                            start_time_selection = True
+                            menu = MENU_MIX_CONFIRM
+                        elif location == 3:
+                            menu = MENU_SETTINGS
+                            location = 2
+                        elif location == sprites:
+                            menu = MENU_START
 
-                    
-                elif menu == MENU_MIXING_DURATION:
-                    if start_time_selection:
-                        start_time_selection = False
-                        location = time_increment_selection
-                    else:
-                        if location == sprites:
-                            menu = MENU_MIXING_SETTINGS
-                        elif location == 0:
-                            time_increment_selection = 0
-                            start_time_selection = True
+
+                    elif menu == MENU_2COMPONENT_SELECTION:
+                        if location == 0:
+                            component = 0
+                            menu = MENU_2COMPONENT_WEIGHT
                         elif location == 1:
-                            time_increment_selection = 1
-                            start_time_selection = True
-                        elif location == 2:
-                            time_increment_selection = 2
-                            start_time_selection = True
+                            component = 1
+                            menu = MENU_2COMPONENT_WEIGHT
+                        elif location == sprites:
+                            menu = MENU_START
 
-
-                elif menu == MENU_MIXING_START_TIME:
-                    if start_time_selection:
-                        start_time_selection = False
-                        location = time_increment_selection
-                    else:
+                    elif menu == MENU_2COMPONENT_WEIGHT:
                         if location == sprites:
-                            menu = MENU_MIXING_SETTINGS
-                        elif location == 0:
-                            time_increment_selection = 0
-                            start_time_selection = True
+                            menu = MENU_START
+                        else:
+                            components_amount = 2
+                            weight = weight_2component_progress
+                            menu = MENU_DISPENSING
+
+                    elif menu == MENU_4COMPONENT_WEIGHT:
+                        if location == sprites:
+                            menu = MENU_START
+                        else:
+                            weight = weight_4component_progress
+                            components_amount = 4
+                            menu = MENU_4COMPONENT_HARDNESS
+
+                    elif menu == MENU_4COMPONENT_HARDNESS:
+                        if location == sprites:
+                            menu = MENU_START
+                        else:
+                            hardness = hardness_4component_progress
+                            menu = MENU_DISPENSING
+
+
+                    elif menu == MENU_MIX_CONFIRM:
+                        if location == 0:
+                            menu = MENU_DISPENSING
                         elif location == 1:
-                            time_increment_selection = 1
-                            start_time_selection = True
+                            menu = MENU_START
+
+
+                    elif menu == MENU_SETTINGS:
+                        if location == 0:
+                            menu = MENU_MIXING_SETTINGS
+                        elif location == 1:
+                            menu = MENU_REPLACE_CARTRIDGE
                         elif location == 2:
-                            time_increment_selection = 2
-                            start_time_selection = True
+                            menu = MENU_1COMPONENT_SELECT
+                        elif location == sprites:
+                            menu = MENU_START
 
 
-                elif menu == MENU_1COMPONENT_SELECT:
-                    if location == sprites:
-                        menu = MENU_SETTINGS
-                    else:
-                        components_amount = 1
-                        component = location
-                        menu = MENU_1COMPONENT_WEIGHT
-                        component = location
-                elif menu == MENU_1COMPONENT_WEIGHT:
-                    if location == sprites:
-                        menu = MENU_1COMPONENT_SELECT
-                    else:
-                        weight = weight_1component_progress
-                        menu = MENU_DISPENSING
-                location = 0
+                    elif menu == MENU_MIXING_SETTINGS:
+                        if location == 0:
+                            menu = MENU_MIXING_FREQUENCY
+                        elif location == 1:
+                            menu = MENU_MIXING_DURATION
+                        elif location == 2:
+                            menu = MENU_MIXING_START_TIME
+                        elif location == sprites:
+                            menu = MENU_SETTINGS
+
+
+                    elif menu == MENU_REPLACE_CARTRIDGE:
+                        if location == sprites:
+                            menu = MENU_SETTINGS
+                        else:
+                            menu = MENU_REPLACE_WEIGHT
+
+                    elif menu == MENU_REPLACE_WEIGHT:
+                        if location == sprites:
+                            menu = MENU_REPLACE_CARTRIDGE
+                        else:
+                            menu = MENU_REPLACE_HARDNESS
+
+                    elif menu == MENU_REPLACE_HARDNESS:
+                        if location == sprites:
+                            menu = MENU_REPLACE_WEIGHT
+                        else:
+                            menu = MENU_DISPENSING
+
+
+                    elif menu == MENU_MIXING_FREQUENCY:
+                        if start_time_selection:
+                            start_time_selection = False
+                            location = time_increment_selection
+                        else:
+                            if location == sprites:
+                                menu = MENU_MIXING_SETTINGS
+                            elif location == 0:
+                                time_increment_selection = 0
+                                start_time_selection = True
+                            elif location == 1:
+                                time_increment_selection = 1
+                                start_time_selection = True
+                            elif location == 2:
+                                time_increment_selection = 2
+                                start_time_selection = True
+
+                        
+                    elif menu == MENU_MIXING_DURATION:
+                        if start_time_selection:
+                            start_time_selection = False
+                            location = time_increment_selection
+                        else:
+                            if location == sprites:
+                                menu = MENU_MIXING_SETTINGS
+                            elif location == 0:
+                                time_increment_selection = 0
+                                start_time_selection = True
+                            elif location == 1:
+                                time_increment_selection = 1
+                                start_time_selection = True
+                            elif location == 2:
+                                time_increment_selection = 2
+                                start_time_selection = True
+
+
+                    elif menu == MENU_MIXING_START_TIME:
+                        if start_time_selection:
+                            start_time_selection = False
+                            location = time_increment_selection
+                        else:
+                            if location == sprites:
+                                menu = MENU_MIXING_SETTINGS
+                            elif location == 0:
+                                time_increment_selection = 0
+                                start_time_selection = True
+                            elif location == 1:
+                                time_increment_selection = 1
+                                start_time_selection = True
+                            elif location == 2:
+                                time_increment_selection = 2
+                                start_time_selection = True
+
+
+                    elif menu == MENU_1COMPONENT_SELECT:
+                        if location == sprites:
+                            menu = MENU_SETTINGS
+                        else:
+                            components_amount = 1
+                            component = location
+                            menu = MENU_1COMPONENT_WEIGHT
+                            component = location
+                    elif menu == MENU_1COMPONENT_WEIGHT:
+                        if location == sprites:
+                            menu = MENU_1COMPONENT_SELECT
+                        else:
+                            weight = weight_1component_progress
+                            menu = MENU_DISPENSING
+                    location = 0
 
 
     if menu == MENU_START: #draw start menu
@@ -860,4 +1169,11 @@ while running:
 
         previous_menu = menu
     pygame.display.flip()           # update display
+if is_raspberry_pi():
+    import RPi.GPIO as GPIO
+    GPIO.cleanup()
 pygame.quit()
+
+
+
+

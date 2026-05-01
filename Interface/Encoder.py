@@ -56,5 +56,17 @@ def run_encoder(pin_left, pin_right, pin_click):
     finally:
         GPIO.cleanup()
 
+_setup_done = False
+
+def def_encoder(pin_left, pin_right, pin_click):
+    global _setup_done
+    if not _setup_done:
+        setup_encoder(pin_left, pin_right, pin_click)
+        _setup_done = True
+    try:
+        return event_queue.get_nowait()
+    except queue.Empty:
+        return None
+
 if __name__ == "__main__":
     run_encoder(Pin_left, Pin_right, Pin_click)
