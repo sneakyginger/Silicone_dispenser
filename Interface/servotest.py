@@ -11,7 +11,7 @@ pwm.start(0)
 
 def set_angle(angle):
     min_duty = 2.5   # duty cycle at 0°  → increase if servo doesn't reach full left
-    max_duty = 12.5  # duty cycle at 180° → increase if servo doesn't reach full right
+    max_duty = 14  # duty cycle at 180° → increase if servo doesn't reach full right
     duty = min_duty + (angle / 180) * (max_duty - min_duty)
     pwm.ChangeDutyCycle(duty)
     time.sleep(2)
