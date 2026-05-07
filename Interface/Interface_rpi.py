@@ -8,14 +8,36 @@ import time
 import threading
 import json
 import os
-import dispense
-import Encoder
 #import Weight_sensor
-import RPi.GPIO as GPIO
-GPIO.cleanup()
+
+is_rpi = False
+try:
+    with open("/proc/device-tree/model", "r"):
+        is_rpi = True
+except FileNotFoundError:
+    is_rpi = False
+
+def is_raspberry_pi():
+    return is_rpi
 
 #PINS
 Pin_left, Pin_right, Pin_click = 11, 15, 13
+
+if is_raspberry_pi():
+    import dispense
+    import Encoder
+    import RPi.GPIO as GPIO
+    GPIO.cleanup()
+else:
+    class _DispenseStub:
+        density_of_liquid = 1.0
+        @staticmethod
+        def multi_dispense(amounts):
+            print(f"[laptop sim] multi_dispense({amounts})")
+            time.sleep(0.5)
+            return list(amounts)
+    dispense = _DispenseStub()
+    Encoder = None
 
 # Persistent cartridge state — which silicone hardness sits in each bucket pair
 # and how much volume remains. Buckets 1+2 share pair_ab; buckets 3+4 share pair_cd.
@@ -257,6 +279,45 @@ previous_menu = MENU_START
 button_size = (75,75)
 
 
+def get_click_target(mouse_pos, menu, sprites, loci):
+    """Map a mouse click position to the location index it activates, or None."""
+    if menu == MENU_DISPENSING:
+        return None
+
+    return_rect = pygame.Rect(0, 0, 120, 120)
+    return_rect.center = (width - 50, height - 50)
+
+    if menu in (MENU_MIXING_FREQUENCY, MENU_MIXING_DURATION, MENU_MIXING_START_TIME):
+        time_centers = [(width / 6, height / 2),
+                        (width / 6 * 3, height / 2),
+                        (width / 6 * 5, height / 2)]
+        for i, c in enumerate(time_centers):
+            r = pygame.Rect(0, 0, 160, 160)
+            r.center = c
+            if r.collidepoint(mouse_pos):
+                return i
+        if return_rect.collidepoint(mouse_pos):
+            return sprites
+        return None
+
+    # Weight/hardness slider menus have only a return button — the bar itself
+    # is adjusted by the rotary encoder.
+    if menu in (MENU_2COMPONENT_WEIGHT, MENU_4COMPONENT_WEIGHT, MENU_4COMPONENT_HARDNESS,
+                MENU_REPLACE_WEIGHT, MENU_REPLACE_HARDNESS, MENU_1COMPONENT_WEIGHT):
+        if return_rect.collidepoint(mouse_pos):
+            return sprites
+        return None
+
+    for i in range(sprites):
+        r = pygame.Rect(0, 0, 180, 180)
+        r.center = loci[i]
+        if r.collidepoint(mouse_pos):
+            return i
+    if return_rect.collidepoint(mouse_pos):
+        return sprites
+    return None
+
+
 
 #Maak teks voor tijdens mengen
 mengen_bezig, mengen_bezig_rect = create_text("MIXING", (width // 2, height // 2), (255,255,255))
@@ -401,7 +462,23 @@ while running:
     selection_image_rect.center = (loci[location]) 
     screen.fill((255, 255, 255))# clear screen (white background)
 
-    encoder = Encoder.def_encoder(Pin_left, Pin_right, Pin_click)
+    if is_raspberry_pi():
+        encoder = Encoder.def_encoder(Pin_left, Pin_right, Pin_click)
+    else:
+        encoder = None
+
+    mouse_click_pos = None
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            mouse_click_pos = event.pos
+
+    if mouse_click_pos is not None and encoder not in ("Left", "Right", "Click"):
+        target = get_click_target(mouse_click_pos, menu, sprites, loci)
+        if target is not None:
+            location = target
+            encoder = "Click"
 
     if encoder == "Right": #changing location
         location += 1
