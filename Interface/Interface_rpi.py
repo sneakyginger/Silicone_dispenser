@@ -34,10 +34,10 @@ MENU_DISPENSING = -1
 MENU_2COMPONENT_SELECTION = 15
 
 max_weight_1component = 100
-max_weight_2component = 10
-max_weight_4component = 20
+max_weight_2component = 100
+max_weight_4component = 100
 max_weight_replacement = 100
-max_hardness_4component = 2
+max_hardness_4component = 50
 max_hardness_replacement = 50
 components_amount = -1
 component = -1
@@ -683,7 +683,7 @@ while running:
         hardness_bar_image_use_rect = hardness_bar_image_use.get_rect(midleft=(x_bar_har_4, 3/4*height))  # update loading bar position
         if hardness_4component_progress <= max_hardness_4component and hardness_4component_progress >= 0:
             screen.blit(hardness_bar_image_use, hardness_bar_image_use_rect)  # draw loading bar
-            hardness_text,hardness_rect = create_text(f"Desired hardness: {hardness_4component_progress}", (width // 2, height // 2), (0,0,0))
+            hardness_text,hardness_rect = create_text(f"Desired hardness: {hardness_4component_progress} shore", (width // 2, height // 2), (0,0,0))
             screen.blit(hardness_text, hardness_rect)  # draw hardness text in the center
         else:
             screen.blit(return_,return_rect)
@@ -783,7 +783,7 @@ while running:
         hardness_bar_image_use_rect = hardness_bar_image_use.get_rect(midleft=(x_bar_har_re, 3/4*height))  # update loading bar position
         if hardness_replacement_progress <= max_hardness_replacement and hardness_replacement_progress >= 0:
             screen.blit(hardness_bar_image_use, hardness_bar_image_use_rect)  # draw loading bar
-            cartridge_hardness_text, cartridge_hardness_text_rect = create_text(f"Hardness of new cartridge: {hardness_replacement_progress}", (width // 2, height // 2), (0,0,0))
+            cartridge_hardness_text, cartridge_hardness_text_rect = create_text(f"Hardness of new cartridge: {hardness_replacement_progress} shore", (width // 2, height // 2), (0,0,0))
             screen.blit(cartridge_hardness_text, cartridge_hardness_text_rect)  # draw hardness text in the center
         else:
             screen.blit(return_,return_rect)
