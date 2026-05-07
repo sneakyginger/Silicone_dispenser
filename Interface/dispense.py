@@ -2,7 +2,7 @@ import random
 import math
 import time
 
-#import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
 
 
 RASPBERRY = True
