@@ -827,9 +827,8 @@ while running:
             multi_components[component*2] = weight/2
             multi_components[component*2+1] = weight/2
         elif(components_amount == 4):
-            while(i<4):
+            for i in range(4):
                 multi_components[i] = weight/4
-                i+=1
             print(weight, hardness)
         dispense.multi_dispense(multi_components)
         if threading.active_count() == 1:  # check if the work thread is not already running
