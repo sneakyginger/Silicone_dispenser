@@ -9,6 +9,8 @@ import threading
 import dispense
 import Encoder
 #import Weight_sensor
+import RPi.GPIO as GPIO
+GPIO.cleanup()
 
 #PINS
 Pin_left, Pin_right, Pin_click = 17, 27, 22
