@@ -23,6 +23,7 @@ The first parameter is the order in which the bytes are used to build the "long"
 the order of the bits inside each byte. According to the HX711 Datasheet, the second parameter is MSB so you
 shouldn't need to modify it.
 '''
+print("set format")
 hx.set_reading_format("MSB", "MSB")
 
 '''
@@ -38,7 +39,7 @@ hx.set_reading_format("MSB", "MSB")
 In my case, the longValueWithOffset was around 114000 so my reference unit is 114,
 because if I used the 114000, I'd be getting milligrams instead of grams.
 '''
-
+print("set reference unit")
 referenceUnit = 1
 hx.set_reference_unit(referenceUnit)
 print("reset")
