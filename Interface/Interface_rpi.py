@@ -322,6 +322,7 @@ no_image, no_image_rect = load_image(r'./Sprites/no.png', button_size, (loci[1])
 button_bottle_ab_image, button_bottle_ab_image_rect = load_image(r'./Sprites/button_bottle_a.png', bottle_img_size, (loci[0]))
 button_bottle_cd_image, button_bottle_cd_image_rect = load_image(r'./Sprites/button_bottle_b.png', bottle_img_size, (loci[1]))
 
+dispense_started = False
 running = True
 while running:
     loci = locus(sprites)
@@ -479,7 +480,7 @@ while running:
         elif menu == MENU_2COMPONENT_WEIGHT:
             if location == sprites:
                 menu = MENU_START
-            else:
+            elif weight_2component_progress > 0:
                 components_amount = 2
                 weight = weight_2component_progress
                 menu = MENU_DISPENSING
@@ -487,7 +488,7 @@ while running:
         elif menu == MENU_4COMPONENT_WEIGHT:
             if location == sprites:
                 menu = MENU_START
-            else:
+            elif weight_4component_progress > 0:
                 weight = weight_4component_progress
                 components_amount = 4
                 menu = MENU_4COMPONENT_HARDNESS
@@ -613,7 +614,7 @@ while running:
         elif menu == MENU_1COMPONENT_WEIGHT:
             if location == sprites:
                 menu = MENU_1COMPONENT_SELECT
-            else:
+            elif weight_1component_progress > 0:
                 weight = weight_1component_progress
                 menu = MENU_DISPENSING
         location = 0
@@ -819,22 +820,23 @@ while running:
             screen.blit(return_,return_rect)
     
     if menu == MENU_DISPENSING: #draw loading bar
-        multi_components = [0,0,0,0]
         sprites = 4
-        if(components_amount == 1):
-            print(weight,component)
-            multi_components[component] = weight
-        elif(components_amount == 2):
-            print(weight,component)
-            multi_components[component*2] = weight/2
-            multi_components[component*2+1] = weight/2
-        elif(components_amount == 4):
-            for i in range(4):
-                multi_components[i] = weight/4
-            print(weight, hardness)
-        dispense.multi_dispense(multi_components)
-        if threading.active_count() == 1:  # check if the work thread is not already running
-            threading.Thread(target=doWork).start()  # start the work in a separate thread
+        if not dispense_started:
+            multi_components = [0,0,0,0]
+            if(components_amount == 1):
+                print(weight,component)
+                multi_components[component] = weight
+            elif(components_amount == 2):
+                print(weight,component)
+                multi_components[component*2] = weight/2
+                multi_components[component*2+1] = weight/2
+            elif(components_amount == 4):
+                for i in range(4):
+                    multi_components[i] = weight/4
+                print(weight, hardness)
+            threading.Thread(target=dispense.multi_dispense, args=(multi_components,), daemon=True).start()
+            threading.Thread(target=doWork, daemon=True).start()
+            dispense_started = True
         screen.fill((0,0,0))          # clear screen (black background)
         screen.blit(mengen_bezig, mengen_bezig_rect)  # draw "mengen bezig" text in the center of the screen
         #progress bar for loading
@@ -846,6 +848,8 @@ while running:
         elif loading_progress >= 100:
             menu = MENU_START
             location = 0
+            dispense_started = False
+            loading_progress = 0
         #resetting variables for next mixing session
         weight_1component_progress = max_weight_1component//2
         weight_2component_progress = max_weight_2component//2

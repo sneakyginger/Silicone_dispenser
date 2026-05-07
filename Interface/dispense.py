@@ -70,21 +70,29 @@ def under_tolerance_components(measured_results, amounts, relative_tolerance, ta
     over-dispensed component). Each component's proportional target is amounts[i] * target_ratio,
     so all components are corrected to the same fraction of their individual targets rather than
     to their absolute targets independently.
+
+    Components with amounts[i] == 0 are skipped — they were not requested.
     """
     return [
         (i, amounts[i] * target_ratio - measured)
         for i, (measured, _) in enumerate(zip(measured_results, amounts))
-        if amounts[i] * target_ratio - measured > relative_tolerance
+        if amounts[i] > 0 and amounts[i] * target_ratio - measured > relative_tolerance
     ]
 
 
 def biggest_ratio_difference(measured_results, amounts):
-    """Return (i, j, ratios, diff_pct) for the pair of components with the biggest % ratio difference."""
-    ratios = [measured / target for measured, target in zip(measured_results, amounts)]
-    i = max(range(len(ratios)), key=lambda k: ratios[k])
-    j = min(range(len(ratios)), key=lambda k: ratios[k])
-    diff_pct = (ratios[i] - ratios[j]) * 100
-    return i, j, ratios, diff_pct
+    """Return (i, j, ratios, diff_pct) for the pair of active components with the biggest % ratio difference.
+
+    Components with amounts == 0 are excluded. Returns None if fewer than two components were active.
+    """
+    active = [(k, m / t) for k, (m, t) in enumerate(zip(measured_results, amounts)) if t > 0]
+    if len(active) < 2:
+        return None
+    ratios_by_index = dict(active)
+    i = max(ratios_by_index, key=ratios_by_index.get)
+    j = min(ratios_by_index, key=ratios_by_index.get)
+    diff_pct = (ratios_by_index[i] - ratios_by_index[j]) * 100
+    return i, j, ratios_by_index, diff_pct
 
 
 def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, max_iterations=10):
@@ -95,17 +103,26 @@ def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, ma
         print(f"Component {i+1}: {amount} grams.")
     print("")
 
-    # initial dispense pass
-    measured_results = [dispense_and_measure(i + 1, amount) for i, amount in enumerate(amounts)]
+    # initial dispense pass — skip motors with amount == 0 so we don't move them or re-prompt the scale
+    measured_results = [
+        dispense_and_measure(i + 1, amount) if amount > 0 else 0.0
+        for i, amount in enumerate(amounts)
+    ]
 
     print("Measured weights after dispensing:")
     for i, measured in enumerate(measured_results):
         print(f"Component {i+1}: {measured:.3f} grams.")
 
     # warn about components whose ratio deviates from the most over-dispensed component
-    ratios = [m / t for m, t in zip(measured_results, amounts)]
-    max_ratio = max(ratios)
+    ratios = [m / t if t > 0 else 0.0 for m, t in zip(measured_results, amounts)]
+    active_ratios = [r for r, t in zip(ratios, amounts) if t > 0]
+    if not active_ratios:
+        print("No components requested — nothing to dispense.")
+        return
+    max_ratio = max(active_ratios)
     for i, (measured, target) in enumerate(zip(measured_results, amounts)):
+        if target == 0:
+            continue
         shortfall_from_ratio = target * max_ratio - measured
         if shortfall_from_ratio > relative_tolerance:
             print(f"Warning: Component {i+1} is behind proportional target. "
@@ -135,9 +152,11 @@ def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, ma
 
     print(f"Total correction iterations used: {iterations_used}")
 
-    # report biggest ratio difference
-    i, j, ratios, max_diff_pct = biggest_ratio_difference(measured_results, amounts)
-    print(f"Biggest % difference: Component {i+1} ({ratios[i]*100:.2f}% of target) vs Component {j+1} ({ratios[j]*100:.2f}% of target): {max_diff_pct:.2f}%")
+    # report biggest ratio difference (only meaningful when 2+ components were active)
+    result = biggest_ratio_difference(measured_results, amounts)
+    if result is not None:
+        i, j, ratios, max_diff_pct = result
+        print(f"Biggest % difference: Component {i+1} ({ratios[i]*100:.2f}% of target) vs Component {j+1} ({ratios[j]*100:.2f}% of target): {max_diff_pct:.2f}%")
 
 
 def mix(rotations=10):
