@@ -6,6 +6,8 @@ from pygame.locals import *
 import pygame.gfxdraw
 import time
 import threading
+import json
+import os
 import dispense
 import Encoder
 #import Weight_sensor
@@ -14,6 +16,69 @@ GPIO.cleanup()
 
 #PINS
 Pin_left, Pin_right, Pin_click = 11, 15, 13
+
+# Persistent cartridge state — which silicone hardness sits in each bucket pair
+# and how much volume remains. Buckets 1+2 share pair_ab; buckets 3+4 share pair_cd.
+CARTRIDGE_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cartridge_config.json")
+DEFAULT_CARTRIDGE_CONFIG = {
+    "pair_ab": {"hardness": 5,  "volume": 100},
+    "pair_cd": {"hardness": 50, "volume": 100},
+}
+
+def load_cartridge_config():
+    try:
+        with open(CARTRIDGE_CONFIG_PATH) as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {k: dict(v) for k, v in DEFAULT_CARTRIDGE_CONFIG.items()}
+
+def save_cartridge_config(config):
+    with open(CARTRIDGE_CONFIG_PATH, "w") as f:
+        json.dump(config, f, indent=2)
+
+cartridge_config = load_cartridge_config()
+
+# Calibration curve for the silicone additive mix:
+# (target shore hardness, fraction of high-hardness pair in the mix).
+# Source: "Shore waarde van mengsel Siliconen Additie Kleurloos" chart.
+HARDNESS_CURVE = [
+    (5.0,  0.00),
+    (5.5,  0.10),
+    (14.0, 0.20),
+    (18.5, 0.30),
+    (23.5, 0.40),
+    (27.5, 0.50),
+    (32.0, 0.60),
+    (36.5, 0.70),
+    (41.0, 0.80),
+    (45.5, 0.90),
+    (50.0, 1.00),
+]
+
+def dispense_and_track_volume(amounts):
+    """Run multi_dispense and decrement cartridge volumes by the actual measured grams."""
+    measured = dispense.multi_dispense(amounts)
+    if measured is None:
+        return
+    ab_used_ml = ((measured[0] or 0) + (measured[1] or 0)) / dispense.density_of_liquid
+    cd_used_ml = ((measured[2] or 0) + (measured[3] or 0)) / dispense.density_of_liquid
+    cartridge_config["pair_ab"]["volume"] = max(0.0, round(cartridge_config["pair_ab"]["volume"] - ab_used_ml, 2))
+    cartridge_config["pair_cd"]["volume"] = max(0.0, round(cartridge_config["pair_cd"]["volume"] - cd_used_ml, 2))
+    save_cartridge_config(cartridge_config)
+
+
+def hardness_to_ratio(target_shore):
+    """Piecewise-linear interpolation through the chart data points."""
+    if target_shore <= HARDNESS_CURVE[0][0]:
+        return HARDNESS_CURVE[0][1]
+    if target_shore >= HARDNESS_CURVE[-1][0]:
+        return HARDNESS_CURVE[-1][1]
+    for i in range(len(HARDNESS_CURVE) - 1):
+        x0, r0 = HARDNESS_CURVE[i]
+        x1, r1 = HARDNESS_CURVE[i + 1]
+        if x0 <= target_shore <= x1:
+            return r0 + (r1 - r0) * (target_shore - x0) / (x1 - x0)
+    return 1.0
 
 
 # Menu constants
@@ -38,13 +103,16 @@ MENU_2COMPONENT_SELECTION = 15
 max_weight_1component = 100
 max_weight_2component = 100
 max_weight_4component = 100
-max_weight_replacement = 100
-max_hardness_4component = 50
-max_hardness_replacement = 50
+max_volume_replacement = 500
+min_hardness_4component = int(HARDNESS_CURVE[0][0])
+max_hardness_4component = int(HARDNESS_CURVE[-1][0])
+min_hardness_replacement = int(HARDNESS_CURVE[0][0])
+max_hardness_replacement = int(HARDNESS_CURVE[-1][0])
 components_amount = -1
 component = -1
 weight = -1
 hardness = -1
+pair_being_replaced = -1  # 0 = pair_ab (buckets 1+2), 1 = pair_cd (buckets 3+4)
 
 
 def load_image(path, size, location):
@@ -275,28 +343,30 @@ loading_bar_width = 8
 weight_1component_progress = max_weight_1component//2
 weight_2component_progress = max_weight_2component//2
 weight_4component_progress = max_weight_4component//2
-weight_replacement_progress = max_weight_replacement//2
+volume_replacement_progress = max_volume_replacement//2
 
 scaling_weight_1 = width/2//max_weight_1component
 scaling_weight_2 = width/2//max_weight_2component
 scaling_weight_4 = width/2//max_weight_4component
-scaling_weight_replacement = width/2//max_weight_replacement
+scaling_volume_replacement = width/2//max_volume_replacement
 
 x_bar_weight_1 = width/2-max_weight_1component*scaling_weight_1/2
 x_bar_weight_2 = width/2-max_weight_2component*scaling_weight_2/2
 x_bar_weight_4 = width/2-max_weight_4component*scaling_weight_4/2
-x_bar_weight_re = width/2-max_weight_replacement*scaling_weight_replacement/2
+x_bar_volume_re = width/2-max_volume_replacement*scaling_volume_replacement/2
 
 weight_bar_width = 8
 weight_bar_image, weight_bar_image_rect = load_image(r'./Sprites/black.png',(weight_bar_width, 50) ,(200, height//2))
 
-hardness_4component_progress = max_hardness_4component//2
-hardness_replacement_progress = max_hardness_replacement//2
-scaling_hardness_4 = width/2//max_hardness_4component
-scaling_hardness_re = width/2//max_hardness_replacement
+hardness_4component_progress = (min_hardness_4component + max_hardness_4component) // 2
+hardness_replacement_progress = (min_hardness_replacement + max_hardness_replacement) // 2
+hardness_4component_span = max_hardness_4component - min_hardness_4component
+hardness_replacement_span = max_hardness_replacement - min_hardness_replacement
+scaling_hardness_4 = width/2//hardness_4component_span
+scaling_hardness_re = width/2//hardness_replacement_span
 
-x_bar_har_4 = width/2-max_hardness_4component*scaling_hardness_4/2
-x_bar_har_re = width/2-max_hardness_replacement*scaling_hardness_re/2
+x_bar_har_4 = width/2-hardness_4component_span*scaling_hardness_4/2
+x_bar_har_re = width/2-hardness_replacement_span*scaling_hardness_re/2
 hardness_bar_width = 8
 hardness_bar_image, hardness_bar_image_rect = load_image(r'./Sprites/black.png',(hardness_bar_width, 50) ,(200, height//2))
 
@@ -323,6 +393,8 @@ button_bottle_ab_image, button_bottle_ab_image_rect = load_image(r'./Sprites/but
 button_bottle_cd_image, button_bottle_cd_image_rect = load_image(r'./Sprites/button_bottle_b.png', bottle_img_size, (loci[1]))
 
 dispense_started = False
+dispense_warning_message = ""
+LOW_VOLUME_THRESHOLD_ML = 20
 running = True
 while running:
     loci = locus(sprites)
@@ -354,24 +426,24 @@ while running:
                 location  = 0
                 hardness_4component_progress += 1
             else:
-                hardness_4component_progress = max_hardness_4component+1
+                hardness_4component_progress = max_hardness_4component
                 location = sprites
         elif menu == MENU_MIX_CONFIRM:
             if location == 2:
                 location = 0
         elif menu == MENU_REPLACE_WEIGHT:
-            if weight_replacement_progress < max_weight_replacement:
+            if volume_replacement_progress < max_volume_replacement:
                 location  = 0
-                weight_replacement_progress += 1
+                volume_replacement_progress += 1
             else:
-                weight_replacement_progress = max_weight_replacement+1
+                volume_replacement_progress = max_volume_replacement
                 location = sprites
         elif menu == MENU_REPLACE_HARDNESS:
             if hardness_replacement_progress < max_hardness_replacement:
                 location  = 0
                 hardness_replacement_progress += 1
             else:
-                hardness_replacement_progress = max_hardness_replacement+1
+                hardness_replacement_progress = max_hardness_replacement
                 location = sprites
         elif menu == MENU_MIXING_FREQUENCY:
             if start_time_selection:
@@ -408,28 +480,28 @@ while running:
                 weight_4component_progress = 0
                 location = sprites
         elif menu == MENU_4COMPONENT_HARDNESS:
-            if hardness_4component_progress > 0:
+            if hardness_4component_progress > min_hardness_4component:
                 location  = 0
                 hardness_4component_progress -= 1
             else:
-                hardness_4component_progress = 0
+                hardness_4component_progress = min_hardness_4component
                 location = sprites
         elif menu == MENU_MIX_CONFIRM:
             if location == 2:
                 location = 1
         elif menu == MENU_REPLACE_WEIGHT:
-            if weight_replacement_progress > 0:
+            if volume_replacement_progress > 0:
                 location  = 0
-                weight_replacement_progress -= 1
+                volume_replacement_progress -= 1
             else:
-                weight_replacement_progress = 0
+                volume_replacement_progress = 0
                 location = sprites
         elif menu == MENU_REPLACE_HARDNESS:
-            if hardness_replacement_progress > 0:
+            if hardness_replacement_progress > min_hardness_replacement:
                 location  = 0
                 hardness_replacement_progress -= 1
             else:
-                hardness_replacement_progress = 0
+                hardness_replacement_progress = min_hardness_replacement
                 location = sprites
         elif menu == MENU_MIXING_FREQUENCY:
             location = available_locations(location, "left", 4)
@@ -453,6 +525,7 @@ while running:
 
     elif encoder == "Click": #state machine for menu navigation
         if menu == MENU_START:
+            dispense_warning_message = ""
             if location == 0:
                 menu = MENU_2COMPONENT_SELECTION
                 location = 1
@@ -534,6 +607,7 @@ while running:
             if location == sprites:
                 menu = MENU_SETTINGS
             else:
+                pair_being_replaced = location  # 0 = pair_ab, 1 = pair_cd
                 menu = MENU_REPLACE_WEIGHT
 
         elif menu == MENU_REPLACE_WEIGHT:
@@ -546,7 +620,13 @@ while running:
             if location == sprites:
                 menu = MENU_REPLACE_WEIGHT
             else:
-                menu = MENU_DISPENSING
+                pair_key = "pair_ab" if pair_being_replaced == 0 else "pair_cd"
+                cartridge_config[pair_key] = {
+                    "hardness": hardness_replacement_progress,
+                    "volume": volume_replacement_progress,
+                }
+                save_cartridge_config(cartridge_config)
+                menu = MENU_START
 
 
         elif menu == MENU_MIXING_FREQUENCY:
@@ -634,6 +714,16 @@ while running:
         screen.blit(mixing_menu_text, mixing_menu_text_rect)  # draw mixing menu text
         screen.blit(settings_text, settings_text_rect)  # draw settings text
 
+        if dispense_warning_message:
+            warn_text, warn_rect = create_text(dispense_warning_message, (width // 2, 60), (200, 0, 0), "small")
+            screen.blit(warn_text, warn_rect)
+        low_pairs = [name for name, key in (("A+B", "pair_ab"), ("C+D", "pair_cd"))
+                     if cartridge_config[key]["volume"] < LOW_VOLUME_THRESHOLD_ML]
+        if low_pairs:
+            low_text_str = "Low cartridge volume: " + ", ".join(low_pairs)
+            low_text, low_rect = create_text(low_text_str, (width // 2, height - 30), (200, 100, 0), "small")
+            screen.blit(low_text, low_rect)
+
     if menu == MENU_2COMPONENT_SELECTION: #draw 2 component selection menu
         sprites = 2
         screen.blit(menu1_text, menu1_text_rect)  # draw menu text in the center of the screen
@@ -681,10 +771,10 @@ while running:
             screen.blit(selection_image, selection_image_rect)  # draw cursor
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
 
-        hardness_bar_width = abs(hardness_4component_progress)*scaling_hardness_4
-        hardness_bar_image_use = pygame.transform.scale(hardness_bar_image, (int(hardness_bar_width), 50))  # scale loading bar based on selected weight
+        hardness_bar_width = (hardness_4component_progress - min_hardness_4component)*scaling_hardness_4
+        hardness_bar_image_use = pygame.transform.scale(hardness_bar_image, (max(int(hardness_bar_width), 1), 50))  # scale loading bar based on selected weight
         hardness_bar_image_use_rect = hardness_bar_image_use.get_rect(midleft=(x_bar_har_4, 3/4*height))  # update loading bar position
-        if hardness_4component_progress <= max_hardness_4component and hardness_4component_progress >= 0:
+        if min_hardness_4component <= hardness_4component_progress <= max_hardness_4component:
             screen.blit(hardness_bar_image_use, hardness_bar_image_use_rect)  # draw loading bar
             hardness_text,hardness_rect = create_text(f"Desired hardness: {hardness_4component_progress} shore", (width // 2, height // 2), (0,0,0))
             screen.blit(hardness_text, hardness_rect)  # draw hardness text in the center
@@ -745,32 +835,30 @@ while running:
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
     
 
-    if menu == MENU_REPLACE_CARTRIDGE: #draw cartridge replacement menu
-        sprites = 4
+    if menu == MENU_REPLACE_CARTRIDGE: #draw cartridge replacement menu (pick which pair)
+        sprites = 2
         screen.blit(menu7_text, menu7_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw cursor
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         screen.blit(select_cartridge_text, select_cartridge_text_rect)  # draw select cartridge text
 
-        screen.blit(button_bottle_a_image, button_bottle_a_image_rect)  # draw button 1
-        screen.blit(button_bottle_b_image, button_bottle_b_image_rect)  # draw button 2
-        screen.blit(button_bottle_c_image, button_bottle_c_image_rect)  # draw button 3
-        screen.blit(button_bottle_d_image, button_bottle_d_image_rect)  # draw button 4
+        screen.blit(button_bottle_ab_image, button_bottle_ab_image_rect)  # draw pair A+B
+        screen.blit(button_bottle_cd_image, button_bottle_cd_image_rect)  # draw pair C+D
 
-    if menu == MENU_REPLACE_WEIGHT: #Select replacement weight
+    if menu == MENU_REPLACE_WEIGHT: #Select replacement volume
         sprites = 1
         screen.blit(menu7_text, menu7_text_rect)  # draw menu text in the center of the screen
         if location == sprites:
             screen.blit(selection_image, selection_image_rect)  # draw cursor
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
 
-        weight_bar_width = abs(weight_replacement_progress)*scaling_weight_replacement
-        weight_bar_image_use = pygame.transform.scale(weight_bar_image, (int(weight_bar_width), 50))  # scale loading bar based on selected weight
-        weight_bar_image_use_rect = weight_bar_image_use.get_rect(midleft=(x_bar_weight_re, 3/4*height))  # update loading bar position
-        if weight_replacement_progress <= max_weight_replacement and weight_replacement_progress >= 0:
-            cartridge_weight_text, cartridge_weight_text_rect = create_text(f"Weight of new cartridge: {weight_replacement_progress}", (width // 2, height // 2), (0,0,0))
-            screen.blit(cartridge_weight_text, cartridge_weight_text_rect)  # draw hardness text in the center
-            screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
+        volume_bar_width = abs(volume_replacement_progress)*scaling_volume_replacement
+        volume_bar_image_use = pygame.transform.scale(weight_bar_image, (max(int(volume_bar_width), 1), 50))  # scale loading bar based on selected volume
+        volume_bar_image_use_rect = volume_bar_image_use.get_rect(midleft=(x_bar_volume_re, 3/4*height))  # update loading bar position
+        if 0 <= volume_replacement_progress <= max_volume_replacement:
+            cartridge_volume_text, cartridge_volume_text_rect = create_text(f"Total volume of new cartridge: {volume_replacement_progress} ml", (width // 2, height // 2), (0,0,0))
+            screen.blit(cartridge_volume_text, cartridge_volume_text_rect)  # draw volume text in the center
+            screen.blit(volume_bar_image_use, volume_bar_image_use_rect)  # draw loading bar
         else:
             screen.blit(return_,return_rect)
 
@@ -780,11 +868,10 @@ while running:
         if location == sprites:
             screen.blit(selection_image, selection_image_rect)  # draw cursor
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
-        screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
-        hardness_bar_width = abs(hardness_replacement_progress)*scaling_hardness_re
-        hardness_bar_image_use = pygame.transform.scale(hardness_bar_image, (int(hardness_bar_width), 50))  # scale loading bar based on selected weight
+        hardness_bar_width = (hardness_replacement_progress - min_hardness_replacement)*scaling_hardness_re
+        hardness_bar_image_use = pygame.transform.scale(hardness_bar_image, (max(int(hardness_bar_width), 1), 50))  # scale loading bar based on selected hardness
         hardness_bar_image_use_rect = hardness_bar_image_use.get_rect(midleft=(x_bar_har_re, 3/4*height))  # update loading bar position
-        if hardness_replacement_progress <= max_hardness_replacement and hardness_replacement_progress >= 0:
+        if min_hardness_replacement <= hardness_replacement_progress <= max_hardness_replacement:
             screen.blit(hardness_bar_image_use, hardness_bar_image_use_rect)  # draw loading bar
             cartridge_hardness_text, cartridge_hardness_text_rect = create_text(f"Hardness of new cartridge: {hardness_replacement_progress} shore", (width // 2, height // 2), (0,0,0))
             screen.blit(cartridge_hardness_text, cartridge_hardness_text_rect)  # draw hardness text in the center
@@ -831,30 +918,57 @@ while running:
                 multi_components[component*2] = weight/2
                 multi_components[component*2+1] = weight/2
             elif(components_amount == 4):
-                for i in range(4):
-                    multi_components[i] = weight/4
-                print(weight, hardness)
-            threading.Thread(target=dispense.multi_dispense, args=(multi_components,), daemon=True).start()
-            threading.Thread(target=doWork, daemon=True).start()
-            dispense_started = True
-        screen.fill((0,0,0))          # clear screen (black background)
-        screen.blit(mengen_bezig, mengen_bezig_rect)  # draw "mengen bezig" text in the center of the screen
-        #progress bar for loading
-        if loading_progress < 100:
-            loading_bar_width = loading_progress*width/2//100
-            loading_bar_image = pygame.transform.scale(loading_bar_image, (int(loading_bar_width), 50))  # scale loading bar based on progress
-            loading_bar_image_rect = loading_bar_image.get_rect(midleft=(200, 3/4*height))  # update loading bar position
-            screen.blit(loading_bar_image, loading_bar_image_rect)  # draw loading bar
-        elif loading_progress >= 100:
-            menu = MENU_START
-            location = 0
-            dispense_started = False
-            loading_progress = 0
-        #resetting variables for next mixing session
-        weight_1component_progress = max_weight_1component//2
-        weight_2component_progress = max_weight_2component//2
-        weight_4component_progress = max_weight_4component//2
-        hardness_4component_progress = max_hardness_4component//2
+                ratio_high = hardness_to_ratio(hardness)
+                ab_h = cartridge_config["pair_ab"]["hardness"]
+                cd_h = cartridge_config["pair_cd"]["hardness"]
+                weight_high = weight * ratio_high
+                weight_low = weight - weight_high
+                if ab_h <= cd_h:
+                    multi_components[0] = weight_low / 2
+                    multi_components[1] = weight_low / 2
+                    multi_components[2] = weight_high / 2
+                    multi_components[3] = weight_high / 2
+                else:
+                    multi_components[0] = weight_high / 2
+                    multi_components[1] = weight_high / 2
+                    multi_components[2] = weight_low / 2
+                    multi_components[3] = weight_low / 2
+                print(weight, hardness, ratio_high, multi_components)
+
+            ab_requested_ml = (multi_components[0] + multi_components[1]) / dispense.density_of_liquid
+            cd_requested_ml = (multi_components[2] + multi_components[3]) / dispense.density_of_liquid
+            ab_avail = cartridge_config["pair_ab"]["volume"]
+            cd_avail = cartridge_config["pair_cd"]["volume"]
+            if ab_requested_ml > ab_avail or cd_requested_ml > cd_avail:
+                dispense_warning_message = "Insufficient cartridge volume — refill before dispensing"
+                print(dispense_warning_message)
+                print(f"  Pair AB needs {ab_requested_ml:.1f} ml, has {ab_avail} ml")
+                print(f"  Pair CD needs {cd_requested_ml:.1f} ml, has {cd_avail} ml")
+                menu = MENU_START
+                location = 0
+            else:
+                threading.Thread(target=dispense_and_track_volume, args=(multi_components,), daemon=True).start()
+                threading.Thread(target=doWork, daemon=True).start()
+                dispense_started = True
+        if dispense_started:
+            screen.fill((0,0,0))          # clear screen (black background)
+            screen.blit(mengen_bezig, mengen_bezig_rect)  # draw "mengen bezig" text in the center of the screen
+            #progress bar for loading
+            if loading_progress < 100:
+                loading_bar_width = loading_progress*width/2//100
+                loading_bar_image = pygame.transform.scale(loading_bar_image, (int(loading_bar_width), 50))  # scale loading bar based on progress
+                loading_bar_image_rect = loading_bar_image.get_rect(midleft=(200, 3/4*height))  # update loading bar position
+                screen.blit(loading_bar_image, loading_bar_image_rect)  # draw loading bar
+            elif loading_progress >= 100:
+                menu = MENU_START
+                location = 0
+                dispense_started = False
+                loading_progress = 0
+            #resetting variables for next mixing session
+            weight_1component_progress = max_weight_1component//2
+            weight_2component_progress = max_weight_2component//2
+            weight_4component_progress = max_weight_4component//2
+            hardness_4component_progress = (min_hardness_4component + max_hardness_4component) // 2
 
     if menu != previous_menu:
         if menu != MENU_MIX_CONFIRM:

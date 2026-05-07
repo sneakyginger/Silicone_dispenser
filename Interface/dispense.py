@@ -118,7 +118,7 @@ def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, ma
     active_ratios = [r for r, t in zip(ratios, amounts) if t > 0]
     if not active_ratios:
         print("No components requested — nothing to dispense.")
-        return
+        return measured_results
     max_ratio = max(active_ratios)
     for i, (measured, target) in enumerate(zip(measured_results, amounts)):
         if target == 0:
@@ -157,6 +157,8 @@ def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, ma
     if result is not None:
         i, j, ratios, max_diff_pct = result
         print(f"Biggest % difference: Component {i+1} ({ratios[i]*100:.2f}% of target) vs Component {j+1} ({ratios[j]*100:.2f}% of target): {max_diff_pct:.2f}%")
+
+    return measured_results
 
 
 def mix(rotations=10):
