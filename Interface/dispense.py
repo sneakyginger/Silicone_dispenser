@@ -9,8 +9,8 @@ RASPBERRY = False
 # GPIO pins [7, 11, 13, 15] -> [26, 23, 33, 10]
 #control_pins = [26, 23, 33, 10]  # BOARD pin numbers, one per motor
 control_pins = [7, 11, 13, 15]
-MF_pin = int = 16  # BOARD pin number for the MF input input (RPi 4)
-DIR_pin = int = 18  # BOARD pin number for the DIR input (RPi 4)
+MF_pin = 16  # BOARD pin number for the MF input input (RPi 4)
+DIR_pin = 18  # BOARD pin number for the DIR input (RPi 4)
 
 step_delay = 0.01  # in seconds, delay between each microstep pulse1
 
