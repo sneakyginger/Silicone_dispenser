@@ -13,7 +13,7 @@ import RPi.GPIO as GPIO
 GPIO.cleanup()
 
 #PINS
-Pin_left, Pin_right, Pin_click = 11, 15, 13
+Pin_left, Pin_right, Pin_click = 11, 13, 15
 
 
 # Menu constants
