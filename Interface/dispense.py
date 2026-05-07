@@ -13,6 +13,7 @@ MF_pin = 16  # BOARD pin number for the MF input input (RPi 4)
 DIR_pin = 18  # BOARD pin number for the DIR input (RPi 4)
 
 step_delay = 0.01  # in seconds, delay between each microstep pulse1
+step_delay = 1  # in seconds, delay between each microstep pulse1
 
 servo_pins = [12, 32, 35, 33]  # BOARD pin numbers for servos 1–4 (hardware PWM, RPi 5)
 
