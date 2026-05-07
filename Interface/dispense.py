@@ -9,6 +9,8 @@ RASPBERRY = False
 # GPIO pins [7, 11, 13, 15] -> [26, 23, 33, 10]
 #control_pins = [26, 23, 33, 10]  # BOARD pin numbers, one per motor
 control_pins = [7, 11, 13, 15]
+MF_pin = int = 16  # BOARD pin number for the MF input input (RPi 4)
+DIR_pin = int = 18  # BOARD pin number for the DIR input (RPi 4)
 
 step_delay = 0.01  # in seconds, delay between each microstep pulse1
 
@@ -188,6 +190,10 @@ def move_motor(motor_id, steps):
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(pin, GPIO.OUT)
         GPIO.output(pin, 0)
+        GPIO.setup(MF_pin, GPIO.OUT)
+        GPIO.output(MF_pin, 1)  # set MF high for microstepping
+        GPIO.setup(DIR_pin, GPIO.OUT)
+        GPIO.output(DIR_pin, 0)  # set direction (1 or 0 depending on desired direction)
 
         for i in range(microsteps):
             GPIO.output(pin, 1)
