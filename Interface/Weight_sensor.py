@@ -2,7 +2,7 @@ import time
 import sys
 import RPi.GPIO as GPIO
 from hx711 import HX711
-
+print("Starting...")
 def cleanAndExit():
     print("Cleaning...")
         
@@ -41,7 +41,7 @@ because if I used the 114000, I'd be getting milligrams instead of grams.
 
 referenceUnit = 1
 hx.set_reference_unit(referenceUnit)
-
+print("reset")
 hx.reset()
 
 hx.tare()
