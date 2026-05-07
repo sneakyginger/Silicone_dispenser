@@ -5,7 +5,7 @@ import time
 #import RPi.GPIO as GPIO
 
 
-RASPBERRY = False
+RASPBERRY = True
 # GPIO pins [7, 11, 13, 15] -> [26, 23, 33, 10]
 #control_pins = [26, 23, 33, 10]  # BOARD pin numbers, one per motor
 control_pins = [7, 11, 13, 15]
