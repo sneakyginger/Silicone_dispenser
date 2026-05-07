@@ -47,7 +47,7 @@ def setup_encoder(pin_left, pin_right, pin_click):
     # Detect ALL edges on both encoder pins — no bouncetime
     GPIO.add_event_detect(pin_left,  GPIO.BOTH, callback=encoder_callback)
     GPIO.add_event_detect(pin_right, GPIO.BOTH, callback=encoder_callback)
-    GPIO.add_event_detect(pin_click, GPIO.BOTH, callback=encoder_callback, bouncetime=200)
+    GPIO.add_event_detect(pin_click, GPIO.BOTH, callback=encoder_callback, bouncetime=20)
 
 def run_encoder(pin_left, pin_right, pin_click):
     setup_encoder(pin_left, pin_right, pin_click)
