@@ -10,6 +10,7 @@ def cleanAndExit():
     sys.exit()
 
 hx = HX711(29, 31)
+#hx = HX711(5, 6) #BCM
 
 '''
 I've found out that, for some reason, the order of the bytes is not always the same between versions of python,
@@ -38,7 +39,7 @@ In my case, the longValueWithOffset was around 114000 so my reference unit is 11
 because if I used the 114000, I'd be getting milligrams instead of grams.
 '''
 
-referenceUnit = 114
+referenceUnit = 1
 hx.set_reference_unit(referenceUnit)
 
 hx.reset()
