@@ -271,11 +271,6 @@ def set_servo_positions(positions):
     assert all(p in (0, 1) for p in positions), "Each position must be 0 (dispense) or 1 (mix)."
 
 
-    # print servo positions for debugging, print each as either "dispense" or "mix" for clarity
-    for i, pos in enumerate(positions):
-        label = "dispense" if pos == 0 else "mix"
-        print(f"Servo {i+1} on pin {servo_pins[i]}: {label} ({SERVO_ANGLE_DISPENSE if pos == 0 else SERVO_ANGLE_MIX}°)")
-
     angles = [SERVO_ANGLE_DISPENSE if p == 0 else SERVO_ANGLE_MIX for p in positions]
 
     for i, (pin, angle) in enumerate(zip(servo_pins, angles)):
