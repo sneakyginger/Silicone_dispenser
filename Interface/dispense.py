@@ -222,7 +222,6 @@ def move_motor(motor_id, steps):
             GPIO.output(pin, 0)
             time.sleep(step_delay / 2)
 
-        GPIO.cleanup(pin)
     else:
         comps_dispensed[motor_id - 1] += steps * volume_per_step * density_of_liquid  # in gram
 
@@ -295,7 +294,6 @@ def set_servo_positions(positions):
             pwm.ChangeDutyCycle(0)  # stop PWM signal to prevent jitter
             pwm.stop()
 
-        GPIO.cleanup(servo_pins)
 
 
 if __name__ == "__main__":
