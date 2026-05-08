@@ -23,7 +23,7 @@ The first parameter is the order in which the bytes are used to build the "long"
 the order of the bits inside each byte. According to the HX711 Datasheet, the second parameter is MSB so you
 shouldn't need to modify it.
 '''
-hx.set_reading_format("LSB", "MSB")
+hx.set_reading_format("LSB", "LSB")
 
 '''
 # HOW TO CALCULATE THE REFFERENCE UNIT
