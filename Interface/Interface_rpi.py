@@ -39,24 +39,52 @@ else:
     dispense = _DispenseStub()
     Encoder = None
 
-# Persistent cartridge state — which silicone hardness sits in each bucket pair
-# and how much volume remains. Buckets 1+2 share pair_ab; buckets 3+4 share pair_cd.
+# Persistent cartridge state — hardness per pair (A+B share pair_ab, C+D share
+# pair_cd) and volume tracked individually for each of the four buckets.
 CARTRIDGE_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cartridge_config.json")
 DEFAULT_CARTRIDGE_CONFIG = {
-    "pair_ab": {"hardness": 5,  "volume": 100},
-    "pair_cd": {"hardness": 50, "volume": 100},
+    "pair_ab": {"hardness": 5,  "volume_a": 100, "volume_b": 100},
+    "pair_cd": {"hardness": 50, "volume_c": 100, "volume_d": 100},
 }
+
+# Bucket index 0..3 -> (pair key, volume key in that pair)
+BUCKET_KEYS = [
+    ("pair_ab", "volume_a"),
+    ("pair_ab", "volume_b"),
+    ("pair_cd", "volume_c"),
+    ("pair_cd", "volume_d"),
+]
 
 def load_cartridge_config():
     try:
         with open(CARTRIDGE_CONFIG_PATH) as f:
-            return json.load(f)
+            cfg = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return {k: dict(v) for k, v in DEFAULT_CARTRIDGE_CONFIG.items()}
+    # Migrate legacy schema where each pair stored a single shared "volume".
+    for pair_key, vol_keys in (("pair_ab", ("volume_a", "volume_b")),
+                               ("pair_cd", ("volume_c", "volume_d"))):
+        pair = cfg.setdefault(pair_key, dict(DEFAULT_CARTRIDGE_CONFIG[pair_key]))
+        if "volume" in pair:
+            split = pair.pop("volume") / 2
+            for vk in vol_keys:
+                pair.setdefault(vk, split)
+        for vk in vol_keys:
+            pair.setdefault(vk, DEFAULT_CARTRIDGE_CONFIG[pair_key][vk])
+        pair.setdefault("hardness", DEFAULT_CARTRIDGE_CONFIG[pair_key]["hardness"])
+    return cfg
 
 def save_cartridge_config(config):
     with open(CARTRIDGE_CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=2)
+
+def bucket_volume(idx):
+    pair, vol = BUCKET_KEYS[idx]
+    return cartridge_config[pair][vol]
+
+def set_bucket_volume(idx, value):
+    pair, vol = BUCKET_KEYS[idx]
+    cartridge_config[pair][vol] = value
 
 cartridge_config = load_cartridge_config()
 
@@ -78,14 +106,13 @@ HARDNESS_CURVE = [
 ]
 
 def dispense_and_track_volume(amounts):
-    """Run multi_dispense and decrement cartridge volumes by the actual measured grams."""
+    """Run multi_dispense and decrement each bucket's volume by its measured grams."""
     measured = dispense.multi_dispense(amounts)
     if measured is None:
         return
-    ab_used_ml = ((measured[0] or 0) + (measured[1] or 0)) / dispense.density_of_liquid
-    cd_used_ml = ((measured[2] or 0) + (measured[3] or 0)) / dispense.density_of_liquid
-    cartridge_config["pair_ab"]["volume"] = max(0.0, round(cartridge_config["pair_ab"]["volume"] - ab_used_ml, 2))
-    cartridge_config["pair_cd"]["volume"] = max(0.0, round(cartridge_config["pair_cd"]["volume"] - cd_used_ml, 2))
+    for i in range(4):
+        used_ml = (measured[i] or 0) / dispense.density_of_liquid
+        set_bucket_volume(i, max(0.0, round(bucket_volume(i) - used_ml, 2)))
     save_cartridge_config(cartridge_config)
 
 
@@ -118,7 +145,6 @@ MENU_MIXING_DURATION = 10
 MENU_MIXING_START_TIME = 11
 MENU_1COMPONENT_SELECT = 12
 MENU_1COMPONENT_WEIGHT = 13
-MENU_REPLACE_HARDNESS = 14
 MENU_DISPENSING = -1
 MENU_2COMPONENT_SELECTION = 15
 
@@ -128,13 +154,11 @@ max_weight_4component = 100
 max_volume_replacement = 500
 min_hardness_4component = int(HARDNESS_CURVE[0][0])
 max_hardness_4component = int(HARDNESS_CURVE[-1][0])
-min_hardness_replacement = int(HARDNESS_CURVE[0][0])
-max_hardness_replacement = int(HARDNESS_CURVE[-1][0])
 components_amount = -1
 component = -1
 weight = -1
 hardness = -1
-pair_being_replaced = -1  # 0 = pair_ab (buckets 1+2), 1 = pair_cd (buckets 3+4)
+bucket_being_replaced = -1  # 0=A, 1=B, 2=C, 3=D
 
 
 def load_image(path, size, location):
@@ -303,7 +327,7 @@ def get_click_target(mouse_pos, menu, sprites, loci):
     # Weight/hardness slider menus have only a return button — the bar itself
     # is adjusted by the rotary encoder.
     if menu in (MENU_2COMPONENT_WEIGHT, MENU_4COMPONENT_WEIGHT, MENU_4COMPONENT_HARDNESS,
-                MENU_REPLACE_WEIGHT, MENU_REPLACE_HARDNESS, MENU_1COMPONENT_WEIGHT):
+                MENU_REPLACE_WEIGHT, MENU_1COMPONENT_WEIGHT):
         if return_rect.collidepoint(mouse_pos):
             return sprites
         return None
@@ -337,7 +361,7 @@ menu5_text, menu5_text_rect = create_text("Settings", (width // 2, 25), (0,0,0))
 #Text menu MENU_MIXING_SETTINGS
 menu6_text, menu6_text_rect = create_text("Mixing Settings", (width // 2, 25), (0,0,0))
 #Text menu MENU_REPLACE_CARTRIDGE
-menu7_text, menu7_text_rect = create_text("Replace cartridge", (width // 2, 25), (0,0,0))
+menu7_text, menu7_text_rect = create_text("Refill bucket", (width // 2, 25), (0,0,0))
 #Text menu MENU_REPLACE_WEIGHT
 menu8_text, menu8_text_rect = create_text("Select hardness of new cartridge", (width // 2, 25), (0,0,0))
 #Text menu MENU_MIXING_FREQUENCY
@@ -364,7 +388,7 @@ settings_text, settings_text_rect = create_text("Settings", (loci[3][0], loci[3]
 loci = locus(3)
 #Setting options text
 mixing_settings_text, mixing_settings_text_rect = create_text("Mixing settings", (loci[0][0], loci[0][1]+50), (0,0,0), "small")
-replace_cartridge_text, replace_cartridge_text_rect = create_text("Replace cartridge", (loci[1][0], loci[1][1]+50), (0,0,0), "small")
+replace_cartridge_text, replace_cartridge_text_rect = create_text("Refill bucket", (loci[1][0], loci[1][1]+50), (0,0,0), "small")
 one_component_dispensing_text, one_component_dispensing_text_rect = create_text("One component", (loci[2][0], loci[2][1]+50), (0,0,0), "small")
 one_component_dispensing_line2_text, one_component_dispensing_line2_text_rect = create_text("dispensing", (loci[2][0], loci[2][1]+75), (0,0,0), "small")
 
@@ -377,7 +401,7 @@ mixing_start_time_line2_text, mixing_start_time_line2_text_rect = create_text("n
 
 
 #cartridge replacement options text
-select_cartridge_text, select_cartridge_text_rect = create_text("Select cartridge that is replaced", (width/2, height/2+50), (0,0,0), "small")
+select_cartridge_text, select_cartridge_text_rect = create_text("Select bucket to refill", (width/2, height/2+50), (0,0,0), "small")
 
 loci = locus(4)
 #load in selection sprite
@@ -420,14 +444,10 @@ weight_bar_width = 8
 weight_bar_image, weight_bar_image_rect = load_image(r'./Sprites/black.png',(weight_bar_width, 50) ,(200, height//2))
 
 hardness_4component_progress = (min_hardness_4component + max_hardness_4component) // 2
-hardness_replacement_progress = (min_hardness_replacement + max_hardness_replacement) // 2
 hardness_4component_span = max_hardness_4component - min_hardness_4component
-hardness_replacement_span = max_hardness_replacement - min_hardness_replacement
 scaling_hardness_4 = width/2//hardness_4component_span
-scaling_hardness_re = width/2//hardness_replacement_span
 
 x_bar_har_4 = width/2-hardness_4component_span*scaling_hardness_4/2
-x_bar_har_re = width/2-hardness_replacement_span*scaling_hardness_re/2
 hardness_bar_width = 8
 hardness_bar_image, hardness_bar_image_rect = load_image(r'./Sprites/black.png',(hardness_bar_width, 50) ,(200, height//2))
 
@@ -468,17 +488,33 @@ while running:
         encoder = None
 
     mouse_click_pos = None
+    right_click = False
+    wheel_direction = None
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            mouse_click_pos = event.pos
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                mouse_click_pos = event.pos
+            elif event.button == 3:
+                right_click = True
+        elif event.type == pygame.MOUSEWHEEL:
+            if event.y > 0:
+                wheel_direction = "Right"
+            elif event.y < 0:
+                wheel_direction = "Left"
 
     if mouse_click_pos is not None and encoder not in ("Left", "Right", "Click"):
         target = get_click_target(mouse_click_pos, menu, sprites, loci)
         if target is not None:
             location = target
             encoder = "Click"
+
+    if right_click and encoder not in ("Left", "Right", "Click"):
+        encoder = "Click"
+
+    if wheel_direction is not None and encoder not in ("Left", "Right", "Click"):
+        encoder = wheel_direction
 
     if encoder == "Right": #changing location
         location += 1
@@ -514,13 +550,6 @@ while running:
                 volume_replacement_progress += 1
             else:
                 volume_replacement_progress = max_volume_replacement
-                location = sprites
-        elif menu == MENU_REPLACE_HARDNESS:
-            if hardness_replacement_progress < max_hardness_replacement:
-                location  = 0
-                hardness_replacement_progress += 1
-            else:
-                hardness_replacement_progress = max_hardness_replacement
                 location = sprites
         elif menu == MENU_MIXING_FREQUENCY:
             if start_time_selection:
@@ -572,13 +601,6 @@ while running:
                 volume_replacement_progress -= 1
             else:
                 volume_replacement_progress = 0
-                location = sprites
-        elif menu == MENU_REPLACE_HARDNESS:
-            if hardness_replacement_progress > min_hardness_replacement:
-                location  = 0
-                hardness_replacement_progress -= 1
-            else:
-                hardness_replacement_progress = min_hardness_replacement
                 location = sprites
         elif menu == MENU_MIXING_FREQUENCY:
             location = available_locations(location, "left", 4)
@@ -684,24 +706,15 @@ while running:
             if location == sprites:
                 menu = MENU_SETTINGS
             else:
-                pair_being_replaced = location  # 0 = pair_ab, 1 = pair_cd
+                bucket_being_replaced = location  # 0=A, 1=B, 2=C, 3=D
+                volume_replacement_progress = int(bucket_volume(location))
                 menu = MENU_REPLACE_WEIGHT
 
         elif menu == MENU_REPLACE_WEIGHT:
             if location == sprites:
                 menu = MENU_REPLACE_CARTRIDGE
             else:
-                menu = MENU_REPLACE_HARDNESS
-
-        elif menu == MENU_REPLACE_HARDNESS:
-            if location == sprites:
-                menu = MENU_REPLACE_WEIGHT
-            else:
-                pair_key = "pair_ab" if pair_being_replaced == 0 else "pair_cd"
-                cartridge_config[pair_key] = {
-                    "hardness": hardness_replacement_progress,
-                    "volume": volume_replacement_progress,
-                }
+                set_bucket_volume(bucket_being_replaced, volume_replacement_progress)
                 save_cartridge_config(cartridge_config)
                 menu = MENU_START
 
@@ -794,10 +807,10 @@ while running:
         if dispense_warning_message:
             warn_text, warn_rect = create_text(dispense_warning_message, (width // 2, 60), (200, 0, 0), "small")
             screen.blit(warn_text, warn_rect)
-        low_pairs = [name for name, key in (("A+B", "pair_ab"), ("C+D", "pair_cd"))
-                     if cartridge_config[key]["volume"] < LOW_VOLUME_THRESHOLD_ML]
-        if low_pairs:
-            low_text_str = "Low cartridge volume: " + ", ".join(low_pairs)
+        low_buckets = [label for i, label in enumerate("ABCD")
+                       if bucket_volume(i) < LOW_VOLUME_THRESHOLD_ML]
+        if low_buckets:
+            low_text_str = "Low bucket volume: " + ", ".join(low_buckets)
             low_text, low_rect = create_text(low_text_str, (width // 2, height - 30), (200, 100, 0), "small")
             screen.blit(low_text, low_rect)
 
@@ -912,15 +925,17 @@ while running:
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
     
 
-    if menu == MENU_REPLACE_CARTRIDGE: #draw cartridge replacement menu (pick which pair)
-        sprites = 2
+    if menu == MENU_REPLACE_CARTRIDGE: #draw cartridge replacement menu (pick which bucket)
+        sprites = 4
         screen.blit(menu7_text, menu7_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw cursor
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
-        screen.blit(select_cartridge_text, select_cartridge_text_rect)  # draw select cartridge text
+        screen.blit(select_cartridge_text, select_cartridge_text_rect)  # draw select bucket text
 
-        screen.blit(button_bottle_ab_image, button_bottle_ab_image_rect)  # draw pair A+B
-        screen.blit(button_bottle_cd_image, button_bottle_cd_image_rect)  # draw pair C+D
+        screen.blit(button_bottle_a_image, button_bottle_a_image_rect)  # bucket A
+        screen.blit(button_bottle_b_image, button_bottle_b_image_rect)  # bucket B
+        screen.blit(button_bottle_c_image, button_bottle_c_image_rect)  # bucket C
+        screen.blit(button_bottle_d_image, button_bottle_d_image_rect)  # bucket D
 
     if menu == MENU_REPLACE_WEIGHT: #Select replacement volume
         sprites = 1
@@ -933,25 +948,9 @@ while running:
         volume_bar_image_use = pygame.transform.scale(weight_bar_image, (max(int(volume_bar_width), 1), 50))  # scale loading bar based on selected volume
         volume_bar_image_use_rect = volume_bar_image_use.get_rect(midleft=(x_bar_volume_re, 3/4*height))  # update loading bar position
         if 0 <= volume_replacement_progress <= max_volume_replacement:
-            cartridge_volume_text, cartridge_volume_text_rect = create_text(f"Total volume of new cartridge: {volume_replacement_progress} ml", (width // 2, height // 2), (0,0,0))
+            cartridge_volume_text, cartridge_volume_text_rect = create_text(f"New total bucket volume: {volume_replacement_progress} ml", (width // 2, height // 2), (0,0,0))
             screen.blit(cartridge_volume_text, cartridge_volume_text_rect)  # draw volume text in the center
             screen.blit(volume_bar_image_use, volume_bar_image_use_rect)  # draw loading bar
-        else:
-            screen.blit(return_,return_rect)
-
-    if menu == MENU_REPLACE_HARDNESS: #Select replacement hardness
-        sprites = 1
-        screen.blit(menu7_text, menu7_text_rect)  # draw menu text in the center of the screen
-        if location == sprites:
-            screen.blit(selection_image, selection_image_rect)  # draw cursor
-        screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
-        hardness_bar_width = (hardness_replacement_progress - min_hardness_replacement)*scaling_hardness_re
-        hardness_bar_image_use = pygame.transform.scale(hardness_bar_image, (max(int(hardness_bar_width), 1), 50))  # scale loading bar based on selected hardness
-        hardness_bar_image_use_rect = hardness_bar_image_use.get_rect(midleft=(x_bar_har_re, 3/4*height))  # update loading bar position
-        if min_hardness_replacement <= hardness_replacement_progress <= max_hardness_replacement:
-            screen.blit(hardness_bar_image_use, hardness_bar_image_use_rect)  # draw loading bar
-            cartridge_hardness_text, cartridge_hardness_text_rect = create_text(f"Hardness of new cartridge: {hardness_replacement_progress} shore", (width // 2, height // 2), (0,0,0))
-            screen.blit(cartridge_hardness_text, cartridge_hardness_text_rect)  # draw hardness text in the center
         else:
             screen.blit(return_,return_rect)
 
@@ -1012,15 +1011,13 @@ while running:
                     multi_components[3] = weight_low / 2
                 print(weight, hardness, ratio_high, multi_components)
 
-            ab_requested_ml = (multi_components[0] + multi_components[1]) / dispense.density_of_liquid
-            cd_requested_ml = (multi_components[2] + multi_components[3]) / dispense.density_of_liquid
-            ab_avail = cartridge_config["pair_ab"]["volume"]
-            cd_avail = cartridge_config["pair_cd"]["volume"]
-            if ab_requested_ml > ab_avail or cd_requested_ml > cd_avail:
-                dispense_warning_message = "Insufficient cartridge volume — refill before dispensing"
+            requested_ml = [multi_components[i] / dispense.density_of_liquid for i in range(4)]
+            short = [label for i, label in enumerate("ABCD") if requested_ml[i] > bucket_volume(i)]
+            if short:
+                dispense_warning_message = "Insufficient bucket volume (" + ", ".join(short) + ") — refill before dispensing"
                 print(dispense_warning_message)
-                print(f"  Pair AB needs {ab_requested_ml:.1f} ml, has {ab_avail} ml")
-                print(f"  Pair CD needs {cd_requested_ml:.1f} ml, has {cd_avail} ml")
+                for i, label in enumerate("ABCD"):
+                    print(f"  Bucket {label} needs {requested_ml[i]:.1f} ml, has {bucket_volume(i)} ml")
                 menu = MENU_START
                 location = 0
             else:
