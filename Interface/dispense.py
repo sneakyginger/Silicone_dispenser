@@ -192,12 +192,20 @@ def dispense(component_id, weight):
     print(f"Dispensing component {component_id}, amount: {amount:.4f} ml")
 
     positions = [0 if i == component_id - 1 else 1 for i in range(4)]  # only this component's servo to dispense
+    # print servo positions for debugging, print each as either "dispense" or "mix" for clarity
+    for i, pos in enumerate(positions):
+        label = "dispense" if pos == 0 else "mix"
+        print(f"Servo {i+1} on pin {servo_pins[i]}: {label} ({SERVO_ANGLE_DISPENSE if pos == 0 else SERVO_ANGLE_MIX}°)")
     set_servo_positions(positions)
 
     amount_with_noise = amount * (1 + random.uniform(-dispensing_noise_factor, dispensing_noise_factor))
     move_motor(component_id, amount_with_noise / volume_per_step)
 
     set_servo_positions([1, 1, 1, 1])  # return all servos to mix position after dispensing
+    # print servo positions for debugging, print each as either "dispense" or "mix" for clarity
+    for i, pos in enumerate(positions):
+        label = "dispense" if pos == 0 else "mix"
+        print(f"Servo {i+1} on pin {servo_pins[i]}: {label} ({SERVO_ANGLE_DISPENSE if pos == 0 else SERVO_ANGLE_MIX}°)")
 
 
 def move_motor(motor_id, steps):
