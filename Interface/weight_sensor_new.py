@@ -2,10 +2,11 @@ import RPi.GPIO as gpio
 import time
 
 
-DT =27
-SCK=17
+DT =29
+SCK=31
 
 def readCount():
+  gpio.setmode(gpio.BOARD)
   i=0
   Count=0
   gpio.setup(DT, gpio.OUT)
