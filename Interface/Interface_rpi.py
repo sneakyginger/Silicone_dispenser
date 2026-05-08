@@ -1021,7 +1021,7 @@ while running:
                 menu = MENU_START
                 location = 0
             else:
-                threading.Thread(target=dispense_and_track_volume, args=(multi_components,), daemon=True).start()
+                dispense_and_track_volume(multi_components)
                 threading.Thread(target=doWork, daemon=True).start()
                 dispense_started = True
         if dispense_started:
