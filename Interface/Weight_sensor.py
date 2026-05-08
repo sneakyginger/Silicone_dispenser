@@ -62,7 +62,7 @@ while True:
         # print binary_string + " " + np_arr8_string
         
         # Prints the weight. Comment if you're debbuging the MSB and LSB issue.
-        val = hx.get_weight(1)
+        val = hx.get_weight(5)
         print(val)
 
         # To get weight from both channels (if you have load cells hooked up 
@@ -71,9 +71,9 @@ while True:
         #val_B = hx.get_weight_B(5)
         #print "A: %s  B: %s" % ( val_A, val_B )
 
-        hx.power_down()
-        hx.power_up()
-        time.sleep(0.1)
+        #hx.power_down()
+        #hx.power_up()
+        #time.sleep(0.1)
 
     except (KeyboardInterrupt, SystemExit):
         cleanAndExit()
