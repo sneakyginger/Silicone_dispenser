@@ -23,7 +23,7 @@ The first parameter is the order in which the bytes are used to build the "long"
 the order of the bits inside each byte. According to the HX711 Datasheet, the second parameter is MSB so you
 shouldn't need to modify it.
 '''
-hx.set_reading_format("LSB", "LSB")
+hx.set_reading_format("MSB", "LSB")
 
 '''
 # HOW TO CALCULATE THE REFFERENCE UNIT
@@ -62,7 +62,7 @@ while True:
         # print binary_string + " " + np_arr8_string
         
         # Prints the weight. Comment if you're debbuging the MSB and LSB issue.
-        val = hx.get_weight(11)
+        val = hx.get_weight(5)
         print(val)
 
         # To get weight from both channels (if you have load cells hooked up 
