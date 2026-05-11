@@ -51,9 +51,10 @@ print("Tare done! Add weight now...")
 # to use both channels, you'll need to tare them both
 #hx.tare_A()
 #hx.tare_B()
-
+loop_count = 0
 while True:
     try:
+        loop_count += 1
         # These three lines are usefull to debug wether to use MSB or LSB in the reading formats
         # for the first parameter of "hx.set_reading_format("LSB", "MSB")".
         # Comment the two lines "val = hx.get_weight(5)" and "print val" and uncomment these three lines to see what it prints.
@@ -63,7 +64,7 @@ while True:
         # print binary_string + " " + np_arr8_string
         
         # Prints the weight. Comment if you're debbuging the MSB and LSB issue.
-        val = hx.get_weight(25)
+        val = hx.get_weight(1)
         print(val)
 
         # To get weight from both channels (if you have load cells hooked up 
@@ -75,6 +76,9 @@ while True:
         hx.power_down()
         hx.power_up()
         time.sleep(0.1)
+        if loop_count == 100:
+            loop_count = 0
+            hx.tare(15)
 
     except (KeyboardInterrupt, SystemExit):
         cleanAndExit()
