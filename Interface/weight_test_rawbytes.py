@@ -30,4 +30,5 @@ def __main__():
     import time
     PD_SCK, DOUT = 29, 31
     GPIO.setmode(GPIO.BOARD)
-    readNextByte('MSB', PD_SCK, DOUT)
+    while True:
+        print(readNextByte('MSB', PD_SCK, DOUT))
