@@ -76,7 +76,7 @@ while True:
         hx.power_down()
         hx.power_up()
         time.sleep(0.1)
-        if loop_count == 100:
+        if loop_count == 100 && val <1:
             loop_count = 0
             hx.tare(15)
 
