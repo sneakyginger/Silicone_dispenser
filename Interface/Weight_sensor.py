@@ -39,7 +39,7 @@ In my case, the longValueWithOffset was around 114000 so my reference unit is 11
 because if I used the 114000, I'd be getting milligrams instead of grams.
 '''
 referenceUnit = 1
-#referenceUnit = 243440/186.7
+referenceUnit = 2439279/165
 hx.set_reference_unit(referenceUnit)
 print("reset")
 hx.reset()
@@ -72,9 +72,9 @@ while True:
         #val_B = hx.get_weight_B(5)
         #print "A: %s  B: %s" % ( val_A, val_B )
 
-        #hx.power_down()
-        #hx.power_up()
-        #time.sleep(0.1)
+        hx.power_down()
+        hx.power_up()
+        time.sleep(0.1)
 
     except (KeyboardInterrupt, SystemExit):
         cleanAndExit()
