@@ -44,7 +44,7 @@ hx.set_reference_unit(referenceUnit)
 print("reset")
 hx.reset()
 
-hx.tare()
+hx.tare(100)
 
 print("Tare done! Add weight now...")
 
