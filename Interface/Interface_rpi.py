@@ -6,8 +6,7 @@ from pygame.locals import *
 import pygame.gfxdraw
 import time
 import threading
-import json
-import os
+import cartridge
 #import Weight_sensor
 
 is_rpi = False
@@ -39,95 +38,12 @@ else:
     dispense = _DispenseStub()
     Encoder = None
 
-# Persistent cartridge state — hardness per pair (A+B share pair_ab, C+D share
-# pair_cd) and volume tracked individually for each of the four buckets.
-CARTRIDGE_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cartridge_config.json")
-DEFAULT_CARTRIDGE_CONFIG = {
-    "pair_ab": {"hardness": 5,  "volume_a": 100, "volume_b": 100},
-    "pair_cd": {"hardness": 50, "volume_c": 100, "volume_d": 100},
-}
-
-# Bucket index 0..3 -> (pair key, volume key in that pair)
-BUCKET_KEYS = [
-    ("pair_ab", "volume_a"),
-    ("pair_ab", "volume_b"),
-    ("pair_cd", "volume_c"),
-    ("pair_cd", "volume_d"),
-]
-
-def load_cartridge_config():
-    try:
-        with open(CARTRIDGE_CONFIG_PATH) as f:
-            cfg = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {k: dict(v) for k, v in DEFAULT_CARTRIDGE_CONFIG.items()}
-    # Migrate legacy schema where each pair stored a single shared "volume".
-    for pair_key, vol_keys in (("pair_ab", ("volume_a", "volume_b")),
-                               ("pair_cd", ("volume_c", "volume_d"))):
-        pair = cfg.setdefault(pair_key, dict(DEFAULT_CARTRIDGE_CONFIG[pair_key]))
-        if "volume" in pair:
-            split = pair.pop("volume") / 2
-            for vk in vol_keys:
-                pair.setdefault(vk, split)
-        for vk in vol_keys:
-            pair.setdefault(vk, DEFAULT_CARTRIDGE_CONFIG[pair_key][vk])
-        pair.setdefault("hardness", DEFAULT_CARTRIDGE_CONFIG[pair_key]["hardness"])
-    return cfg
-
-def save_cartridge_config(config):
-    with open(CARTRIDGE_CONFIG_PATH, "w") as f:
-        json.dump(config, f, indent=2)
-
-def bucket_volume(idx):
-    pair, vol = BUCKET_KEYS[idx]
-    return cartridge_config[pair][vol]
-
-def set_bucket_volume(idx, value):
-    pair, vol = BUCKET_KEYS[idx]
-    cartridge_config[pair][vol] = value
-
-cartridge_config = load_cartridge_config()
-
-# Calibration curve for the silicone additive mix:
-# (target shore hardness, fraction of high-hardness pair in the mix).
-# Source: "Shore waarde van mengsel Siliconen Additie Kleurloos" chart.
-HARDNESS_CURVE = [
-    (5.0,  0.00),
-    (5.5,  0.10),
-    (14.0, 0.20),
-    (18.5, 0.30),
-    (23.5, 0.40),
-    (27.5, 0.50),
-    (32.0, 0.60),
-    (36.5, 0.70),
-    (41.0, 0.80),
-    (45.5, 0.90),
-    (50.0, 1.00),
-]
-
 def dispense_and_track_volume(amounts):
     """Run multi_dispense and decrement each bucket's volume by its measured grams."""
     measured = dispense.multi_dispense(amounts)
     if measured is None:
         return
-    for i in range(4):
-        used_ml = (measured[i] or 0) / dispense.density_of_liquid
-        set_bucket_volume(i, max(0.0, round(bucket_volume(i) - used_ml, 2)))
-    save_cartridge_config(cartridge_config)
-
-
-def hardness_to_ratio(target_shore):
-    """Piecewise-linear interpolation through the chart data points."""
-    if target_shore <= HARDNESS_CURVE[0][0]:
-        return HARDNESS_CURVE[0][1]
-    if target_shore >= HARDNESS_CURVE[-1][0]:
-        return HARDNESS_CURVE[-1][1]
-    for i in range(len(HARDNESS_CURVE) - 1):
-        x0, r0 = HARDNESS_CURVE[i]
-        x1, r1 = HARDNESS_CURVE[i + 1]
-        if x0 <= target_shore <= x1:
-            return r0 + (r1 - r0) * (target_shore - x0) / (x1 - x0)
-    return 1.0
+    cartridge.decrement_bucket_volumes(measured, dispense.density_of_liquid)
 
 
 # Menu constants
@@ -152,8 +68,7 @@ max_weight_1component = 100
 max_weight_2component = 100
 max_weight_4component = 100
 max_volume_replacement = 500
-min_hardness_4component = int(HARDNESS_CURVE[0][0])
-max_hardness_4component = int(HARDNESS_CURVE[-1][0])
+min_hardness_4component, max_hardness_4component = cartridge.hardness_limits()
 components_amount = -1
 component = -1
 weight = -1
@@ -707,15 +622,15 @@ while running:
                 menu = MENU_SETTINGS
             else:
                 bucket_being_replaced = location  # 0=A, 1=B, 2=C, 3=D
-                volume_replacement_progress = int(bucket_volume(location))
+                volume_replacement_progress = int(cartridge.bucket_volume(location))
                 menu = MENU_REPLACE_WEIGHT
 
         elif menu == MENU_REPLACE_WEIGHT:
             if location == sprites:
                 menu = MENU_REPLACE_CARTRIDGE
             else:
-                set_bucket_volume(bucket_being_replaced, volume_replacement_progress)
-                save_cartridge_config(cartridge_config)
+                cartridge.set_bucket_volume(bucket_being_replaced, volume_replacement_progress)
+                cartridge.save_cartridge_config(cartridge.cartridge_config)
                 menu = MENU_START
 
 
@@ -808,7 +723,7 @@ while running:
             warn_text, warn_rect = create_text(dispense_warning_message, (width // 2, 60), (200, 0, 0), "small")
             screen.blit(warn_text, warn_rect)
         low_buckets = [label for i, label in enumerate("ABCD")
-                       if bucket_volume(i) < LOW_VOLUME_THRESHOLD_ML]
+                       if cartridge.bucket_volume(i) < LOW_VOLUME_THRESHOLD_ML]
         if low_buckets:
             low_text_str = "Low bucket volume: " + ", ".join(low_buckets)
             low_text, low_rect = create_text(low_text_str, (width // 2, height - 30), (200, 100, 0), "small")
@@ -994,30 +909,16 @@ while running:
                 multi_components[component*2] = weight/2
                 multi_components[component*2+1] = weight/2
             elif(components_amount == 4):
-                ratio_high = hardness_to_ratio(hardness)
-                ab_h = cartridge_config["pair_ab"]["hardness"]
-                cd_h = cartridge_config["pair_cd"]["hardness"]
-                weight_high = weight * ratio_high
-                weight_low = weight - weight_high
-                if ab_h <= cd_h:
-                    multi_components[0] = weight_low / 2
-                    multi_components[1] = weight_low / 2
-                    multi_components[2] = weight_high / 2
-                    multi_components[3] = weight_high / 2
-                else:
-                    multi_components[0] = weight_high / 2
-                    multi_components[1] = weight_high / 2
-                    multi_components[2] = weight_low / 2
-                    multi_components[3] = weight_low / 2
-                print(weight, hardness, ratio_high, multi_components)
+                multi_components = cartridge.component_amounts_for_hardness(weight, hardness)
+                print(weight, hardness, cartridge.hardness_to_ratio(hardness), multi_components)
 
             requested_ml = [multi_components[i] / dispense.density_of_liquid for i in range(4)]
-            short = [label for i, label in enumerate("ABCD") if requested_ml[i] > bucket_volume(i)]
+            short = [label for i, label in enumerate("ABCD") if requested_ml[i] > cartridge.bucket_volume(i)]
             if short:
                 dispense_warning_message = "Insufficient bucket volume (" + ", ".join(short) + ") — refill before dispensing"
                 print(dispense_warning_message)
                 for i, label in enumerate("ABCD"):
-                    print(f"  Bucket {label} needs {requested_ml[i]:.1f} ml, has {bucket_volume(i)} ml")
+                    print(f"  Bucket {label} needs {requested_ml[i]:.1f} ml, has {cartridge.bucket_volume(i)} ml")
                 menu = MENU_START
                 location = 0
             else:
