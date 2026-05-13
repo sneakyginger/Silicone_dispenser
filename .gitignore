@@ -13,6 +13,3 @@ dispenser_venv/
 # Python cache files
 __pycache__/
 *.py[cod]
-
-# Local cartridge configuration
-Interface/cartridge_config.json

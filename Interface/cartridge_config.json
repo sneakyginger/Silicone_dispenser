@@ -1,0 +1,28 @@
+{
+  "buckets": {
+    "bucket_1": {
+      "component": "A",
+      "hardness_group": "small",
+      "hardness": 5,
+      "volume": 8.49
+    },
+    "bucket_2": {
+      "component": "B",
+      "hardness_group": "small",
+      "hardness": 5,
+      "volume": 67.59
+    },
+    "bucket_3": {
+      "component": "A",
+      "hardness_group": "big",
+      "hardness": 50,
+      "volume": 269.22
+    },
+    "bucket_4": {
+      "component": "B",
+      "hardness_group": "big",
+      "hardness": 50,
+      "volume": 834.41
+    }
+  }
+}
