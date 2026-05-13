@@ -14,14 +14,14 @@ WARNING = (200, 0, 0)
 CAUTION = (200, 100, 0)
 
 # Font names
-DEFAULT_FONT = None
 SANS_SERIF_FONTS = "sans,arial,liberationsans,helvetica,dejavusans"
 SERIF_FONTS = "liberationserif,dejavuserif,timesnewroman,times,serif"
+DEFAULT_FONT = SERIF_FONTS
 CLOCK_FONTS = "sfprodisplay,sfpro,helveticaneue,helvetica,arial,notosans,liberationsans,dejavusans"
 
 # Interface font sizes
-FONT_SIZE_SMALL = 36
-FONT_SIZE_NORMAL = 48
+FONT_SIZE_SMALL = 28
+FONT_SIZE_NORMAL = 28
 FONT_SIZE_BIG = 72
 
 # Top bar font sizes
