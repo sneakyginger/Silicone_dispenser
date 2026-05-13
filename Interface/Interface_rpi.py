@@ -212,6 +212,14 @@ def available_locations(current_location, direction, options):
             current_location = options
     return current_location
 
+def menu_has_return_button(menu):
+    return menu not in (MENU_START, MENU_MIX_CONFIRM, MENU_DISPENSING)
+
+def available_menu_locations(menu, sprites):
+    if menu_has_return_button(menu):
+        return sprites
+    return sprites - 1
+
 pygame.init()
 #screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 screen = pygame.display.set_mode((800, 480))
@@ -261,7 +269,7 @@ def get_click_target(mouse_pos, menu, sprites, loci):
         r.center = loci[i]
         if r.collidepoint(mouse_pos):
             return i
-    if return_rect.collidepoint(mouse_pos):
+    if menu_has_return_button(menu) and return_rect.collidepoint(mouse_pos):
         return sprites
     return None
 
@@ -442,7 +450,7 @@ while running:
 
     if encoder == "Right": #changing location
         location += 1
-        location = available_locations(location, "right", sprites)
+        location = available_locations(location, "right", available_menu_locations(menu, sprites))
         if menu == MENU_2COMPONENT_WEIGHT:
             if weight_2component_progress < max_weight_2component:
                 location  = 0
@@ -490,7 +498,7 @@ while running:
 
     elif encoder == "Left":
         location -= 1
-        location = available_locations(location, "left", sprites)
+        location = available_locations(location, "left", available_menu_locations(menu, sprites))
         if menu == MENU_2COMPONENT_WEIGHT:
             if weight_2component_progress > 0:
                 location  = 0
@@ -555,8 +563,6 @@ while running:
             elif location == 3:
                 menu = MENU_SETTINGS
                 location = 2
-            elif location == sprites:
-                menu = MENU_START
 
 
         elif menu == MENU_2COMPONENT_SELECTION:
@@ -715,7 +721,6 @@ while running:
         screen.blit(menu0_text, menu0_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw cursor
         screen.blit(settings_image, settings_image_rect)  # draw settings image
-        screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         screen.blit(two_component_image, two_component_image_rect)  # draw button 1
         screen.blit(two_component_text, two_component_text_rect)  # draw two component text
         screen.blit(four_component_image, four_component_image_rect)  # draw button 2
@@ -738,6 +743,7 @@ while running:
         sprites = 2
         screen.blit(menu1_text, menu1_text_rect)  # draw menu text in the center of the screen
         screen.blit(selection_image, selection_image_rect)  # draw cursor
+        screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         screen.blit(button_bottle_ab_image, button_bottle_ab_image_rect)  # draw component A image
         screen.blit(button_bottle_cd_image, button_bottle_cd_image_rect)  # draw component B image
 
