@@ -6,7 +6,7 @@ from pygame.locals import *
 import pygame.gfxdraw
 import time
 import threading
-import cartridge
+import saved_settings
 import top_bar
 import theme
 #import Weight_sensor
@@ -15,7 +15,7 @@ TEXT_COLOR = theme.BLACK
 BACKGROUND_COLOR = theme.WHITE
 DISPENSING_BACKGROUND_COLOR = theme.BLACK
 DISPENSING_TEXT_COLOR = theme.WHITE
-REFILL_BAR_TRACK_COLOR = theme.REFILL_BAR_TRACK
+SELECTION_BAR_TRACK_COLOR = theme.SELECTION_BAR_TRACK  # Selection bar UI: background color behind adjustable weight, hardness, and refill bars.
 
 is_rpi = False
 try:
@@ -51,7 +51,7 @@ def dispense_and_track_volume(amounts):
     measured = dispense.multi_dispense(amounts)
     if measured is None:
         return
-    cartridge.decrement_bucket_volumes(measured, dispense.density_of_liquid)
+    saved_settings.decrement_bucket_volumes(measured, dispense.density_of_liquid)
 
 
 # Menu constants
@@ -77,7 +77,7 @@ max_weight_2component = 100
 max_weight_4component = 100
 max_volume_replacement = 500  # Refilling UI: visual full-scale point for the refill bar, not a refill limit.
 volume_replacement_step = 10.0  # Refilling UI: refill volume changes by 10 ml for each encoder step.
-min_hardness_4component, max_hardness_4component = cartridge.hardness_limits()
+min_hardness_4component, max_hardness_4component = saved_settings.hardness_limits()
 components_amount = -1
 component = -1
 weight = -1
@@ -333,7 +333,7 @@ mixing_start_time_line2_text, mixing_start_time_line2_text_rect = create_text("n
 
 
 #cartridge replacement options text
-select_cartridge_text, select_cartridge_text_rect = create_text("Select bucket to refill", (width/2, height/2+50), TEXT_COLOR, "small")
+select_cartridge_text, select_cartridge_text_rect = create_text("Select bucket to refill", (width/2, loci[0][1]+90), TEXT_COLOR, "small")
 
 loci = locus(4)
 #load in selection sprite
@@ -411,6 +411,10 @@ def draw_selection_cursor():
         screen.blit(return_selection_image, return_selection_image_rect)  # draw cursor
     else:
         screen.blit(selection_image, selection_image_rect)  # draw cursor
+
+def draw_bar_track(x, y, bar_width):
+    """Draw the selection-bar background used behind adjustable bar menus."""
+    pygame.draw.rect(screen, SELECTION_BAR_TRACK_COLOR, pygame.Rect(x, y, int(bar_width), 50))
 
 dispense_started = False
 dispense_warning_message = ""
@@ -641,15 +645,15 @@ while running:
                 menu = MENU_SETTINGS
             else:
                 bucket_being_replaced = location  # 0=bucket 1, 1=bucket 2, 2=bucket 3, 3=bucket 4
-                volume_replacement_progress = float(cartridge.bucket_volume(location))
+                volume_replacement_progress = float(saved_settings.bucket_volume(location))
                 menu = MENU_REPLACE_WEIGHT
 
         elif menu == MENU_REPLACE_WEIGHT:
             if location == sprites:
                 menu = MENU_REPLACE_CARTRIDGE
             else:
-                cartridge.set_bucket_volume(bucket_being_replaced, volume_replacement_progress)
-                cartridge.save_cartridge_config(cartridge.cartridge_config)
+                saved_settings.set_bucket_volume(bucket_being_replaced, volume_replacement_progress)
+                saved_settings.save_settings(saved_settings.cartridge_config)
                 menu = MENU_START
 
 
@@ -741,7 +745,7 @@ while running:
             warn_text, warn_rect = create_text(dispense_warning_message, (width // 2, 130), theme.WARNING, "small")
             screen.blit(warn_text, warn_rect)
         low_buckets = [str(i + 1) for i in range(4)
-                       if cartridge.bucket_volume(i) < LOW_VOLUME_THRESHOLD_ML]
+                       if saved_settings.bucket_volume(i) < LOW_VOLUME_THRESHOLD_ML]
         if low_buckets:
             low_text_str = "Low bucket volume: " + ", ".join(low_buckets)
             low_text, low_rect = create_text(low_text_str, (width // 2, height - 30), theme.CAUTION, "small")
@@ -765,6 +769,7 @@ while running:
         weight_bar_image_use = pygame.transform.scale(weight_bar_image, (int(weight_bar_width), 50))  # scale loading bar based on selected weight
         weight_bar_image_use_rect = weight_bar_image_use.get_rect(midleft=(x_bar_weight_2, 3/4*height))  # update loading bar position
         if weight_2component_progress <= max_weight_2component and weight_2component_progress >= 0:
+            draw_bar_track(x_bar_weight_2, weight_bar_image_use_rect.y, max_weight_2component*scaling_weight_2)
             screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
             weight_text,weight_rect = create_text(f"Desired weight: {weight_2component_progress} g", (width // 2, height // 2), TEXT_COLOR)
             screen.blit(weight_text, weight_rect)  # draw weight text in the center
@@ -782,6 +787,7 @@ while running:
         weight_bar_image_use = pygame.transform.scale(weight_bar_image, (int(weight_bar_width), 50))  # scale loading bar based on selected weight
         weight_bar_image_use_rect = weight_bar_image_use.get_rect(midleft=(x_bar_weight_4, 3/4*height))  # update loading bar position
         if weight_4component_progress <= max_weight_4component and weight_4component_progress >= 0:
+            draw_bar_track(x_bar_weight_4, weight_bar_image_use_rect.y, max_weight_4component*scaling_weight_4)
             screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
             weight_text,weight_rect = create_text(f"Total desired weight: {weight_4component_progress} g", (width // 2, height // 2), TEXT_COLOR)
             screen.blit(weight_text, weight_rect)  # draw weight text in the center
@@ -799,6 +805,7 @@ while running:
         hardness_bar_image_use = pygame.transform.scale(hardness_bar_image, (max(int(hardness_bar_width), 1), 50))  # scale loading bar based on selected weight
         hardness_bar_image_use_rect = hardness_bar_image_use.get_rect(midleft=(x_bar_har_4, 3/4*height))  # update loading bar position
         if min_hardness_4component <= hardness_4component_progress <= max_hardness_4component:
+            draw_bar_track(x_bar_har_4, hardness_bar_image_use_rect.y, hardness_4component_span*scaling_hardness_4)
             screen.blit(hardness_bar_image_use, hardness_bar_image_use_rect)  # draw loading bar
             hardness_text,hardness_rect = create_text(f"Desired hardness: {hardness_4component_progress} shore", (width // 2, height // 2), TEXT_COLOR)
             screen.blit(hardness_text, hardness_rect)  # draw hardness text in the center
@@ -886,7 +893,7 @@ while running:
         volume_bar_track_rect = pygame.Rect(x_bar_volume_re, volume_bar_image_use_rect.y, int(volume_bar_track_width), 50)
         cartridge_volume_text, cartridge_volume_text_rect = create_text(f"Total bucket volume: {int(volume_replacement_progress)} ml", (width // 2, height // 2), TEXT_COLOR)
         screen.blit(cartridge_volume_text, cartridge_volume_text_rect)  # draw volume text in the center
-        pygame.draw.rect(screen, REFILL_BAR_TRACK_COLOR, volume_bar_track_rect)
+        draw_bar_track(volume_bar_track_rect.x, volume_bar_track_rect.y, volume_bar_track_rect.width)
         screen.blit(volume_bar_image_use, volume_bar_image_use_rect)  # draw loading bar
 
     if menu == MENU_1COMPONENT_SELECT: #draw one component component selection menu
@@ -911,6 +918,7 @@ while running:
         weight_bar_image_use = pygame.transform.scale(weight_bar_image, (int(weight_bar_width), 50))  # scale loading bar based on selected weight
         weight_bar_image_use_rect = weight_bar_image_use.get_rect(midleft=(x_bar_weight_1, 3/4*height))  # update loading bar position
         if weight_1component_progress <= max_weight_1component and weight_1component_progress >= 0:
+            draw_bar_track(x_bar_weight_1, weight_bar_image_use_rect.y, max_weight_1component*scaling_weight_1)
             screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
             weight_text,weight_rect = create_text(f"Desired weight: {weight_1component_progress} g", (width // 2, height // 2), TEXT_COLOR)
             screen.blit(weight_text, weight_rect)  # draw weight text in the center
@@ -929,16 +937,16 @@ while running:
                 multi_components[component*2] = weight/2
                 multi_components[component*2+1] = weight/2
             elif(components_amount == 4):
-                multi_components = cartridge.component_amounts_for_hardness(weight, hardness)
-                print(weight, hardness, cartridge.hardness_to_ratio(hardness), multi_components)
+                multi_components = saved_settings.component_amounts_for_hardness(weight, hardness)
+                print(weight, hardness, saved_settings.hardness_to_ratio(hardness), multi_components)
 
             requested_ml = [multi_components[i] / dispense.density_of_liquid for i in range(4)]
-            short = [str(i + 1) for i in range(4) if requested_ml[i] > cartridge.bucket_volume(i)]
+            short = [str(i + 1) for i in range(4) if requested_ml[i] > saved_settings.bucket_volume(i)]
             if short:
                 dispense_warning_message = "Insufficient bucket volume (" + ", ".join(short) + ") — refill before dispensing"
                 print(dispense_warning_message)
                 for i in range(4):
-                    print(f"  Bucket {i + 1} needs {requested_ml[i]:.1f} ml, has {cartridge.bucket_volume(i)} ml")
+                    print(f"  Bucket {i + 1} needs {requested_ml[i]:.1f} ml, has {saved_settings.bucket_volume(i)} ml")
                 menu = MENU_START
                 location = 0
             else:

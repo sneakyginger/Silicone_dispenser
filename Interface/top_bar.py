@@ -5,7 +5,7 @@ import time
 
 import pygame
 
-import cartridge
+import saved_settings
 import theme
 
 
@@ -156,5 +156,5 @@ def draw(screen):
     cell_w = (cells_area_w - CELL_GAP * 3) // 4
     for i in range(4):
         x = SIDE_PADDING + i * (cell_w + CELL_GAP)
-        volume = cartridge.bucket_volume(i)
+        volume = saved_settings.bucket_volume(i)
         _draw_bucket_cell(screen, x, 0, cell_w, HEIGHT, str(i + 1), volume)

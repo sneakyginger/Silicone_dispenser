@@ -1,10 +1,11 @@
 """Bucket state and hardness calculations for the dispenser interface.
 
-This module owns the cartridge configuration stored in ``cartridge_config.json``.
-That file records the four physical buckets, the component in each bucket, the
-bucket hardness group, and the remaining volume. The pygame interface imports
-this module to read/update bucket volumes, find the selectable hardness range,
-and calculate how a 4-component dispense should be split between the small- and
+This module owns the cartridge configuration stored in ``saved_settings.json``.
+That file can also hold other saved dispenser information later. For now it
+records the four physical buckets, the component in each bucket, the bucket
+hardness group, and the remaining volume. The pygame interface imports this
+module to read/update bucket volumes, find the selectable hardness range, and
+calculate how a 4-component dispense should be split between the small- and
 big-hardness buckets.
 
 The UI should stay focused on menus and drawing. Keeping these helpers here
@@ -16,7 +17,9 @@ import json
 import os
 
 
-CARTRIDGE_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cartridge_config.json")
+SETTINGS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "saved_settings.json")
+LEGACY_CARTRIDGE_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cartridge_config.json")
+CARTRIDGE_CONFIG_PATH = SETTINGS_PATH
 
 DEFAULT_CARTRIDGE_CONFIG = {
     "buckets": {
@@ -70,6 +73,11 @@ def bucket_keys(idx):
 
 def load_cartridge_config(path=CARTRIDGE_CONFIG_PATH):
     """Load cartridge state from JSON and return a complete configuration dict."""
+    loaded_from_legacy_path = False
+    if path == CARTRIDGE_CONFIG_PATH and not os.path.exists(path) and os.path.exists(LEGACY_CARTRIDGE_CONFIG_PATH):
+        path = LEGACY_CARTRIDGE_CONFIG_PATH
+        loaded_from_legacy_path = True
+
     try:
         with open(path) as f:
             config = json.load(f)
@@ -77,13 +85,13 @@ def load_cartridge_config(path=CARTRIDGE_CONFIG_PATH):
         return default_cartridge_config()
 
     migrated = migrate_cartridge_config(config)
-    if migrated:
-        save_cartridge_config(config, path)
+    if migrated or loaded_from_legacy_path:
+        save_settings(config, CARTRIDGE_CONFIG_PATH)
     return config
 
 
-def save_cartridge_config(config, path=CARTRIDGE_CONFIG_PATH):
-    """Write the current cartridge state back to the JSON config file."""
+def save_settings(config, path=CARTRIDGE_CONFIG_PATH):
+    """Write the current cartridge state back to the saved settings JSON file."""
     with open(path, "w") as f:
         json.dump(config, f, indent=2)
 
@@ -166,7 +174,7 @@ def decrement_bucket_volumes(measured_grams, density):
     for i in range(4):
         used_ml = (measured_grams[i] or 0) / density
         set_bucket_volume(i, max(0.0, round(bucket_volume(i) - used_ml, 2)))
-    save_cartridge_config(cartridge_config)
+    save_settings(cartridge_config)
 
 
 def hardness_group_value(group):
@@ -188,7 +196,7 @@ def pair_hardnesses():
 
 
 def hardness_limits():
-    """Return the selectable min and max hardness from the cartridge JSON state."""
+    """Return the selectable min and max hardness from the saved JSON state."""
     small_hardness, big_hardness = hardness_group_values()
     return int(min(small_hardness, big_hardness)), int(max(small_hardness, big_hardness))
 
