@@ -171,8 +171,8 @@ def display_time_selection(width, height,selected_time, location, time_selecting
             selection_image_rect.center = (width /6*5, height // 2)
             screen.blit(selection_image, selection_image_rect)  # draw cursor
         elif location == 3:
-            selection_image_rect.center = (width-50, height-50)
-            screen.blit(selection_image, selection_image_rect)  # draw cursor
+            return_selection_image_rect.center = (width-50, height-50)
+            screen.blit(return_selection_image, return_selection_image_rect)  # draw cursor
     #draw days hours and minutes
     day_text, day_text_rect = create_text(f"{day}", (width /6, height // 2+25), TEXT_COLOR, "big")
     screen.blit(day_text, day_text_rect)  # draw days
@@ -312,24 +312,24 @@ return_, return_rect = create_text("Return to previous menu", (width // 2, heigh
 
 loci = locus(4)
 #menus names text
-two_component_text,two_component_text_rect = create_text("2 component", (loci[0][0], loci[0][1]+50), TEXT_COLOR, "small")
-four_component_text, four_component_text_rect = create_text("4 component", (loci[1][0], loci[1][1]+50), TEXT_COLOR, "small")
-mixing_menu_text, mixing_menu_text_rect = create_text("Mixing", (loci[2][0], loci[2][1]+50), TEXT_COLOR, "small")
-settings_text, settings_text_rect = create_text("Settings", (loci[3][0], loci[3][1]+50), TEXT_COLOR, "small")
+two_component_text,two_component_text_rect = create_text("2 component", (loci[0][0], loci[0][1]+90), TEXT_COLOR, "small")
+four_component_text, four_component_text_rect = create_text("4 component", (loci[1][0], loci[1][1]+90), TEXT_COLOR, "small")
+mixing_menu_text, mixing_menu_text_rect = create_text("Mixing", (loci[2][0], loci[2][1]+90), TEXT_COLOR, "small")
+settings_text, settings_text_rect = create_text("Settings", (loci[3][0], loci[3][1]+90), TEXT_COLOR, "small")
 
 loci = locus(3)
 #Setting options text
-mixing_settings_text, mixing_settings_text_rect = create_text("Mixing settings", (loci[0][0], loci[0][1]+50), TEXT_COLOR, "small")
-replace_cartridge_text, replace_cartridge_text_rect = create_text("Refill bucket", (loci[1][0], loci[1][1]+50), TEXT_COLOR, "small")
-one_component_dispensing_text, one_component_dispensing_text_rect = create_text("One component", (loci[2][0], loci[2][1]+50), TEXT_COLOR, "small")
-one_component_dispensing_line2_text, one_component_dispensing_line2_text_rect = create_text("dispensing", (loci[2][0], loci[2][1]+75), TEXT_COLOR, "small")
+mixing_settings_text, mixing_settings_text_rect = create_text("Mixing settings", (loci[0][0], loci[0][1]+90), TEXT_COLOR, "small")
+replace_cartridge_text, replace_cartridge_text_rect = create_text("Refill bucket", (loci[1][0], loci[1][1]+90), TEXT_COLOR, "small")
+one_component_dispensing_text, one_component_dispensing_text_rect = create_text("One component", (loci[2][0], loci[2][1]+90), TEXT_COLOR, "small")
+one_component_dispensing_line2_text, one_component_dispensing_line2_text_rect = create_text("dispensing", (loci[2][0], loci[2][1]+115), TEXT_COLOR, "small")
 
 loci = locus(3)
 #mixing settings options text
-frequency_text, frequency_text_rect = create_text("Mixing frequency", (loci[0][0], loci[0][1]+50), TEXT_COLOR, "small")
-duration_text, duration_text_rect = create_text("Mixing duration", (loci[1][0], loci[1][1]+50), TEXT_COLOR, "small")
-mixing_start_time_text, mixing_start_time_text_rect = create_text("Time until", (loci[2][0], loci[2][1]+50), TEXT_COLOR, "small")
-mixing_start_time_line2_text, mixing_start_time_line2_text_rect = create_text("next mix", (loci[2][0], loci[2][1]+75), TEXT_COLOR, "small")
+frequency_text, frequency_text_rect = create_text("Mixing frequency", (loci[0][0], loci[0][1]+90), TEXT_COLOR, "small")
+duration_text, duration_text_rect = create_text("Mixing duration", (loci[1][0], loci[1][1]+90), TEXT_COLOR, "small")
+mixing_start_time_text, mixing_start_time_text_rect = create_text("Time until", (loci[2][0], loci[2][1]+90), TEXT_COLOR, "small")
+mixing_start_time_line2_text, mixing_start_time_line2_text_rect = create_text("next mix", (loci[2][0], loci[2][1]+115), TEXT_COLOR, "small")
 
 
 #cartridge replacement options text
@@ -337,7 +337,8 @@ select_cartridge_text, select_cartridge_text_rect = create_text("Select bucket t
 
 loci = locus(4)
 #load in selection sprite
-selection_image, selection_image_rect = load_image(r'./Sprites/rond.png', (100, 100), loci[0])
+selection_image, selection_image_rect = load_image(r'./Sprites/rond.png', (145, 145), loci[0])
+return_selection_image, return_selection_image_rect = load_image(r'./Sprites/rond.png', (100, 100), loci[-1])  # Return button UI: default-size selector used when the back button is selected.
 
 #loud in 2 component mixing sprite
 two_component_image, two_component_image_rect = load_image(r'./Sprites/button_2comp.png',(175,175),loci[0])
@@ -405,6 +406,12 @@ no_image, no_image_rect = load_image(r'./Sprites/no.png', button_size, (loci[1])
 button_bottle_ab_image, button_bottle_ab_image_rect = load_image(r'./Sprites/button_bottle_a.png', bottle_img_size, (loci[0]))
 button_bottle_cd_image, button_bottle_cd_image_rect = load_image(r'./Sprites/button_bottle_b.png', bottle_img_size, (loci[1]))
 
+def draw_selection_cursor():
+    if location == sprites and menu_has_return_button(menu):
+        screen.blit(return_selection_image, return_selection_image_rect)  # draw cursor
+    else:
+        screen.blit(selection_image, selection_image_rect)  # draw cursor
+
 dispense_started = False
 dispense_warning_message = ""
 LOW_VOLUME_THRESHOLD_ML = 20
@@ -412,6 +419,7 @@ running = True
 while running:
     loci = locus(sprites)
     selection_image_rect.center = (loci[location]) 
+    return_selection_image_rect.center = (loci[location])
     screen.fill(BACKGROUND_COLOR)# clear screen
 
     if is_raspberry_pi():
@@ -719,7 +727,7 @@ while running:
     if menu == MENU_START: #draw start menu
         sprites = 4
         screen.blit(menu0_text, menu0_text_rect)  # draw menu text in the center of the screen
-        screen.blit(selection_image, selection_image_rect)  # draw cursor
+        draw_selection_cursor()
         screen.blit(settings_image, settings_image_rect)  # draw settings image
         screen.blit(two_component_image, two_component_image_rect)  # draw button 1
         screen.blit(two_component_text, two_component_text_rect)  # draw two component text
@@ -730,7 +738,7 @@ while running:
         screen.blit(settings_text, settings_text_rect)  # draw settings text
 
         if dispense_warning_message:
-            warn_text, warn_rect = create_text(dispense_warning_message, (width // 2, 60), theme.WARNING, "small")
+            warn_text, warn_rect = create_text(dispense_warning_message, (width // 2, 130), theme.WARNING, "small")
             screen.blit(warn_text, warn_rect)
         low_buckets = [str(i + 1) for i in range(4)
                        if cartridge.bucket_volume(i) < LOW_VOLUME_THRESHOLD_ML]
@@ -742,7 +750,7 @@ while running:
     if menu == MENU_2COMPONENT_SELECTION: #draw 2 component selection menu
         sprites = 2
         screen.blit(menu1_text, menu1_text_rect)  # draw menu text in the center of the screen
-        screen.blit(selection_image, selection_image_rect)  # draw cursor
+        draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         screen.blit(button_bottle_ab_image, button_bottle_ab_image_rect)  # draw component A image
         screen.blit(button_bottle_cd_image, button_bottle_cd_image_rect)  # draw component B image
@@ -751,7 +759,7 @@ while running:
         sprites = 1
         screen.blit(menu1_text, menu1_text_rect)  # draw menu text in the center of the screen
         if location == sprites:
-            screen.blit(selection_image, selection_image_rect)  # draw cursor
+            draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         weight_bar_width = abs(weight_2component_progress)*scaling_weight_2
         weight_bar_image_use = pygame.transform.scale(weight_bar_image, (int(weight_bar_width), 50))  # scale loading bar based on selected weight
@@ -767,7 +775,7 @@ while running:
         sprites = 1
         screen.blit(menu2_text, menu2_text_rect)  # draw menu text in the center of the screen
         if location == sprites:
-            screen.blit(selection_image, selection_image_rect)  # draw cursor
+            draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
 
         weight_bar_width = abs(weight_4component_progress)*scaling_weight_4
@@ -784,7 +792,7 @@ while running:
         sprites = 1
         screen.blit(menu3_text, menu3_text_rect)  # draw menu text in the center of the screen
         if location == sprites:
-            screen.blit(selection_image, selection_image_rect)  # draw cursor
+            draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
 
         hardness_bar_width = (hardness_4component_progress - min_hardness_4component)*scaling_hardness_4
@@ -805,7 +813,7 @@ while running:
             location = 1
         sprites = 2
         screen.blit(menu4_text, menu4_text_rect)  # draw menu text in the center of the screen
-        screen.blit(selection_image, selection_image_rect)  # draw cursor
+        draw_selection_cursor()
         screen.blit(yes_image, yes_image_rect)  # draw yes image
         screen.blit(no_image, no_image_rect)  # draw no image
 
@@ -813,7 +821,7 @@ while running:
     if menu == MENU_SETTINGS: #draw settings menu
         sprites = 3
         screen.blit(menu5_text, menu5_text_rect)  # draw menu text in the center of the screen
-        screen.blit(selection_image, selection_image_rect)  # draw cursor
+        draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner   
         screen.blit(mixing_settings_text, mixing_settings_text_rect)  # draw mixing settings text
         screen.blit(replace_cartridge_text, replace_cartridge_text_rect)  # draw replace cartridge text
@@ -823,7 +831,7 @@ while running:
     if menu == MENU_MIXING_SETTINGS: #draw mixing settings menu
         sprites = 3
         screen.blit(menu6_text, menu6_text_rect)  # draw menu text in the center of the screen
-        screen.blit(selection_image, selection_image_rect)  # draw cursor
+        draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         screen.blit(frequency_text, frequency_text_rect)  # draw frequency text
         screen.blit(duration_text, duration_text_rect)  # draw duration text
@@ -854,7 +862,7 @@ while running:
     if menu == MENU_REPLACE_CARTRIDGE: #draw cartridge replacement menu (pick which bucket)
         sprites = 4
         screen.blit(menu7_text, menu7_text_rect)  # draw menu text in the center of the screen
-        screen.blit(selection_image, selection_image_rect)  # draw cursor
+        draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         screen.blit(select_cartridge_text, select_cartridge_text_rect)  # draw select bucket text
 
@@ -867,7 +875,7 @@ while running:
         sprites = 1
         screen.blit(menu7_text, menu7_text_rect)  # draw menu text in the center of the screen
         if location == sprites:
-            screen.blit(selection_image, selection_image_rect)  # draw cursor
+            draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
 
         volume_bar_progress = min(max(volume_replacement_progress, 0.0), max_volume_replacement)
@@ -884,7 +892,7 @@ while running:
     if menu == MENU_1COMPONENT_SELECT: #draw one component component selection menu
         sprites = 4
         screen.blit(menu12_text, menu12_text_rect)  # draw menu text in the center of the screen
-        screen.blit(selection_image, selection_image_rect)  # draw cursor
+        draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
 
         screen.blit(button_bottle_a_image, button_bottle_a_image_rect)  # draw button 1
@@ -896,7 +904,7 @@ while running:
         sprites = 1
         screen.blit(menu13_text, menu13_text_rect)  # draw menu text in the center of the screen
         if location == sprites:
-            screen.blit(selection_image, selection_image_rect)  # draw cursor
+            draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
 
         weight_bar_width = abs(weight_1component_progress)*scaling_weight_1

@@ -4,6 +4,8 @@ import time
 
 import RPi.GPIO as GPIO
 
+import scale_sensor
+
 
 RASPBERRY = True
 # GPIO pins [7, 11, 13, 15] -> [26, 23, 33, 10]
@@ -22,7 +24,9 @@ SERVO_ANGLE_MIX      = 90  # degrees — change here to recalibrate the mix posi
 
 comps_dispensed = [0, 0, 0, 0]  # in gram # for testing, to keep track of how much has been dispensed from each motor
 
-manual_sensor = True  # if True, prompts the user to enter the scale reading manually instead of simulating it
+keyboard_weight_entry = True  # if True, prompts the user to enter the scale reading manually in the CLI
+
+manual_sensor = keyboard_weight_entry  # backwards-compatible alias for tests and older scripts
 
 # to simulate dispensing, we will add noise to the process
 dispensing_noise_factor = 0*15/100  # in %,  noise in dispensing, for testing purposes
@@ -180,11 +184,9 @@ def show_dispensed_amounts():
 
 
 def measure_weight():
-    if manual_sensor:
+    if keyboard_weight_entry:
         return float(input("Enter current scale reading (g): "))
-    # TODO: replace with real scale read once hardware is available
-    noise = random.uniform(-measurement_noise_factor, measurement_noise_factor)
-    return sum(comps_dispensed) + noise  # fixed absolute noise, not % of total
+    return scale_sensor.read_weight()
 
 
 def dispense(bucket_id, weight):
