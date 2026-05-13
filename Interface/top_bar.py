@@ -6,15 +6,16 @@ import time
 import pygame
 
 import cartridge
+import theme
 
 
 HEIGHT = 64
-BACKGROUND_COLOR = (10, 10, 10)
-TEXT_COLOR = (230, 230, 230)
-BAR_TRACK_COLOR = (58, 58, 58)
-COLOR_GREEN = (0x2A, 0xB6, 0x46)
-COLOR_BLUE = (0x1A, 0x60, 0xD8)
-COLOR_RED = (0xFC, 0x38, 0x34)
+BACKGROUND_COLOR = theme.TOP_BAR_BACKGROUND
+TEXT_COLOR = theme.TOP_BAR_TEXT
+BAR_TRACK_COLOR = theme.TOP_BAR_TRACK
+COLOR_GREEN = theme.BUCKET_FULL
+COLOR_BLUE = theme.BUCKET_NORMAL
+COLOR_RED = theme.BUCKET_LOW
 
 BUCKET_MAX_ML = 500
 LOW_FRACTION = 0.20
@@ -24,16 +25,16 @@ CELL_GAP = 30
 CLOCK_GAP = 28
 BAR_HEIGHT = 6
 ICON_HEIGHT = 22
-LABEL_FONT_SIZE = 26
-TEXT_FONT_SIZE = 13
-TIME_FONT_SIZE = 26
+LABEL_FONT_SIZE = theme.TOP_BAR_LABEL_FONT_SIZE
+TEXT_FONT_SIZE = theme.TOP_BAR_TEXT_FONT_SIZE
+TIME_FONT_SIZE = theme.TOP_BAR_TIME_FONT_SIZE
 LABEL_ICON_GAP = 4
 ICON_BAR_GAP = 6
 TEXT_BAR_GAP = 2
 STACK_Y_OFFSET = -3
-SANS_SERIF_FONTS = "sans,arial,liberationsans,helvetica,dejavusans"
-SERIF_FONTS = "liberationserif,dejavuserif,timesnewroman,times,serif"
-CLOCK_FONTS = "sfprodisplay,sfpro,helveticaneue,helvetica,arial,notosans,liberationsans,dejavusans"
+SANS_SERIF_FONTS = theme.SANS_SERIF_FONTS
+SERIF_FONTS = theme.SERIF_FONTS
+CLOCK_FONTS = theme.CLOCK_FONTS
 
 SPRITES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Sprites")
 

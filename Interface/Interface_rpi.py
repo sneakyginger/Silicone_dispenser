@@ -8,7 +8,13 @@ import time
 import threading
 import cartridge
 import top_bar
+import theme
 #import Weight_sensor
+
+TEXT_COLOR = theme.BLACK
+BACKGROUND_COLOR = theme.WHITE
+DISPENSING_BACKGROUND_COLOR = theme.BLACK
+DISPENSING_TEXT_COLOR = theme.WHITE
 
 is_rpi = False
 try:
@@ -88,11 +94,11 @@ def load_image(path, size, location):
 pygame.font.init()
 
 # Create a font (font name, size) - None uses the default font
-font = pygame.font.SysFont(None, 48)
-font_small = pygame.font.SysFont(None, 36)
-font_big = pygame.font.SysFont(None, 72)
+font = pygame.font.SysFont(theme.DEFAULT_FONT, theme.FONT_SIZE_NORMAL)
+font_small = pygame.font.SysFont(theme.DEFAULT_FONT, theme.FONT_SIZE_SMALL)
+font_big = pygame.font.SysFont(theme.DEFAULT_FONT, theme.FONT_SIZE_BIG)
 
-def create_text(text, position, color=(255,255,255), font_type="normal"):
+def create_text(text, position, color=theme.WHITE, font_type="normal"):
     if font_type == "small":
         surface_text = font_small.render(text, True, color)
         surface_text = font_small.render(text, True, color)
@@ -166,22 +172,22 @@ def display_time_selection(width, height,selected_time, location, time_selecting
             selection_image_rect.center = (width-50, height-50)
             screen.blit(selection_image, selection_image_rect)  # draw cursor
     #draw days hours and minutes
-    day_text, day_text_rect = create_text(f"{day}", (width /6, height // 2+25), (0,0,0),"big")
+    day_text, day_text_rect = create_text(f"{day}", (width /6, height // 2+25), TEXT_COLOR, "big")
     screen.blit(day_text, day_text_rect)  # draw days
-    hour_text, hour_text_rect = create_text(f"{hour}", (width/6*3, height // 2+25), (0,0,0),"big")
+    hour_text, hour_text_rect = create_text(f"{hour}", (width/6*3, height // 2+25), TEXT_COLOR, "big")
     screen.blit(hour_text, hour_text_rect)  # draw hours
-    minute_text, minute_text_rect = create_text(f"{minute}", (width /6*5, height // 2+25), (0,0,0),"big")
+    minute_text, minute_text_rect = create_text(f"{minute}", (width /6*5, height // 2+25), TEXT_COLOR, "big")
     screen.blit(minute_text, minute_text_rect)  # draw minutes
-    partition_text, partition_text_rect = create_text(":", (width/6*2, height // 2+25), (0,0,0),"big")
+    partition_text, partition_text_rect = create_text(":", (width/6*2, height // 2+25), TEXT_COLOR, "big")
     screen.blit(partition_text, partition_text_rect)  # draw :
-    partition_text, partition_text_rect = create_text(":", (width/6*4, height // 2+25), (0,0,0),"big")
+    partition_text, partition_text_rect = create_text(":", (width/6*4, height // 2+25), TEXT_COLOR, "big")
     screen.blit(partition_text, partition_text_rect)  # draw :
     # annotate days hours and minutes
-    day_annotate_text, day_annotate_text_rect = create_text("DAYS", (width /6, height // 2-25), (0,0,0),"small")
+    day_annotate_text, day_annotate_text_rect = create_text("DAYS", (width /6, height // 2-25), TEXT_COLOR, "small")
     screen.blit(day_annotate_text, day_annotate_text_rect)  # draw annotation day
-    hour_annotate_text, hour_annotate_text_rect = create_text("HOURS", (width/6*3, height // 2-25), (0,0,0),"small")
+    hour_annotate_text, hour_annotate_text_rect = create_text("HOURS", (width/6*3, height // 2-25), TEXT_COLOR, "small")
     screen.blit(hour_annotate_text, hour_annotate_text_rect)  # draw annotation hour
-    minute_annotate_text, minute_annotate_text_rect = create_text("MINUTES", (width /6*5, height // 2-25), (0,0,0),"small")
+    minute_annotate_text, minute_annotate_text_rect = create_text("MINUTES", (width /6*5, height // 2-25), TEXT_COLOR, "small")
     screen.blit(minute_annotate_text, minute_annotate_text_rect)  # draw annotation minute
     return
 work = 5000000
@@ -260,64 +266,64 @@ def get_click_target(mouse_pos, menu, sprites, loci):
 
 
 #Maak teks voor tijdens mengen
-mengen_bezig, mengen_bezig_rect = create_text("MIXING", (width // 2, height // 2), (255,255,255))
+mengen_bezig, mengen_bezig_rect = create_text("MIXING", (width // 2, height // 2), DISPENSING_TEXT_COLOR)
 #Text menu MENU_START
-menu0_text, menu0_text_rect = create_text("START", (width // 2, 25), (0,0,0))
+menu0_text, menu0_text_rect = create_text("START", (width // 2, 25), TEXT_COLOR)
 
 #Text menu MENU_2COMPONENT_WEIGHT
-menu1_text, menu1_text_rect = create_text("2 component dispensing", (width // 2, 25), (0,0,0))
+menu1_text, menu1_text_rect = create_text("2 component dispensing", (width // 2, 25), TEXT_COLOR)
 #Text menu MENU_4COMPONENT_WEIGHT
-menu2_text, menu2_text_rect = create_text("4 component dispensing", (width //2, 25), (0,0,0))
+menu2_text, menu2_text_rect = create_text("4 component dispensing", (width //2, 25), TEXT_COLOR)
 #Text menu MENU_4COMPONENT_HARDNESS
-menu3_text, menu3_text_rect = create_text("4 component dispensing", (width // 2, 25), (0,0,0))
+menu3_text, menu3_text_rect = create_text("4 component dispensing", (width // 2, 25), TEXT_COLOR)
 #Text menu MENU_MIX_CONFIRM
-menu4_text, menu4_text_rect = create_text("Would you like to start mixing?", (width // 2, 25), (0,0,0))
+menu4_text, menu4_text_rect = create_text("Would you like to start mixing?", (width // 2, 25), TEXT_COLOR)
 #Text menu MENU_SETTINGS
-menu5_text, menu5_text_rect = create_text("Settings", (width // 2, 25), (0,0,0))
+menu5_text, menu5_text_rect = create_text("Settings", (width // 2, 25), TEXT_COLOR)
 #Text menu MENU_MIXING_SETTINGS
-menu6_text, menu6_text_rect = create_text("Mixing Settings", (width // 2, 25), (0,0,0))
+menu6_text, menu6_text_rect = create_text("Mixing Settings", (width // 2, 25), TEXT_COLOR)
 #Text menu MENU_REPLACE_CARTRIDGE
-menu7_text, menu7_text_rect = create_text("Refill bucket", (width // 2, 25), (0,0,0))
+menu7_text, menu7_text_rect = create_text("Refill bucket", (width // 2, 25), TEXT_COLOR)
 #Text menu MENU_REPLACE_WEIGHT
-menu8_text, menu8_text_rect = create_text("Select hardness of new cartridge", (width // 2, 25), (0,0,0))
+menu8_text, menu8_text_rect = create_text("Select hardness of new cartridge", (width // 2, 25), TEXT_COLOR)
 #Text menu MENU_MIXING_FREQUENCY
-menu9_text, menu9_text_rect = create_text("Time between mixes", (width // 2, 25), (0,0,0))
+menu9_text, menu9_text_rect = create_text("Time between mixes", (width // 2, 25), TEXT_COLOR)
 #Text menu MENU_MIXING_DURATION
-menu10_text, menu10_text_rect = create_text("Select mixing duration", (width // 2, 25), (0,0,0))
+menu10_text, menu10_text_rect = create_text("Select mixing duration", (width // 2, 25), TEXT_COLOR)
 #Text menu MENU_MIXING_START_TIME
-menu11_text, menu11_text_rect = create_text("Select time until next mix", (width // 2, 25), (0,0,0))
+menu11_text, menu11_text_rect = create_text("Select time until next mix", (width // 2, 25), TEXT_COLOR)
 #Text menu MENU_1COMPONENT_SELECT
-menu12_text, menu12_text_rect = create_text("Select component to dispense", (width // 2, 25), (0,0,0))
+menu12_text, menu12_text_rect = create_text("Select component to dispense", (width // 2, 25), TEXT_COLOR)
 #Text menu MENU_1COMPONENT_WEIGHT
-menu13_text, menu13_text_rect = create_text("Select desired weight", (width // 2, 25), (0,0,0))
+menu13_text, menu13_text_rect = create_text("Select desired weight", (width // 2, 25), TEXT_COLOR)
 #text return
-return_, return_rect = create_text("Return to previous menu", (width // 2, height // 2), (0,0,0), "normal")
+return_, return_rect = create_text("Return to previous menu", (width // 2, height // 2), TEXT_COLOR, "normal")
 
 
 loci = locus(4)
 #menus names text
-two_component_text,two_component_text_rect = create_text("2 component", (loci[0][0], loci[0][1]+50), (0,0,0), "small")
-four_component_text, four_component_text_rect = create_text("4 component", (loci[1][0], loci[1][1]+50), (0,0,0), "small")
-mixing_menu_text, mixing_menu_text_rect = create_text("Mixing", (loci[2][0], loci[2][1]+50), (0,0,0), "small")
-settings_text, settings_text_rect = create_text("Settings", (loci[3][0], loci[3][1]+50), (0,0,0), "small")
+two_component_text,two_component_text_rect = create_text("2 component", (loci[0][0], loci[0][1]+50), TEXT_COLOR, "small")
+four_component_text, four_component_text_rect = create_text("4 component", (loci[1][0], loci[1][1]+50), TEXT_COLOR, "small")
+mixing_menu_text, mixing_menu_text_rect = create_text("Mixing", (loci[2][0], loci[2][1]+50), TEXT_COLOR, "small")
+settings_text, settings_text_rect = create_text("Settings", (loci[3][0], loci[3][1]+50), TEXT_COLOR, "small")
 
 loci = locus(3)
 #Setting options text
-mixing_settings_text, mixing_settings_text_rect = create_text("Mixing settings", (loci[0][0], loci[0][1]+50), (0,0,0), "small")
-replace_cartridge_text, replace_cartridge_text_rect = create_text("Refill bucket", (loci[1][0], loci[1][1]+50), (0,0,0), "small")
-one_component_dispensing_text, one_component_dispensing_text_rect = create_text("One component", (loci[2][0], loci[2][1]+50), (0,0,0), "small")
-one_component_dispensing_line2_text, one_component_dispensing_line2_text_rect = create_text("dispensing", (loci[2][0], loci[2][1]+75), (0,0,0), "small")
+mixing_settings_text, mixing_settings_text_rect = create_text("Mixing settings", (loci[0][0], loci[0][1]+50), TEXT_COLOR, "small")
+replace_cartridge_text, replace_cartridge_text_rect = create_text("Refill bucket", (loci[1][0], loci[1][1]+50), TEXT_COLOR, "small")
+one_component_dispensing_text, one_component_dispensing_text_rect = create_text("One component", (loci[2][0], loci[2][1]+50), TEXT_COLOR, "small")
+one_component_dispensing_line2_text, one_component_dispensing_line2_text_rect = create_text("dispensing", (loci[2][0], loci[2][1]+75), TEXT_COLOR, "small")
 
 loci = locus(3)
 #mixing settings options text
-frequency_text, frequency_text_rect = create_text("Mixing frequency", (loci[0][0], loci[0][1]+50), (0,0,0), "small")
-duration_text, duration_text_rect = create_text("Mixing duration", (loci[1][0], loci[1][1]+50), (0,0,0), "small")
-mixing_start_time_text, mixing_start_time_text_rect = create_text("Time until", (loci[2][0], loci[2][1]+50), (0,0,0), "small")
-mixing_start_time_line2_text, mixing_start_time_line2_text_rect = create_text("next mix", (loci[2][0], loci[2][1]+75), (0,0,0), "small")
+frequency_text, frequency_text_rect = create_text("Mixing frequency", (loci[0][0], loci[0][1]+50), TEXT_COLOR, "small")
+duration_text, duration_text_rect = create_text("Mixing duration", (loci[1][0], loci[1][1]+50), TEXT_COLOR, "small")
+mixing_start_time_text, mixing_start_time_text_rect = create_text("Time until", (loci[2][0], loci[2][1]+50), TEXT_COLOR, "small")
+mixing_start_time_line2_text, mixing_start_time_line2_text_rect = create_text("next mix", (loci[2][0], loci[2][1]+75), TEXT_COLOR, "small")
 
 
 #cartridge replacement options text
-select_cartridge_text, select_cartridge_text_rect = create_text("Select bucket to refill", (width/2, height/2+50), (0,0,0), "small")
+select_cartridge_text, select_cartridge_text_rect = create_text("Select bucket to refill", (width/2, height/2+50), TEXT_COLOR, "small")
 
 loci = locus(4)
 #load in selection sprite
@@ -396,7 +402,7 @@ running = True
 while running:
     loci = locus(sprites)
     selection_image_rect.center = (loci[location]) 
-    screen.fill((255, 255, 255))# clear screen (white background)
+    screen.fill(BACKGROUND_COLOR)# clear screen
 
     if is_raspberry_pi():
         encoder = Encoder.def_encoder(Pin_left, Pin_right, Pin_click)
@@ -721,13 +727,13 @@ while running:
         screen.blit(settings_text, settings_text_rect)  # draw settings text
 
         if dispense_warning_message:
-            warn_text, warn_rect = create_text(dispense_warning_message, (width // 2, 60), (200, 0, 0), "small")
+            warn_text, warn_rect = create_text(dispense_warning_message, (width // 2, 60), theme.WARNING, "small")
             screen.blit(warn_text, warn_rect)
         low_buckets = [str(i + 1) for i in range(4)
                        if cartridge.bucket_volume(i) < LOW_VOLUME_THRESHOLD_ML]
         if low_buckets:
             low_text_str = "Low bucket volume: " + ", ".join(low_buckets)
-            low_text, low_rect = create_text(low_text_str, (width // 2, height - 30), (200, 100, 0), "small")
+            low_text, low_rect = create_text(low_text_str, (width // 2, height - 30), theme.CAUTION, "small")
             screen.blit(low_text, low_rect)
 
     if menu == MENU_2COMPONENT_SELECTION: #draw 2 component selection menu
@@ -748,7 +754,7 @@ while running:
         weight_bar_image_use_rect = weight_bar_image_use.get_rect(midleft=(x_bar_weight_2, 3/4*height))  # update loading bar position
         if weight_2component_progress <= max_weight_2component and weight_2component_progress >= 0:
             screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
-            weight_text,weight_rect = create_text(f"Desired weight: {weight_2component_progress} g", (width // 2, height // 2), (0,0,0))
+            weight_text,weight_rect = create_text(f"Desired weight: {weight_2component_progress} g", (width // 2, height // 2), TEXT_COLOR)
             screen.blit(weight_text, weight_rect)  # draw weight text in the center
         else:
             screen.blit(return_,return_rect)
@@ -765,7 +771,7 @@ while running:
         weight_bar_image_use_rect = weight_bar_image_use.get_rect(midleft=(x_bar_weight_4, 3/4*height))  # update loading bar position
         if weight_4component_progress <= max_weight_4component and weight_4component_progress >= 0:
             screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
-            weight_text,weight_rect = create_text(f"Total desired weight: {weight_4component_progress} g", (width // 2, height // 2), (0,0,0))
+            weight_text,weight_rect = create_text(f"Total desired weight: {weight_4component_progress} g", (width // 2, height // 2), TEXT_COLOR)
             screen.blit(weight_text, weight_rect)  # draw weight text in the center
         else:
             screen.blit(return_,return_rect)
@@ -782,7 +788,7 @@ while running:
         hardness_bar_image_use_rect = hardness_bar_image_use.get_rect(midleft=(x_bar_har_4, 3/4*height))  # update loading bar position
         if min_hardness_4component <= hardness_4component_progress <= max_hardness_4component:
             screen.blit(hardness_bar_image_use, hardness_bar_image_use_rect)  # draw loading bar
-            hardness_text,hardness_rect = create_text(f"Desired hardness: {hardness_4component_progress} shore", (width // 2, height // 2), (0,0,0))
+            hardness_text,hardness_rect = create_text(f"Desired hardness: {hardness_4component_progress} shore", (width // 2, height // 2), TEXT_COLOR)
             screen.blit(hardness_text, hardness_rect)  # draw hardness text in the center
         else:
             screen.blit(return_,return_rect)
@@ -864,7 +870,7 @@ while running:
         volume_bar_image_use = pygame.transform.scale(weight_bar_image, (max(int(volume_bar_width), 1), 50))  # scale loading bar based on selected volume
         volume_bar_image_use_rect = volume_bar_image_use.get_rect(midleft=(x_bar_volume_re, 3/4*height))  # update loading bar position
         if 0 <= volume_replacement_progress <= max_volume_replacement:
-            cartridge_volume_text, cartridge_volume_text_rect = create_text(f"New total bucket volume: {volume_replacement_progress} ml", (width // 2, height // 2), (0,0,0))
+            cartridge_volume_text, cartridge_volume_text_rect = create_text(f"New total bucket volume: {volume_replacement_progress} ml", (width // 2, height // 2), TEXT_COLOR)
             screen.blit(cartridge_volume_text, cartridge_volume_text_rect)  # draw volume text in the center
             screen.blit(volume_bar_image_use, volume_bar_image_use_rect)  # draw loading bar
         else:
@@ -893,7 +899,7 @@ while running:
         weight_bar_image_use_rect = weight_bar_image_use.get_rect(midleft=(x_bar_weight_1, 3/4*height))  # update loading bar position
         if weight_1component_progress <= max_weight_1component and weight_1component_progress >= 0:
             screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
-            weight_text,weight_rect = create_text(f"Desired weight: {weight_1component_progress} g", (width // 2, height // 2), (0,0,0))
+            weight_text,weight_rect = create_text(f"Desired weight: {weight_1component_progress} g", (width // 2, height // 2), TEXT_COLOR)
             screen.blit(weight_text, weight_rect)  # draw weight text in the center
         else:
             screen.blit(return_,return_rect)
@@ -927,7 +933,7 @@ while running:
                 threading.Thread(target=doWork, daemon=True).start()
                 dispense_started = True
         if dispense_started:
-            screen.fill((0,0,0))          # clear screen (black background)
+            screen.fill(DISPENSING_BACKGROUND_COLOR)
             screen.blit(mengen_bezig, mengen_bezig_rect)  # draw "mengen bezig" text in the center of the screen
             #progress bar for loading
             if loading_progress < 100:
