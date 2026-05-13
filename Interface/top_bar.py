@@ -127,7 +127,7 @@ def _draw_bucket_cell(screen, x, y, w, h, label, volume_ml):
 
     bar_w = max(0, x + w - bar_x)
 
-    vol_text = f"{int(round(volume_ml))}/{BUCKET_MAX_ML}ml"
+    vol_text = f"{int(volume_ml)}/{BUCKET_MAX_ML}ml"
     vol_surface = font.render(vol_text, True, TEXT_COLOR)
 
     stack_height = vol_surface.get_height() + TEXT_BAR_GAP + BAR_HEIGHT

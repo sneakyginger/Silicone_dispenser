@@ -158,7 +158,7 @@ def bucket_volume(idx):
 
 def set_bucket_volume(idx, value):
     """Set remaining volume in ml for index 0=bucket 1 through 3=bucket 4."""
-    cartridge_config["buckets"][bucket_keys(idx)]["volume"] = value
+    cartridge_config["buckets"][bucket_keys(idx)]["volume"] = float(value)
 
 
 def decrement_bucket_volumes(measured_grams, density):

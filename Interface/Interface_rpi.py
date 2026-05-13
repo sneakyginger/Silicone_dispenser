@@ -15,6 +15,7 @@ TEXT_COLOR = theme.BLACK
 BACKGROUND_COLOR = theme.WHITE
 DISPENSING_BACKGROUND_COLOR = theme.BLACK
 DISPENSING_TEXT_COLOR = theme.WHITE
+REFILL_BAR_TRACK_COLOR = theme.REFILL_BAR_TRACK
 
 is_rpi = False
 try:
@@ -74,7 +75,8 @@ MENU_2COMPONENT_SELECTION = 15
 max_weight_1component = 100
 max_weight_2component = 100
 max_weight_4component = 100
-max_volume_replacement = 500
+max_volume_replacement = 500  # Refilling UI: visual full-scale point for the refill bar, not a refill limit.
+volume_replacement_step = 10.0  # Refilling UI: refill volume changes by 10 ml for each encoder step.
 min_hardness_4component, max_hardness_4component = cartridge.hardness_limits()
 components_amount = -1
 component = -1
@@ -350,12 +352,12 @@ loading_bar_width = 8
 weight_1component_progress = max_weight_1component//2
 weight_2component_progress = max_weight_2component//2
 weight_4component_progress = max_weight_4component//2
-volume_replacement_progress = max_volume_replacement//2
+volume_replacement_progress = max_volume_replacement / 2  # Refilling UI: keep math as float; display converts to int.
 
 scaling_weight_1 = width/2//max_weight_1component
 scaling_weight_2 = width/2//max_weight_2component
 scaling_weight_4 = width/2//max_weight_4component
-scaling_volume_replacement = width/2//max_volume_replacement
+scaling_volume_replacement = (width / 2) / max_volume_replacement  # Refilling UI: pixels per ml; real division avoids rounding to 0.
 
 x_bar_weight_1 = width/2-max_weight_1component*scaling_weight_1/2
 x_bar_weight_2 = width/2-max_weight_2component*scaling_weight_2/2
@@ -467,12 +469,8 @@ while running:
             if location == 2:
                 location = 0
         elif menu == MENU_REPLACE_WEIGHT:
-            if volume_replacement_progress < max_volume_replacement:
-                location  = 0
-                volume_replacement_progress += 1
-            else:
-                volume_replacement_progress = max_volume_replacement
-                location = sprites
+            location  = 0
+            volume_replacement_progress += volume_replacement_step
         elif menu == MENU_MIXING_FREQUENCY:
             if start_time_selection:
                 time_frequency = select_time(time_frequency, "right", time_increment_selection)
@@ -520,9 +518,9 @@ while running:
         elif menu == MENU_REPLACE_WEIGHT:
             if volume_replacement_progress > 0:
                 location  = 0
-                volume_replacement_progress -= 1
+                volume_replacement_progress = max(0.0, volume_replacement_progress - volume_replacement_step)
             else:
-                volume_replacement_progress = 0
+                volume_replacement_progress = 0.0
                 location = sprites
         elif menu == MENU_MIXING_FREQUENCY:
             location = available_locations(location, "left", 4)
@@ -629,7 +627,7 @@ while running:
                 menu = MENU_SETTINGS
             else:
                 bucket_being_replaced = location  # 0=bucket 1, 1=bucket 2, 2=bucket 3, 3=bucket 4
-                volume_replacement_progress = int(cartridge.bucket_volume(location))
+                volume_replacement_progress = float(cartridge.bucket_volume(location))
                 menu = MENU_REPLACE_WEIGHT
 
         elif menu == MENU_REPLACE_WEIGHT:
@@ -866,15 +864,16 @@ while running:
             screen.blit(selection_image, selection_image_rect)  # draw cursor
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
 
-        volume_bar_width = abs(volume_replacement_progress)*scaling_volume_replacement
+        volume_bar_progress = min(max(volume_replacement_progress, 0.0), max_volume_replacement)
+        volume_bar_track_width = max_volume_replacement*scaling_volume_replacement
+        volume_bar_width = volume_bar_progress*scaling_volume_replacement
         volume_bar_image_use = pygame.transform.scale(weight_bar_image, (max(int(volume_bar_width), 1), 50))  # scale loading bar based on selected volume
         volume_bar_image_use_rect = volume_bar_image_use.get_rect(midleft=(x_bar_volume_re, 3/4*height))  # update loading bar position
-        if 0 <= volume_replacement_progress <= max_volume_replacement:
-            cartridge_volume_text, cartridge_volume_text_rect = create_text(f"New total bucket volume: {volume_replacement_progress} ml", (width // 2, height // 2), TEXT_COLOR)
-            screen.blit(cartridge_volume_text, cartridge_volume_text_rect)  # draw volume text in the center
-            screen.blit(volume_bar_image_use, volume_bar_image_use_rect)  # draw loading bar
-        else:
-            screen.blit(return_,return_rect)
+        volume_bar_track_rect = pygame.Rect(x_bar_volume_re, volume_bar_image_use_rect.y, int(volume_bar_track_width), 50)
+        cartridge_volume_text, cartridge_volume_text_rect = create_text(f"Total bucket volume: {int(volume_replacement_progress)} ml", (width // 2, height // 2), TEXT_COLOR)
+        screen.blit(cartridge_volume_text, cartridge_volume_text_rect)  # draw volume text in the center
+        pygame.draw.rect(screen, REFILL_BAR_TRACK_COLOR, volume_bar_track_rect)
+        screen.blit(volume_bar_image_use, volume_bar_image_use_rect)  # draw loading bar
 
     if menu == MENU_1COMPONENT_SELECT: #draw one component component selection menu
         sprites = 4
