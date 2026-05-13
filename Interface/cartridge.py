@@ -23,12 +23,18 @@ DEFAULT_CARTRIDGE_CONFIG = {
     "pair_cd": {"hardness": 50, "volume_c": 100, "volume_d": 100},
 }
 
-# Bucket index 0..3 -> (pair key, volume key in that pair).
+# Pair key -> volume keys for the two buckets that belong to that pair.
+PAIR_VOLUME_KEYS = (
+    ("pair_ab", ("volume_a", "volume_b")),
+    ("pair_cd", ("volume_c", "volume_d")),
+)
+
+# Bucket index 0..3 -> (pair key, volume key in that pair). The UI labels
+# these four positions as A, B, C, D.
 BUCKET_KEYS = [
-    ("pair_ab", "volume_a"),
-    ("pair_ab", "volume_b"),
-    ("pair_cd", "volume_c"),
-    ("pair_cd", "volume_d"),
+    (pair_key, volume_key)
+    for pair_key, volume_keys in PAIR_VOLUME_KEYS
+    for volume_key in volume_keys
 ]
 
 # Calibration curve for the silicone additive mix:
@@ -52,6 +58,13 @@ HARDNESS_CURVE = [
 def default_cartridge_config():
     """Return a fresh copy of the default cartridge configuration."""
     return {key: dict(value) for key, value in DEFAULT_CARTRIDGE_CONFIG.items()}
+
+
+def bucket_keys(idx):
+    """Return the config pair/volume keys for bucket index 0=A, 1=B, 2=C, 3=D."""
+    if idx < 0 or idx >= len(BUCKET_KEYS):
+        raise IndexError("Bucket index must be 0, 1, 2, or 3.")
+    return BUCKET_KEYS[idx]
 
 
 def load_cartridge_config(path=CARTRIDGE_CONFIG_PATH):
@@ -84,8 +97,7 @@ def migrate_cartridge_config(config):
     missing the newer keys.
     """
     migrated = False
-    for pair_key, volume_keys in (("pair_ab", ("volume_a", "volume_b")),
-                                  ("pair_cd", ("volume_c", "volume_d"))):
+    for pair_key, volume_keys in PAIR_VOLUME_KEYS:
         # Compatibility migration: keep existing machines working if their
         # cartridge_config.json was created before per-bucket volumes existed.
         if pair_key not in config:
@@ -114,13 +126,13 @@ def migrate_cartridge_config(config):
 
 def bucket_volume(idx):
     """Return the remaining volume in ml for bucket index 0=A, 1=B, 2=C, 3=D."""
-    pair_key, volume_key = BUCKET_KEYS[idx]
+    pair_key, volume_key = bucket_keys(idx)
     return cartridge_config[pair_key][volume_key]
 
 
 def set_bucket_volume(idx, value):
     """Set the remaining volume in ml for bucket index 0=A, 1=B, 2=C, 3=D."""
-    pair_key, volume_key = BUCKET_KEYS[idx]
+    pair_key, volume_key = bucket_keys(idx)
     cartridge_config[pair_key][volume_key] = value
 
 
@@ -150,9 +162,7 @@ def hardness_to_ratio(target_shore):
     if target_shore >= HARDNESS_CURVE[-1][0]:
         return HARDNESS_CURVE[-1][1]
 
-    for i in range(len(HARDNESS_CURVE) - 1):
-        x0, r0 = HARDNESS_CURVE[i]
-        x1, r1 = HARDNESS_CURVE[i + 1]
+    for (x0, r0), (x1, r1) in zip(HARDNESS_CURVE, HARDNESS_CURVE[1:]):
         if x0 <= target_shore <= x1:
             return r0 + (r1 - r0) * (target_shore - x0) / (x1 - x0)
 
@@ -165,20 +175,10 @@ def component_amounts_for_hardness(total_weight, target_shore):
     pair_ab_hardness, pair_cd_hardness = pair_hardnesses()
     weight_high = total_weight * ratio_high
     weight_low = total_weight - weight_high
-    amounts = [0, 0, 0, 0]
 
     if pair_ab_hardness <= pair_cd_hardness:
-        amounts[0] = weight_low / 2
-        amounts[1] = weight_low / 2
-        amounts[2] = weight_high / 2
-        amounts[3] = weight_high / 2
-    else:
-        amounts[0] = weight_high / 2
-        amounts[1] = weight_high / 2
-        amounts[2] = weight_low / 2
-        amounts[3] = weight_low / 2
-
-    return amounts
+        return [weight_low / 2, weight_low / 2, weight_high / 2, weight_high / 2]
+    return [weight_high / 2, weight_high / 2, weight_low / 2, weight_low / 2]
 
 
 cartridge_config = load_cartridge_config()
