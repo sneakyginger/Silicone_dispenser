@@ -7,6 +7,7 @@ import pygame.gfxdraw
 import time
 import threading
 import cartridge
+import top_bar
 #import Weight_sensor
 
 is_rpi = False
@@ -952,5 +953,6 @@ while running:
             location = 1
 
         previous_menu = menu
+    top_bar.draw(screen)
     pygame.display.flip()           # update display
 pygame.quit()
