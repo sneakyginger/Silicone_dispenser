@@ -1,11 +1,11 @@
-"""Cartridge state and hardness calculations for the dispenser interface.
+"""Bucket state and hardness calculations for the dispenser interface.
 
 This module owns the cartridge configuration stored in ``cartridge_config.json``.
-That file records the hardness of the two cartridge pairs and the remaining
-volume in each bucket. The pygame interface imports this module to read/update
-bucket volumes, find the selectable hardness range, and calculate how a
-4-component dispense should be split between the low-hardness and high-hardness
-cartridge pairs.
+That file records the four physical buckets, the component in each bucket, the
+bucket hardness group, and the remaining volume. The pygame interface imports
+this module to read/update bucket volumes, find the selectable hardness range,
+and calculate how a 4-component dispense should be split between the small- and
+big-hardness buckets.
 
 The UI should stay focused on menus and drawing. Keeping these helpers here
 makes the saved cartridge state and silicone hardness math easier to test and
@@ -19,26 +19,22 @@ import os
 CARTRIDGE_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cartridge_config.json")
 
 DEFAULT_CARTRIDGE_CONFIG = {
-    "pair_ab": {"hardness": 5, "volume_a": 100, "volume_b": 100},
-    "pair_cd": {"hardness": 50, "volume_c": 100, "volume_d": 100},
+    "buckets": {
+        "bucket_1": {"component": "A", "hardness_group": "small", "hardness": 5, "volume": 100},
+        "bucket_2": {"component": "B", "hardness_group": "small", "hardness": 5, "volume": 100},
+        "bucket_3": {"component": "A", "hardness_group": "big", "hardness": 50, "volume": 100},
+        "bucket_4": {"component": "B", "hardness_group": "big", "hardness": 50, "volume": 100},
+    }
 }
 
-# Pair key -> volume keys for the two buckets that belong to that pair.
-PAIR_VOLUME_KEYS = (
-    ("pair_ab", ("volume_a", "volume_b")),
-    ("pair_cd", ("volume_c", "volume_d")),
-)
-
-# Bucket index 0..3 -> (pair key, volume key in that pair). The UI labels
-# these four positions as A, B, C, D.
-BUCKET_KEYS = [
-    (pair_key, volume_key)
-    for pair_key, volume_keys in PAIR_VOLUME_KEYS
-    for volume_key in volume_keys
-]
+# Python lists use index 0..3, but the machine labels the physical reservoirs
+# as bucket 1..4.
+BUCKET_KEYS = ("bucket_1", "bucket_2", "bucket_3", "bucket_4")
+SMALL_HARDNESS_BUCKETS = ("bucket_1", "bucket_2")
+BIG_HARDNESS_BUCKETS = ("bucket_3", "bucket_4")
 
 # Calibration curve for the silicone additive mix:
-# (target shore hardness, fraction of high-hardness pair in the mix).
+# (target shore hardness, fraction of big-hardness buckets in the mix).
 # Source: "Shore waarde van mengsel Siliconen Additie Kleurloos" chart.
 HARDNESS_CURVE = [
     (5.0, 0.00),
@@ -57,11 +53,16 @@ HARDNESS_CURVE = [
 
 def default_cartridge_config():
     """Return a fresh copy of the default cartridge configuration."""
-    return {key: dict(value) for key, value in DEFAULT_CARTRIDGE_CONFIG.items()}
+    return {
+        "buckets": {
+            bucket_key: dict(bucket)
+            for bucket_key, bucket in DEFAULT_CARTRIDGE_CONFIG["buckets"].items()
+        }
+    }
 
 
 def bucket_keys(idx):
-    """Return the config pair/volume keys for bucket index 0=A, 1=B, 2=C, 3=D."""
+    """Return the config bucket key for index 0=bucket 1 through 3=bucket 4."""
     if idx < 0 or idx >= len(BUCKET_KEYS):
         raise IndexError("Bucket index must be 0, 1, 2, or 3.")
     return BUCKET_KEYS[idx]
@@ -90,50 +91,74 @@ def save_cartridge_config(config, path=CARTRIDGE_CONFIG_PATH):
 def migrate_cartridge_config(config):
     """Update older cartridge JSON shapes so the current code can use them.
 
-    This is here because older saved configs may have stored one shared
-    ``volume`` for a pair instead of separate bucket volumes such as
-    ``volume_a`` and ``volume_b``. Without this compatibility step, an existing
-    dispenser could crash after a software update because its old JSON file is
-    missing the newer keys.
+    Older configs used ``pair_ab``/``pair_cd`` with volumes such as
+    ``volume_a`` and ``volume_b``. The current shape is bucket-first:
+    ``buckets.bucket_1`` through ``buckets.bucket_4``.
     """
     migrated = False
-    for pair_key, volume_keys in PAIR_VOLUME_KEYS:
-        # Compatibility migration: keep existing machines working if their
-        # cartridge_config.json was created before per-bucket volumes existed.
-        if pair_key not in config:
-            config[pair_key] = dict(DEFAULT_CARTRIDGE_CONFIG[pair_key])
+    defaults = default_cartridge_config()
+
+    if "buckets" not in config:
+        old_pair_ab = config.get("pair_ab", {})
+        old_pair_cd = config.get("pair_cd", {})
+        small_hardness = old_pair_ab.get("hardness", defaults["buckets"]["bucket_1"]["hardness"])
+        big_hardness = old_pair_cd.get("hardness", defaults["buckets"]["bucket_3"]["hardness"])
+
+        small_volume = old_pair_ab.get("volume")
+        big_volume = old_pair_cd.get("volume")
+        config["buckets"] = {
+            "bucket_1": {
+                "component": "A",
+                "hardness_group": "small",
+                "hardness": small_hardness,
+                "volume": old_pair_ab.get("volume_a", small_volume / 2 if small_volume is not None else 100),
+            },
+            "bucket_2": {
+                "component": "B",
+                "hardness_group": "small",
+                "hardness": small_hardness,
+                "volume": old_pair_ab.get("volume_b", small_volume / 2 if small_volume is not None else 100),
+            },
+            "bucket_3": {
+                "component": "A",
+                "hardness_group": "big",
+                "hardness": big_hardness,
+                "volume": old_pair_cd.get("volume_c", big_volume / 2 if big_volume is not None else 100),
+            },
+            "bucket_4": {
+                "component": "B",
+                "hardness_group": "big",
+                "hardness": big_hardness,
+                "volume": old_pair_cd.get("volume_d", big_volume / 2 if big_volume is not None else 100),
+            },
+        }
+        config.pop("pair_ab", None)
+        config.pop("pair_cd", None)
+        migrated = True
+
+    buckets = config["buckets"]
+    for bucket_key, default_bucket in defaults["buckets"].items():
+        if bucket_key not in buckets:
+            buckets[bucket_key] = dict(default_bucket)
             migrated = True
 
-        pair = config[pair_key]
-        if "volume" in pair:
-            split_volume = pair.pop("volume") / 2
-            for volume_key in volume_keys:
-                if volume_key not in pair:
-                    pair[volume_key] = split_volume
-            migrated = True
-
-        for volume_key in volume_keys:
-            if volume_key not in pair:
-                pair[volume_key] = DEFAULT_CARTRIDGE_CONFIG[pair_key][volume_key]
+        bucket = buckets[bucket_key]
+        for field, default_value in default_bucket.items():
+            if field not in bucket:
+                bucket[field] = default_value
                 migrated = True
-
-        if "hardness" not in pair:
-            pair["hardness"] = DEFAULT_CARTRIDGE_CONFIG[pair_key]["hardness"]
-            migrated = True
 
     return migrated
 
 
 def bucket_volume(idx):
-    """Return the remaining volume in ml for bucket index 0=A, 1=B, 2=C, 3=D."""
-    pair_key, volume_key = bucket_keys(idx)
-    return cartridge_config[pair_key][volume_key]
+    """Return remaining volume in ml for index 0=bucket 1 through 3=bucket 4."""
+    return cartridge_config["buckets"][bucket_keys(idx)]["volume"]
 
 
 def set_bucket_volume(idx, value):
-    """Set the remaining volume in ml for bucket index 0=A, 1=B, 2=C, 3=D."""
-    pair_key, volume_key = bucket_keys(idx)
-    cartridge_config[pair_key][volume_key] = value
+    """Set remaining volume in ml for index 0=bucket 1 through 3=bucket 4."""
+    cartridge_config["buckets"][bucket_keys(idx)]["volume"] = value
 
 
 def decrement_bucket_volumes(measured_grams, density):
@@ -144,19 +169,32 @@ def decrement_bucket_volumes(measured_grams, density):
     save_cartridge_config(cartridge_config)
 
 
+def hardness_group_value(group):
+    """Return the configured hardness for the small or big hardness group."""
+    for bucket in cartridge_config["buckets"].values():
+        if bucket["hardness_group"] == group:
+            return bucket["hardness"]
+    raise ValueError(f"No bucket configured for hardness group {group!r}.")
+
+
+def hardness_group_values():
+    """Return the configured hardness values for small and big hardness groups."""
+    return hardness_group_value("small"), hardness_group_value("big")
+
+
 def pair_hardnesses():
-    """Return the configured hardness values for pair AB and pair CD."""
-    return cartridge_config["pair_ab"]["hardness"], cartridge_config["pair_cd"]["hardness"]
+    """Compatibility wrapper for older code; returns small and big hardness."""
+    return hardness_group_values()
 
 
 def hardness_limits():
     """Return the selectable min and max hardness from the cartridge JSON state."""
-    pair_ab_hardness, pair_cd_hardness = pair_hardnesses()
-    return int(min(pair_ab_hardness, pair_cd_hardness)), int(max(pair_ab_hardness, pair_cd_hardness))
+    small_hardness, big_hardness = hardness_group_values()
+    return int(min(small_hardness, big_hardness)), int(max(small_hardness, big_hardness))
 
 
 def hardness_to_ratio(target_shore):
-    """Convert target shore hardness to fraction of high-hardness pair in the mix."""
+    """Convert target shore hardness to fraction of big-hardness buckets in the mix."""
     if target_shore <= HARDNESS_CURVE[0][0]:
         return HARDNESS_CURVE[0][1]
     if target_shore >= HARDNESS_CURVE[-1][0]:
@@ -169,16 +207,23 @@ def hardness_to_ratio(target_shore):
     return 1.0
 
 
-def component_amounts_for_hardness(total_weight, target_shore):
-    """Return four component gram amounts for a total weight and target hardness."""
+def bucket_amounts_for_hardness(total_weight, target_shore):
+    """Return bucket 1..4 gram amounts for a total weight and target hardness."""
     ratio_high = hardness_to_ratio(target_shore)
-    pair_ab_hardness, pair_cd_hardness = pair_hardnesses()
     weight_high = total_weight * ratio_high
     weight_low = total_weight - weight_high
 
-    if pair_ab_hardness <= pair_cd_hardness:
-        return [weight_low / 2, weight_low / 2, weight_high / 2, weight_high / 2]
-    return [weight_high / 2, weight_high / 2, weight_low / 2, weight_low / 2]
+    amounts = [0, 0, 0, 0]
+    for bucket_key in SMALL_HARDNESS_BUCKETS:
+        amounts[BUCKET_KEYS.index(bucket_key)] = weight_low / len(SMALL_HARDNESS_BUCKETS)
+    for bucket_key in BIG_HARDNESS_BUCKETS:
+        amounts[BUCKET_KEYS.index(bucket_key)] = weight_high / len(BIG_HARDNESS_BUCKETS)
+    return amounts
+
+
+def component_amounts_for_hardness(total_weight, target_shore):
+    """Compatibility wrapper for older code; returns bucket 1..4 gram amounts."""
+    return bucket_amounts_for_hardness(total_weight, target_shore)
 
 
 cartridge_config = load_cartridge_config()

@@ -87,7 +87,7 @@ def main():
         type=float,
         nargs=4,
         default=[1.0, 1.0, 0.0, 0.0],
-        help="Four component amounts in grams for the flow test.",
+        help="Four bucket amounts in grams for the flow test.",
     )
     args = parser.parse_args()
 

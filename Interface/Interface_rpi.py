@@ -73,7 +73,7 @@ components_amount = -1
 component = -1
 weight = -1
 hardness = -1
-bucket_being_replaced = -1  # 0=A, 1=B, 2=C, 3=D
+bucket_being_replaced = -1  # 0=bucket 1, 1=bucket 2, 2=bucket 3, 3=bucket 4
 
 
 def load_image(path, size, location):
@@ -621,7 +621,7 @@ while running:
             if location == sprites:
                 menu = MENU_SETTINGS
             else:
-                bucket_being_replaced = location  # 0=A, 1=B, 2=C, 3=D
+                bucket_being_replaced = location  # 0=bucket 1, 1=bucket 2, 2=bucket 3, 3=bucket 4
                 volume_replacement_progress = int(cartridge.bucket_volume(location))
                 menu = MENU_REPLACE_WEIGHT
 
@@ -722,7 +722,7 @@ while running:
         if dispense_warning_message:
             warn_text, warn_rect = create_text(dispense_warning_message, (width // 2, 60), (200, 0, 0), "small")
             screen.blit(warn_text, warn_rect)
-        low_buckets = [label for i, label in enumerate("ABCD")
+        low_buckets = [str(i + 1) for i in range(4)
                        if cartridge.bucket_volume(i) < LOW_VOLUME_THRESHOLD_ML]
         if low_buckets:
             low_text_str = "Low bucket volume: " + ", ".join(low_buckets)
@@ -847,10 +847,10 @@ while running:
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         screen.blit(select_cartridge_text, select_cartridge_text_rect)  # draw select bucket text
 
-        screen.blit(button_bottle_a_image, button_bottle_a_image_rect)  # bucket A
-        screen.blit(button_bottle_b_image, button_bottle_b_image_rect)  # bucket B
-        screen.blit(button_bottle_c_image, button_bottle_c_image_rect)  # bucket C
-        screen.blit(button_bottle_d_image, button_bottle_d_image_rect)  # bucket D
+        screen.blit(button_bottle_a_image, button_bottle_a_image_rect)  # bucket 1
+        screen.blit(button_bottle_b_image, button_bottle_b_image_rect)  # bucket 2
+        screen.blit(button_bottle_c_image, button_bottle_c_image_rect)  # bucket 3
+        screen.blit(button_bottle_d_image, button_bottle_d_image_rect)  # bucket 4
 
     if menu == MENU_REPLACE_WEIGHT: #Select replacement volume
         sprites = 1
@@ -913,12 +913,12 @@ while running:
                 print(weight, hardness, cartridge.hardness_to_ratio(hardness), multi_components)
 
             requested_ml = [multi_components[i] / dispense.density_of_liquid for i in range(4)]
-            short = [label for i, label in enumerate("ABCD") if requested_ml[i] > cartridge.bucket_volume(i)]
+            short = [str(i + 1) for i in range(4) if requested_ml[i] > cartridge.bucket_volume(i)]
             if short:
                 dispense_warning_message = "Insufficient bucket volume (" + ", ".join(short) + ") — refill before dispensing"
                 print(dispense_warning_message)
-                for i, label in enumerate("ABCD"):
-                    print(f"  Bucket {label} needs {requested_ml[i]:.1f} ml, has {cartridge.bucket_volume(i)} ml")
+                for i in range(4):
+                    print(f"  Bucket {i + 1} needs {requested_ml[i]:.1f} ml, has {cartridge.bucket_volume(i)} ml")
                 menu = MENU_START
                 location = 0
             else:

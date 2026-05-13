@@ -56,22 +56,22 @@ def main():
     show_dispensed_amounts()
 
 
-def dispense_and_measure(component_id, amount):
+def dispense_and_measure(bucket_id, amount):
     """Dispense a given weight and return the actually measured dispensed amount."""
     before = measure_weight()
-    dispense(component_id, amount)
+    dispense(bucket_id, amount)
     return measure_weight() - before
 
 
-def under_tolerance_components(measured_results, amounts, relative_tolerance, target_ratio=1.0):
-    """Return list of (index, shortfall) for components below target_ratio * target by more than tolerance.
+def under_tolerance_buckets(measured_results, amounts, relative_tolerance, target_ratio=1.0):
+    """Return list of (index, shortfall) for buckets below target_ratio * target by more than tolerance.
 
-    target_ratio is the shared ratio all components should reach (e.g. the ratio of the most
-    over-dispensed component). Each component's proportional target is amounts[i] * target_ratio,
-    so all components are corrected to the same fraction of their individual targets rather than
+    target_ratio is the shared ratio all buckets should reach (e.g. the ratio of the most
+    over-dispensed bucket). Each bucket's proportional target is amounts[i] * target_ratio,
+    so all buckets are corrected to the same fraction of their individual targets rather than
     to their absolute targets independently.
 
-    Components with amounts[i] == 0 are skipped — they were not requested.
+    Buckets with amounts[i] == 0 are skipped — they were not requested.
     """
     return [
         (i, amounts[i] * target_ratio - measured)
@@ -81,9 +81,9 @@ def under_tolerance_components(measured_results, amounts, relative_tolerance, ta
 
 
 def biggest_ratio_difference(measured_results, amounts):
-    """Return (i, j, ratios, diff_pct) for the pair of active components with the biggest % ratio difference.
+    """Return (i, j, ratios, diff_pct) for the pair of active buckets with the biggest % ratio difference.
 
-    Components with amounts == 0 are excluded. Returns None if fewer than two components were active.
+    Buckets with amounts == 0 are excluded. Returns None if fewer than two buckets were active.
     """
     active = [(k, m / t) for k, (m, t) in enumerate(zip(measured_results, amounts)) if t > 0]
     if len(active) < 2:
@@ -98,9 +98,9 @@ def biggest_ratio_difference(measured_results, amounts):
 def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, max_iterations=10):
     assert len(amounts) in (2, 4), "Must provide amounts for 2 or 4 motors."
 
-    print("Dispensing multiple components:")
+    print("Dispensing multiple buckets:")
     for i, amount in enumerate(amounts):
-        print(f"Component {i+1}: {amount} grams.")
+        print(f"Bucket {i+1}: {amount} grams.")
     print("")
 
     # initial dispense pass — skip motors with amount == 0 so we don't move them or re-prompt the scale
@@ -111,13 +111,13 @@ def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, ma
 
     print("Measured weights after dispensing:")
     for i, measured in enumerate(measured_results):
-        print(f"Component {i+1}: {measured:.3f} grams.")
+        print(f"Bucket {i+1}: {measured:.3f} grams.")
 
-    # warn about components whose ratio deviates from the most over-dispensed component
+    # warn about buckets whose ratio deviates from the most over-dispensed bucket
     ratios = [m / t if t > 0 else 0.0 for m, t in zip(measured_results, amounts)]
     active_ratios = [r for r, t in zip(ratios, amounts) if t > 0]
     if not active_ratios:
-        print("No components requested — nothing to dispense.")
+        print("No buckets requested — nothing to dispense.")
         return measured_results
     max_ratio = max(active_ratios)
     for i, (measured, target) in enumerate(zip(measured_results, amounts)):
@@ -125,38 +125,38 @@ def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, ma
             continue
         shortfall_from_ratio = target * max_ratio - measured
         if shortfall_from_ratio > relative_tolerance:
-            print(f"Warning: Component {i+1} is behind proportional target. "
+            print(f"Warning: Bucket {i+1} is behind proportional target. "
                   f"Measured: {measured:.3f}g, Proportional target: {target * max_ratio:.3f}g "
                   f"(ratio {max_ratio:.4f}), shortfall: {shortfall_from_ratio:.3f}g.")
 
-    # correction loop: top up components that are below the fixed target ratio
+    # correction loop: top up buckets that are below the fixed target ratio
     # target_ratio is fixed once from the initial dispense — it must NOT be updated inside the loop,
     # otherwise any overshoot caused by noise would raise the target and trigger a runaway chain reaction
     target_ratio = max_ratio
     iterations_used = 0
     while iterations_used < max_iterations:
-        to_correct = under_tolerance_components(measured_results, amounts, relative_tolerance, target_ratio=target_ratio)
+        to_correct = under_tolerance_buckets(measured_results, amounts, relative_tolerance, target_ratio=target_ratio)
 
         if not to_correct:
-            print("All components within proportional tolerance.")
+            print("All buckets within proportional tolerance.")
             break
 
         for i, shortfall in to_correct:
             correction = min(shortfall, amounts[i] * correction_fraction)
-            print(f"Component {i+1}: shortfall {shortfall:.3f}g from proportional target, correcting by {correction:.3f}g.")
+            print(f"Bucket {i+1}: shortfall {shortfall:.3f}g from proportional target, correcting by {correction:.3f}g.")
             measured_results[i] += dispense_and_measure(i + 1, correction)
 
         iterations_used += 1
     else:
-        print("Warning: max correction iterations reached. Some components may still be out of proportional tolerance.")
+        print("Warning: max correction iterations reached. Some buckets may still be out of proportional tolerance.")
 
     print(f"Total correction iterations used: {iterations_used}")
 
-    # report biggest ratio difference (only meaningful when 2+ components were active)
+    # report biggest ratio difference (only meaningful when 2+ buckets were active)
     result = biggest_ratio_difference(measured_results, amounts)
     if result is not None:
         i, j, ratios, max_diff_pct = result
-        print(f"Biggest % difference: Component {i+1} ({ratios[i]*100:.2f}% of target) vs Component {j+1} ({ratios[j]*100:.2f}% of target): {max_diff_pct:.2f}%")
+        print(f"Biggest % difference: Bucket {i+1} ({ratios[i]*100:.2f}% of target) vs Bucket {j+1} ({ratios[j]*100:.2f}% of target): {max_diff_pct:.2f}%")
 
     return measured_results
 
@@ -176,7 +176,7 @@ def show_dispensed_amounts():
     print("")
     print("Dispensed amounts:")
     for i, amount in enumerate(comps_dispensed):
-        print(f"Component {i+1}: {amount:.3f} grams.")
+        print(f"Bucket {i+1}: {amount:.3f} grams.")
 
 
 def measure_weight():
@@ -187,15 +187,15 @@ def measure_weight():
     return sum(comps_dispensed) + noise  # fixed absolute noise, not % of total
 
 
-def dispense(component_id, weight):
+def dispense(bucket_id, weight):
     amount = weight / density_of_liquid  # convert weight to volume
-    print(f"Dispensing component {component_id}, amount: {amount:.4f} ml")
+    print(f"Dispensing bucket {bucket_id}, amount: {amount:.4f} ml")
 
-    positions = [0 if i == component_id - 1 else 1 for i in range(4)]  # only this component's servo to dispense
+    positions = [0 if i == bucket_id - 1 else 1 for i in range(4)]  # only this bucket's servo to dispense
     set_servo_positions(positions)
 
     amount_with_noise = amount * (1 + random.uniform(-dispensing_noise_factor, dispensing_noise_factor))
-    move_motor(component_id, amount_with_noise / volume_per_step)
+    move_motor(bucket_id, amount_with_noise / volume_per_step)
 
     set_servo_positions([1, 1, 1, 1])  # return all servos to mix position after dispensing
 
