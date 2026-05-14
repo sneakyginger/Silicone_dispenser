@@ -9,3 +9,7 @@ dispenser_venv/
 /dispenser_venv/dispenser_venv/Lib/site-packages/pip
 /dispenser_venv/dispenser_venv/Lib/site-packages/pip/_internal
 /dispenser_venv/dispenser_venv/Lib/site-packages/pip/_internal/commands
+
+# Python cache files
+__pycache__/
+*.py[cod]

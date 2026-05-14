@@ -2,6 +2,8 @@ import time
 import sys
 import RPi.GPIO as GPIO
 from hx711 import HX711
+import numpy as np
+
 print("Starting...")
 def cleanAndExit():
     print("Cleaning...")
@@ -39,12 +41,35 @@ In my case, the longValueWithOffset was around 114000 so my reference unit is 11
 because if I used the 114000, I'd be getting milligrams instead of grams.
 '''
 referenceUnit = 1
-#referenceUnit = 2141725/165
-hx.set_reference_unit(referenceUnit)
+
+#referenceUnit = 92700/5.834 ref 5.92g
+#referenceUnit = 93801/5.92 ref 5.92g
+#referenceUnit = 233000/14.682 ref 14.682g
+#referenceUnit = 398500/25.099 ref 25.099g
+#referenceUnit = 589420/37.111 ref 37.111g
+#referenceUnit = 868650/54.681 ref 54.681g
+#referenceUnit = 979700/61.71 ref 61.71g
+#referenceUnit = 1255451/79.030 ref 79.030g
+#referenceUnit = 2253661/(141.891) ref 76.442+71.171-5.722
+#referenceUnit = 3108360/(195.712) ref 76.442+71.171-5.722+59.400-5.579
+#referenceUnit = 2473600/(155.761) ref 76.442+71.171-5.722+59.400-5.579
+
+
+grams  = [14.682, 25.099, 37.111, 54.681, 61.71, 79.030, 141.891, 195.712, 155.761]
+counts = [233000, 398500, 589420, 868650, 979700, 1255451, 2253661, 3108360, 2473600]
+
+slope, intercept = np.polyfit(counts, grams, 1)
+
+print(f"Scale factor: {1/slope:,.1f} counts/g")
+print(f"Zero offset:  {intercept:.4f}g")
+
+hx.set_reference_unit(1/slope)
+
 print("reset")
 hx.reset()
+time.sleep(2)
 #the argument is the amount of times to measure before taring
-hx.tare(15)
+hx.tare(31)
 
 print("Tare done! Add weight now...")
 
@@ -58,10 +83,12 @@ while True:
      
         
         # Prints the weight. the argument is the avaraging
-        val = hx.get_weight(1)
+        val = hx.get_weight(31)
         print(val)
 
-
+        #hx.power_down()
+        #hx.power_up()
+        #time.sleep(0.4)
         #if loop_count == 50 and val <1:
         #    loop_count = 0
         #    hx.tare(15)
