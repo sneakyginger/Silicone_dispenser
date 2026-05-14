@@ -42,7 +42,7 @@ referenceUnit = 1
 #referenceUnit = 979700/61.71 ref 61.71g
 #referenceUnit = 979700/61.71 ref 61.71g
 #referenceUnit = 979700/61.71 ref 61.71g
-#referenceUnit = 979700/61.71 ref 61.71g
+#referenceUnit = (2541125+60)/160 ref 160.0g
 
 hx.set_reference_unit(referenceUnit)
 print("reset")
@@ -66,9 +66,9 @@ while True:
         val = hx.get_weight(31)
         print(val)
 
-        hx.power_down()
-        hx.power_up()
-        time.sleep(0.4)
+        #hx.power_down()
+        #hx.power_up()
+        #time.sleep(0.4)
         #if loop_count == 50 and val <1:
         #    loop_count = 0
         #    hx.tare(15)
