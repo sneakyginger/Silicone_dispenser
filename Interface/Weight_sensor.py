@@ -72,6 +72,7 @@ while True:
         
         # Prints the weight. the argument is the avaraging
         val = hx.get_weight(3)
+        print(val)
 
         #hx.power_down()
         #hx.power_up()
