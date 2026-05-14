@@ -7,6 +7,7 @@ import pygame.gfxdraw
 import time
 import threading
 import saved_settings
+import mixing_settings_form
 import top_bar
 import theme
 #import Weight_sensor
@@ -229,6 +230,7 @@ pygame.display.set_caption('Dispenser Interface')
 menu = MENU_START
 location = 0
 time_frequency, time_duration, time_start_time = [0,0,0], [0,0,0], [0,0,0]
+mixing_settings_form_state = mixing_settings_form.default_state()  # Mixing settings UI: stores the selected row, edit mode, and saved schedule values.
 start_time_selection = False
 sprites = 4
 previous_menu = MENU_START
@@ -460,6 +462,8 @@ while running:
     if wheel_direction is not None and encoder not in ("Left", "Right", "Click"):
         encoder = wheel_direction
 
+    location_before_encoder = location  # Mixing settings UI: keeps the selected form row steady while an edited value changes.
+
     if encoder == "Right": #changing location
         location += 1
         location = available_locations(location, "right", available_menu_locations(menu, sprites))
@@ -500,6 +504,10 @@ while running:
         elif menu == MENU_MIXING_START_TIME:
             if start_time_selection:
                 time_start_time = select_time(time_start_time, "right", time_increment_selection)
+        elif menu == MENU_MIXING_SETTINGS:
+            form_location = location_before_encoder if mixing_settings_form_state["editing"] else location  # Mixing settings UI: chooses whether encoder movement edits a value or moves between rows.
+            mixing_settings_form_state = mixing_settings_form.handle_turn(mixing_settings_form_state, "right", form_location)
+            location = mixing_settings_form_state["location"]
         elif menu == MENU_1COMPONENT_WEIGHT:
             if weight_1component_progress < max_weight_1component:
                 location  = 0
@@ -554,6 +562,10 @@ while running:
             location = available_locations(location, "left", 4)
             if start_time_selection:
                 time_start_time = select_time(time_start_time, "left", time_increment_selection)
+        elif menu == MENU_MIXING_SETTINGS:
+            form_location = location_before_encoder if mixing_settings_form_state["editing"] else location  # Mixing settings UI: chooses whether encoder movement edits a value or moves between rows.
+            mixing_settings_form_state = mixing_settings_form.handle_turn(mixing_settings_form_state, "left", form_location)
+            location = mixing_settings_form_state["location"]
         elif menu == MENU_1COMPONENT_WEIGHT:
             if weight_1component_progress > 0:
                 location  = 0
@@ -630,13 +642,9 @@ while running:
 
 
         elif menu == MENU_MIXING_SETTINGS:
-            if location == 0:
-                menu = MENU_MIXING_FREQUENCY
-            elif location == 1:
-                menu = MENU_MIXING_DURATION
-            elif location == 2:
-                menu = MENU_MIXING_START_TIME
-            elif location == sprites:
+            mixing_settings_form_state, exit_mixing_settings = mixing_settings_form.handle_click(mixing_settings_form_state, location)  # Mixing settings UI: click enters editing, advances fields, or returns to settings.
+            location = mixing_settings_form_state["location"]
+            if exit_mixing_settings:
                 menu = MENU_SETTINGS
 
 
@@ -726,6 +734,8 @@ while running:
                 weight = weight_1component_progress
                 menu = MENU_DISPENSING
         location = 0
+        if menu == MENU_MIXING_SETTINGS:
+            location = mixing_settings_form_state["location"]
 
 
     if menu == MENU_START: #draw start menu
@@ -838,12 +848,10 @@ while running:
     if menu == MENU_MIXING_SETTINGS: #draw mixing settings menu
         sprites = 3
         screen.blit(menu6_text, menu6_text_rect)  # draw menu text in the center of the screen
-        draw_selection_cursor()
+        mixing_settings_form.draw(screen, width, height, mixing_settings_form_state, create_text)
+        if location == sprites:
+            draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
-        screen.blit(frequency_text, frequency_text_rect)  # draw frequency text
-        screen.blit(duration_text, duration_text_rect)  # draw duration text
-        screen.blit(mixing_start_time_text, mixing_start_time_text_rect)  # draw mixing start time text
-        screen.blit(mixing_start_time_line2_text, mixing_start_time_line2_text_rect)  # draw mixing start time text
 
 
     if menu == MENU_MIXING_FREQUENCY: #draw frequency of mixing menu
