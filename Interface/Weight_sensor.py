@@ -46,10 +46,7 @@ referenceUnit = 1
 #referenceUnit = 868650/54.681 ref 54.681g
 #referenceUnit = 979700/61.71 ref 61.71g
 #referenceUnit = 1255451/79.030 ref 79.030g
-#referenceUnit = 1544000/97.4 ref 97.4g
-#referenceUnit = 2044000/128.9 ref 128.9g
-#referenceUnit = 2541125/160.0 ref 160.0g
-referenceUnit = 15870
+
 
 hx.set_reference_unit(referenceUnit)
 
@@ -71,7 +68,7 @@ while True:
      
         
         # Prints the weight. the argument is the avaraging
-        val = hx.get_weight(3)
+        val = hx.get_weight(31)
         print(val)
 
         #hx.power_down()
