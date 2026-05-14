@@ -39,11 +39,11 @@ In my case, the longValueWithOffset was around 114000 so my reference unit is 11
 because if I used the 114000, I'd be getting milligrams instead of grams.
 '''
 referenceUnit = 1
-referenceUnit = 17000/111
+#referenceUnit = 17000/111
 hx.set_reference_unit(referenceUnit)
 print("reset")
 hx.reset()
-time.sleep(2)
+time.sleep(120)
 #the argument is the amount of times to measure before taring
 hx.tare(15)
 
@@ -59,7 +59,7 @@ while True:
      
         
         # Prints the weight. the argument is the avaraging
-        val = hx.get_weight(1)
+        val = hx.get_weight(30)
         print(val)
 
         hx.power_down()
