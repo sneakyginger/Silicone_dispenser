@@ -18,8 +18,8 @@ step_delay = 0.01  # in seconds, delay between each microstep pulse1
 
 servo_pins = [12, 32, 35, 33]  # BOARD pin numbers for servos 1–4 (hardware PWM, RPi 5)
 
-SERVO_ANGLE_DISPENSE = 0   # degrees — change here to recalibrate the dispense position
-SERVO_ANGLE_MIX      = 90  # degrees — change here to recalibrate the mix position
+SERVO_ANGLE_DISPENSE = 90   # degrees — change here to recalibrate the dispense position
+SERVO_ANGLE_MIX      = 0  # degrees — change here to recalibrate the mix position
 
 
 comps_dispensed = [0, 0, 0, 0]  # in gram # for testing, to keep track of how much has been dispensed from each motor
