@@ -49,7 +49,7 @@ referenceUnit = 1
 #referenceUnit = 1544000/97.4 ref 97.4g
 #referenceUnit = 2044000/128.9 ref 128.9g
 #referenceUnit = 2541125/160.0 ref 160.0g
-referenceUnit = 15,870
+referenceUnit = 15870
 
 hx.set_reference_unit(referenceUnit)
 
