@@ -235,7 +235,7 @@ def _angle_to_duty(angle):
     Adjust min_duty/max_duty here if the servo doesn't reach its physical limits.
     """
     min_duty = 2.5   # duty cycle at 0°  → increase if servo doesn't reach full left
-    max_duty = 12.5  # duty cycle at 180° → increase if servo doesn't reach full right
+    max_duty = 13.5  # duty cycle at 180° → increase if servo doesn't reach full right
     return min_duty + (angle / 180) * (max_duty - min_duty)
 
 
