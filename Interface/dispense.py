@@ -60,11 +60,29 @@ def main():
     show_dispensed_amounts()
 
 
-def dispense_and_measure(bucket_id, amount):
+def dispense_and_measure(bucket_id, amount, progress_callback=None, progress_interval=10):
     """Dispense a given weight and return the actually measured dispensed amount."""
     before = measure_weight()
-    dispense(bucket_id, amount)
-    return measure_weight() - before
+    last_progress_at = 0
+
+    def report_progress():
+        nonlocal last_progress_at
+        now = time.time()
+        if now - last_progress_at < progress_interval:
+            return
+        last_progress_at = now
+        if progress_callback is None:
+            return
+        try:
+            progress_callback(bucket_id - 1, measure_weight() - before)
+        except Exception as exc:
+            print(f"Warning: progress weight read failed for bucket {bucket_id}: {exc}")
+
+    dispense(bucket_id, amount, progress_callback=report_progress)
+    measured = measure_weight() - before
+    if progress_callback is not None:
+        progress_callback(bucket_id - 1, measured)
+    return measured
 
 
 def under_tolerance_buckets(measured_results, amounts, relative_tolerance, target_ratio=1.0):
@@ -99,7 +117,8 @@ def biggest_ratio_difference(measured_results, amounts):
     return i, j, ratios_by_index, diff_pct
 
 
-def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, max_iterations=10):
+def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, max_iterations=10,
+                   progress_callback=None, progress_interval=10):
     assert len(amounts) in (2, 4), "Must provide amounts for 2 or 4 motors."
 
     print("Dispensing multiple buckets:")
@@ -109,7 +128,12 @@ def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, ma
 
     # initial dispense pass — skip motors with amount == 0 so we don't move them or re-prompt the scale
     measured_results = [
-        dispense_and_measure(i + 1, amount) if amount > 0 else 0.0
+        dispense_and_measure(
+            i + 1,
+            amount,
+            progress_callback=progress_callback,
+            progress_interval=progress_interval,
+        ) if amount > 0 else 0.0
         for i, amount in enumerate(amounts)
     ]
 
@@ -148,7 +172,18 @@ def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, ma
         for i, shortfall in to_correct:
             correction = min(shortfall, amounts[i] * correction_fraction)
             print(f"Bucket {i+1}: shortfall {shortfall:.3f}g from proportional target, correcting by {correction:.3f}g.")
-            measured_results[i] += dispense_and_measure(i + 1, correction)
+            measured_before_correction = measured_results[i]
+            def report_correction_progress(bucket_index, grams):
+                if progress_callback is not None:
+                    progress_callback(bucket_index, measured_before_correction + grams)
+            measured_results[i] += dispense_and_measure(
+                i + 1,
+                correction,
+                progress_callback=report_correction_progress,
+                progress_interval=progress_interval,
+            )
+            if progress_callback is not None:
+                progress_callback(i, measured_results[i])
 
         iterations_used += 1
     else:
@@ -189,7 +224,7 @@ def measure_weight():
     return scale_sensor.read_weight()
 
 
-def dispense(bucket_id, weight):
+def dispense(bucket_id, weight, progress_callback=None):
     amount = weight / density_of_liquid  # convert weight to volume
     print(f"Dispensing bucket {bucket_id}, amount: {amount:.4f} ml")
 
@@ -197,12 +232,13 @@ def dispense(bucket_id, weight):
     set_servo_positions(positions)
 
     amount_with_noise = amount * (1 + random.uniform(-dispensing_noise_factor, dispensing_noise_factor))
-    move_motor(bucket_id, amount_with_noise / volume_per_step)
+    try:
+        move_motor(bucket_id, amount_with_noise / volume_per_step, progress_callback=progress_callback)
+    finally:
+        set_servo_positions([1, 1, 1, 1])  # return all servos to mix position after dispensing
 
-    set_servo_positions([1, 1, 1, 1])  # return all servos to mix position after dispensing
 
-
-def move_motor(motor_id, steps):
+def move_motor(motor_id, steps, progress_callback=None):
     assert motor_id in [1, 2, 3, 4], "Invalid motor ID. Must be 1, 2, 3, or 4."
 
     microsteps = int(steps * microsteps_per_step)
@@ -223,9 +259,13 @@ def move_motor(motor_id, steps):
             time.sleep(step_delay / 2)
             GPIO.output(pin, 0)
             time.sleep(step_delay / 2)
+            if progress_callback is not None:
+                progress_callback()
 
     else:
         comps_dispensed[motor_id - 1] += steps * volume_per_step * density_of_liquid  # in gram
+        if progress_callback is not None:
+            progress_callback()
 
 
 def _angle_to_duty(angle):
