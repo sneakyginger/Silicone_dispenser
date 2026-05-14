@@ -46,7 +46,7 @@ microsteps_per_revolution = 200 * microsteps_per_step  # 200 steps/rev with 16 m
 
 
 length_per_step = (arm_length * 2 * math.pi) / microsteps_per_revolution  # in mm
-volume_per_step = length_per_step * tube_cross_section_area / 1000  # in ml
+volume_per_step = length_per_step * tube_cross_section_area / 1000 /4 # in ml
 
 
 def main():
@@ -99,7 +99,7 @@ def biggest_ratio_difference(measured_results, amounts):
     return i, j, ratios_by_index, diff_pct
 
 
-def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, max_iterations=10):
+def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, max_iterations=100):
     assert len(amounts) in (2, 4), "Must provide amounts for 2 or 4 motors."
 
     print("Dispensing multiple buckets:")
