@@ -39,7 +39,11 @@ In my case, the longValueWithOffset was around 114000 so my reference unit is 11
 because if I used the 114000, I'd be getting milligrams instead of grams.
 '''
 referenceUnit = 1
-referenceUnit = 979700/61.71
+#referenceUnit = 979700/61.71 ref 61.71g
+#referenceUnit = 979700/61.71 ref 61.71g
+#referenceUnit = 979700/61.71 ref 61.71g
+#referenceUnit = 979700/61.71 ref 61.71g
+
 hx.set_reference_unit(referenceUnit)
 print("reset")
 hx.reset()
