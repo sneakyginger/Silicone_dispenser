@@ -24,7 +24,7 @@ SERVO_ANGLE_MIX      = 90  # degrees — change here to recalibrate the mix posi
 
 comps_dispensed = [0, 0, 0, 0]  # in gram # for testing, to keep track of how much has been dispensed from each motor
 
-keyboard_weight_entry = True  # if True, prompts the user to enter the scale reading manually in the CLI
+keyboard_weight_entry = False  # if True, prompts the user to enter the scale reading manually in the CLI
 
 manual_sensor = keyboard_weight_entry  # backwards-compatible alias for tests and older scripts
 
