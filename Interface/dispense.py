@@ -79,6 +79,7 @@ def dispense_and_measure(bucket_id, amount, progress_callback=None, progress_int
             print(f"Warning: progress weight read failed for bucket {bucket_id}: {exc}")
 
     dispense(bucket_id, amount, progress_callback=report_progress)
+    time.sleep(2)
     measured = measure_weight() - before
     if progress_callback is not None:
         progress_callback(bucket_id - 1, measured)
