@@ -31,12 +31,12 @@ microsteps_per_step = 1
 microsteps_per_revolution = 200 * microsteps_per_step  # 200 steps/rev with 16 microsteps
 
 length_per_step = (arm_length * 2 * math.pi) / microsteps_per_revolution  # in mm
-volume_per_step = length_per_step * tube_cross_section_area / 1000  # in ml
+volume_per_step = length_per_step * tube_cross_section_area / 1000/2  # in ml
 
 
 def total_dispense_1comp(bucket_id, weight,step_delay = 0.001):
     if weight > 5:
-        step_delay = 0.001
+        step_delay = 0.005
     elif weight > 1:
         step_delay = 0.01
     else:
@@ -44,7 +44,7 @@ def total_dispense_1comp(bucket_id, weight,step_delay = 0.001):
     dispensed = dispense_and_measure(bucket_id, weight,step_delay)
     total_dispensed = dispensed
     print(dispensed)
-    while(dispensed < weight-0.1):
+    while(total_dispensed < weight-0.1):
         dispensed = dispense_and_measure(bucket_id, weight - total_dispensed,step_delay)
         total_dispensed += dispensed
         print(total_dispensed)
