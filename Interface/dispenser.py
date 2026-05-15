@@ -33,6 +33,11 @@ microsteps_per_revolution = 200 * microsteps_per_step  # 200 steps/rev with 16 m
 length_per_step = (arm_length * 2 * math.pi) / microsteps_per_revolution  # in mm
 volume_per_step = length_per_step * tube_cross_section_area / 1000/1.5  # in ml
 
+
+def multi_circulate(time):
+    for bucket_id in range(1, 5):
+        circulate(bucket_id, time)
+
 def circulate(bucket_id, time):
     speed = 0.01
     for i in range(4):
