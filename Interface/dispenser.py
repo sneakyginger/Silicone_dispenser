@@ -56,6 +56,7 @@ def total_dispense_1comp(bucket_id, weight,step_delay = 0.001):
         step_delay = 0.1
     tare = tare()
     dispensed = dispense_and_measure(bucket_id, weight, tare,step_delay)
+    print(dispensed)
     while(dispensed < weight-0.06):
         dispensed = dispense_and_measure(bucket_id, weight - dispensed, tare,step_delay)
         print(dispensed)
