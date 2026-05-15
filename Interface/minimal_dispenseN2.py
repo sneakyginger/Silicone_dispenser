@@ -27,7 +27,7 @@ MF_PIN = 16                      # microstep-full pin
 DIR_PIN = 18                     # direction pin
 STEP_DELAY = 0.003                # seconds per microstep pulse
 MICROSTEPS_PER_GRAM = 82.47      # calibrated: 5000 steps → 60.627 g
-MIN_STEPS = 30                   # minimum microsteps per pulse to overcome pump backlash
+MIN_STEPS = 60                   # minimum microsteps per pulse to overcome pump backlash
 
 SERVO_PINS = [12, 32, 35, 33]    # BOARD pin per servo (1..4)
 SERVO_ANGLE_DISPENSE = 90        # degrees for the "dispense" position
