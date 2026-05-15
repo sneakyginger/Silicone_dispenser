@@ -13,8 +13,9 @@ import saved_settings
 use_dispenser2 = "-d2" in sys.argv[1:]
 use_minimal_g = "-g" in sys.argv[1:]
 use_minimal_n = "-n" in sys.argv[1:]
-if use_minimal_g and use_minimal_n:
-    sys.exit("Choose only one of -g or -n.")
+use_minimal_n2 = "-n2" in sys.argv[1:]
+if sum([use_minimal_g, use_minimal_n, use_minimal_n2]) > 1:
+    sys.exit("Choose only one of -g, -n, or -n2.")
 import dispensing_job
 import dispensing_progress_view
 import mixing_settings_form
@@ -46,6 +47,8 @@ if is_raspberry_pi():
         import minimal_dispenseG as dispense
     elif use_minimal_n:
         import minimal_dispenseN as dispense
+    elif use_minimal_n2:
+        import minimal_dispenseN2 as dispense
     elif use_dispenser2:
         import dispenser as dispense
     else:

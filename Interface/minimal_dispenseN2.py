@@ -26,7 +26,7 @@ STEPPER_PINS = [7, 11, 13, 15]   # BOARD pin per motor (1..4)
 MF_PIN = 16                      # microstep-full pin
 DIR_PIN = 18                     # direction pin
 STEP_DELAY = 0.01                # seconds per microstep pulse
-MICROSTEPS_PER_GRAM = 200        # calibration: tune to your pump hardware
+MICROSTEPS_PER_GRAM = 82.47      # calibrated: 5000 steps → 60.627 g
 
 SERVO_PINS = [12, 32, 35, 33]    # BOARD pin per servo (1..4)
 SERVO_ANGLE_DISPENSE = 90        # degrees for the "dispense" position
