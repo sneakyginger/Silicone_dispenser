@@ -1,9 +1,9 @@
 import RPi.GPIO as GPIO
 import queue
 
-Pin_left  = 11  # CLK
-Pin_right = 15  # DT
-Pin_click = 13  # SW
+Pin_left  = 36  # CLK
+Pin_click = 38  # SW
+Pin_right = 40  # DT
 
 event_queue = queue.Queue()
 last_state = None  # Stores previous (CLK, DT) pair
