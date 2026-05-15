@@ -39,7 +39,7 @@ def is_raspberry_pi():
     return is_rpi
 
 #PINS
-Pin_left, Pin_right, Pin_click = 11, 15, 13
+Pin_left, Pin_right, Pin_click = 36, 40, 38
 
 if is_raspberry_pi():
     if use_minimal_g:
