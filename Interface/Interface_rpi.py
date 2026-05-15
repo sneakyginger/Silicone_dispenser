@@ -490,6 +490,7 @@ while running:
                 location = 0
         elif menu == MENU_REPLACE_WEIGHT:
             location  = 0
+            volume_replacement_progress = round(volume_replacement_progress,-1)
             volume_replacement_progress += volume_replacement_step
         elif menu == MENU_MIXING_FREQUENCY:
             if start_time_selection:
@@ -536,6 +537,7 @@ while running:
             if location == 2:
                 location = 1
         elif menu == MENU_REPLACE_WEIGHT:
+            volume_replacement_progress = round(volume_replacement_progress,-1)
             if volume_replacement_progress > 0:
                 location  = 0
                 volume_replacement_progress = max(0.0, volume_replacement_progress - volume_replacement_step)
