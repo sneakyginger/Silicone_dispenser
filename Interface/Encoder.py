@@ -1,7 +1,7 @@
 import RPi.GPIO as GPIO
 import queue
 
-Pin_left  = 32  # CLK
+Pin_left  = 36  # CLK
 Pin_click = 38  # SW
 Pin_right = 40  # DT
 
