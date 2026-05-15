@@ -42,18 +42,19 @@ def total_dispense_1comp(bucket_id, weight,step_delay = 0.001):
     else:
         step_delay = 0.1
     dispensed = dispense_and_measure(bucket_id, weight,step_delay)
+    total_dispensed = dispensed
     print(dispensed)
     while(dispensed < weight-0.1):
-        step_delay = np.interp(weight - dispensed, [0, 100], [0.0005, 0.1])
-        dispensed = dispense_and_measure(bucket_id, weight - dispensed,step_delay)
-        print(dispensed)
+        dispensed = dispense_and_measure(bucket_id, weight - total_dispensed,step_delay)
+        total_dispensed += dispensed
+        print(total_dispensed)
         if weight > 5:
-            step_delay = 0.001
+            step_delay = 0.005
         elif weight > 1:
             step_delay = 0.01
         else:
             step_delay = 0.1
-    return dispensed
+    return total_dispensed
 
 def multi_dispense(amounts, progress_callback=None, progress_interval=10):
     measured = [0.0, 0.0, 0.0, 0.0]
@@ -106,7 +107,7 @@ def _angle_to_duty(angle):
     """Convert a servo angle in degrees to a PWM duty cycle percentage (for 50 Hz signal).
     """
     min_duty = 2.5   # duty cycle at 0°  → increase if servo doesn't reach full left
-    max_duty = 13.5  # duty cycle at 180° → increase if servo doesn't reach full right
+    max_duty = 12.5  # duty cycle at 180° → increase if servo doesn't reach full right
     return min_duty + (angle / 180) * (max_duty - min_duty)
 
 def set_servo_positions(positions):
