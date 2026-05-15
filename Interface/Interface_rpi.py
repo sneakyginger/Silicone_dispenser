@@ -1,12 +1,23 @@
 #python -m venv dispenser_venv
 #dispenser_venv\Scripts\activate
 
+import sys
 import pygame
 from pygame.locals import *
 import pygame.gfxdraw
 import time
 import threading
+import random
 import saved_settings
+
+use_dispenser2 = "-d2" in sys.argv[1:]
+use_minimal_g = "-g" in sys.argv[1:]
+use_minimal_n = "-n" in sys.argv[1:]
+if use_minimal_g and use_minimal_n:
+    sys.exit("Choose only one of -g or -n.")
+import dispensing_job
+import dispensing_progress_view
+import mixing_settings_form
 import top_bar
 import theme
 #import Weight_sensor
@@ -28,21 +39,58 @@ def is_raspberry_pi():
     return is_rpi
 
 #PINS
-Pin_left, Pin_right, Pin_click = 11, 15, 13
+Pin_left, Pin_right, Pin_click = 36, 40, 38
 
 if is_raspberry_pi():
-    import dispense
+    if use_minimal_g:
+        import minimal_dispenseG as dispense
+    elif use_minimal_n:
+        import minimal_dispenseN as dispense
+    elif use_dispenser2:
+        import dispenser as dispense
+    else:
+        import dispense
     import Encoder
     import RPi.GPIO as GPIO
     GPIO.cleanup()
 else:
     class _DispenseStub:
-        density_of_liquid = 1.0
+        density_of_liquid = 1.06
+        sim_update_seconds = 0.5  # Laptop dispensing sim: seconds between fake weight-sensor progress updates.
+        sim_seconds_per_gram = 0.08  # Laptop dispensing sim: scales fake dispense duration with requested component weight.
+        sim_min_component_seconds = 1.0  # Laptop dispensing sim: minimum visible time for each active component.
+        sim_max_component_seconds = 8.0  # Laptop dispensing sim: maximum visible time for each active component.
+        sim_measurement_noise_fraction = 0.03  # Laptop dispensing sim: random final measured over/under-shoot per component.
+
         @staticmethod
-        def multi_dispense(amounts):
+        def multi_dispense(amounts, progress_callback=None, progress_interval=10):
             print(f"[laptop sim] multi_dispense({amounts})")
-            time.sleep(0.5)
-            return list(amounts)
+            measured = [0.0, 0.0, 0.0, 0.0]  # Laptop dispensing sim: fake measured grams returned after the simulated dispense.
+            for i, target in enumerate(amounts):
+                target = float(target or 0.0)  # Laptop dispensing sim: requested grams for the active simulated component.
+                if target <= 0:
+                    continue
+
+                duration = min(  # Laptop dispensing sim: visible component dispense duration, capped for practical testing.
+                    _DispenseStub.sim_max_component_seconds,
+                    max(_DispenseStub.sim_min_component_seconds, target * _DispenseStub.sim_seconds_per_gram),
+                )
+                final_measured = target * random.uniform(  # Laptop dispensing sim: final fake scale reading with small dosing error.
+                    1.0 - _DispenseStub.sim_measurement_noise_fraction,
+                    1.0 + _DispenseStub.sim_measurement_noise_fraction,
+                )
+                started_at = time.time()  # Laptop dispensing sim: start time for interpolating fake scale progress.
+                while True:
+                    elapsed = time.time() - started_at  # Laptop dispensing sim: elapsed seconds for this fake component.
+                    fraction = min(1.0, elapsed / duration)  # Laptop dispensing sim: progress fraction of the active component.
+                    current = final_measured * fraction  # Laptop dispensing sim: fake current component scale delta in grams.
+                    if progress_callback is not None:
+                        progress_callback(i, current)
+                    if fraction >= 1.0:
+                        break
+                    time.sleep(_DispenseStub.sim_update_seconds)
+                measured[i] = final_measured
+            return measured
     dispense = _DispenseStub()
     Encoder = None
 
@@ -229,6 +277,7 @@ pygame.display.set_caption('Dispenser Interface')
 menu = MENU_START
 location = 0
 time_frequency, time_duration, time_start_time = [0,0,0], [0,0,0], [0,0,0]
+mixing_settings_form_state = mixing_settings_form.default_state()  # Mixing settings UI: stores the selected row, edit mode, and saved schedule values.
 start_time_selection = False
 sprites = 4
 previous_menu = MENU_START
@@ -341,7 +390,7 @@ selection_image, selection_image_rect = load_image(r'./Sprites/rond.png', (145, 
 return_selection_image, return_selection_image_rect = load_image(r'./Sprites/rond.png', (100, 100), loci[-1])  # Return button UI: default-size selector used when the back button is selected.
 
 #loud in 2 component mixing sprite
-two_component_image, two_component_image_rect = load_image(r'./Sprites/button_2comp.png',(175,175),loci[0])
+two_component_image, two_component_image_rect = load_image(r'./Sprites/button_2comp_1.png',(175,175),loci[0])
 
 #loud in 4 component mixing sprite
 four_component_image, four_component_image_rect = load_image(r'./Sprites/button_4comp.png',(175,175),loci[1])
@@ -391,20 +440,21 @@ button2_image, button2_image_rect = load_image(r'./Sprites/button.png', button_s
 button3_image, button3_image_rect = load_image(r'./Sprites/button.png', button_size, (loci[2]))
 button4_image, button4_image_rect = load_image(r'./Sprites/button.png', button_size, (loci[3]))
 
-bottle_img_size = (116,626)
+bottle_img_size = (150,626)
 bottle_img_size = (bottle_img_size[0]//4,bottle_img_size[1]//4)
 button_bottle_a_image, button_bottle_a_image_rect = load_image(r'./Sprites/button_bottle_a.png', bottle_img_size, (loci[0]))
 button_bottle_b_image, button_bottle_b_image_rect = load_image(r'./Sprites/button_bottle_b.png', bottle_img_size, (loci[1]))
 button_bottle_c_image, button_bottle_c_image_rect = load_image(r'./Sprites/button_bottle_c.png', bottle_img_size, (loci[2]))
-button_bottle_d_image, button_bottle_d_image_rect = load_image(r'./Sprites/button_bottle_d.png', bottle_img_size, (loci[3]))
+button_bottle_d_image, button_bottle_d_image_rect = load_image(r'./Sprites/button_bottle_c.png', bottle_img_size, (loci[3]))
 
 loci = locus(2)
 #load yes and no sprite
-yes_image, yes_image_rect = load_image(r'./Sprites/YES.png', button_size, (loci[0]))
+yes_image, yes_image_rect = load_image(r'./Sprites/yes.png', button_size, (loci[0]))
 no_image, no_image_rect = load_image(r'./Sprites/no.png', button_size, (loci[1]))
 
-button_bottle_ab_image, button_bottle_ab_image_rect = load_image(r'./Sprites/button_bottle_a.png', bottle_img_size, (loci[0]))
-button_bottle_cd_image, button_bottle_cd_image_rect = load_image(r'./Sprites/button_bottle_b.png', bottle_img_size, (loci[1]))
+button_bottle_ab_image, button_bottle_ab_image_rect = load_image(r'./Sprites/button_2comp_1.png', button_size, (loci[0]))
+button_bottle_cd_image, button_bottle_cd_image_rect = load_image(r'./Sprites/button_2comp_2.png', button_size, (loci[1]))
+
 
 def draw_selection_cursor():
     if location == sprites and menu_has_return_button(menu):
@@ -460,6 +510,8 @@ while running:
     if wheel_direction is not None and encoder not in ("Left", "Right", "Click"):
         encoder = wheel_direction
 
+    location_before_encoder = location  # Mixing settings UI: keeps the selected form row steady while an edited value changes.
+
     if encoder == "Right": #changing location
         location += 1
         location = available_locations(location, "right", available_menu_locations(menu, sprites))
@@ -490,6 +542,7 @@ while running:
                 location = 0
         elif menu == MENU_REPLACE_WEIGHT:
             location  = 0
+            volume_replacement_progress = round(volume_replacement_progress,-1)
             volume_replacement_progress += volume_replacement_step
         elif menu == MENU_MIXING_FREQUENCY:
             if start_time_selection:
@@ -500,6 +553,10 @@ while running:
         elif menu == MENU_MIXING_START_TIME:
             if start_time_selection:
                 time_start_time = select_time(time_start_time, "right", time_increment_selection)
+        elif menu == MENU_MIXING_SETTINGS:
+            form_location = location_before_encoder if mixing_settings_form_state["editing"] else location  # Mixing settings UI: chooses whether encoder movement edits a value or moves between rows.
+            mixing_settings_form_state = mixing_settings_form.handle_turn(mixing_settings_form_state, "right", form_location)
+            location = mixing_settings_form_state["location"]
         elif menu == MENU_1COMPONENT_WEIGHT:
             if weight_1component_progress < max_weight_1component:
                 location  = 0
@@ -536,6 +593,7 @@ while running:
             if location == 2:
                 location = 1
         elif menu == MENU_REPLACE_WEIGHT:
+            volume_replacement_progress = round(volume_replacement_progress,-1)
             if volume_replacement_progress > 0:
                 location  = 0
                 volume_replacement_progress = max(0.0, volume_replacement_progress - volume_replacement_step)
@@ -554,6 +612,10 @@ while running:
             location = available_locations(location, "left", 4)
             if start_time_selection:
                 time_start_time = select_time(time_start_time, "left", time_increment_selection)
+        elif menu == MENU_MIXING_SETTINGS:
+            form_location = location_before_encoder if mixing_settings_form_state["editing"] else location  # Mixing settings UI: chooses whether encoder movement edits a value or moves between rows.
+            mixing_settings_form_state = mixing_settings_form.handle_turn(mixing_settings_form_state, "left", form_location)
+            location = mixing_settings_form_state["location"]
         elif menu == MENU_1COMPONENT_WEIGHT:
             if weight_1component_progress > 0:
                 location  = 0
@@ -571,6 +633,7 @@ while running:
             elif location == 1:
                 menu = MENU_4COMPONENT_WEIGHT
             elif location == 2:
+                components_amount = -1
                 menu = MENU_MIX_CONFIRM
             elif location == 3:
                 menu = MENU_SETTINGS
@@ -630,13 +693,9 @@ while running:
 
 
         elif menu == MENU_MIXING_SETTINGS:
-            if location == 0:
-                menu = MENU_MIXING_FREQUENCY
-            elif location == 1:
-                menu = MENU_MIXING_DURATION
-            elif location == 2:
-                menu = MENU_MIXING_START_TIME
-            elif location == sprites:
+            mixing_settings_form_state, exit_mixing_settings = mixing_settings_form.handle_click(mixing_settings_form_state, location)  # Mixing settings UI: click enters editing, advances fields, or returns to settings.
+            location = mixing_settings_form_state["location"]
+            if exit_mixing_settings:
                 menu = MENU_SETTINGS
 
 
@@ -726,6 +785,8 @@ while running:
                 weight = weight_1component_progress
                 menu = MENU_DISPENSING
         location = 0
+        if menu == MENU_MIXING_SETTINGS:
+            location = mixing_settings_form_state["location"]
 
 
     if menu == MENU_START: #draw start menu
@@ -838,12 +899,10 @@ while running:
     if menu == MENU_MIXING_SETTINGS: #draw mixing settings menu
         sprites = 3
         screen.blit(menu6_text, menu6_text_rect)  # draw menu text in the center of the screen
-        draw_selection_cursor()
+        mixing_settings_form.draw(screen, width, height, mixing_settings_form_state, create_text)
+        if location == sprites:
+            draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
-        screen.blit(frequency_text, frequency_text_rect)  # draw frequency text
-        screen.blit(duration_text, duration_text_rect)  # draw duration text
-        screen.blit(mixing_start_time_text, mixing_start_time_text_rect)  # draw mixing start time text
-        screen.blit(mixing_start_time_line2_text, mixing_start_time_line2_text_rect)  # draw mixing start time text
 
 
     if menu == MENU_MIXING_FREQUENCY: #draw frequency of mixing menu
@@ -928,7 +987,7 @@ while running:
     if menu == MENU_DISPENSING: #draw loading bar
         sprites = 4
         if not dispense_started:
-            multi_components = [0,0,0,0]
+            multi_components = [0,0,0,0]  # Dispensing screen UI: desired grams per component prepared before starting the worker thread.
             if(components_amount == 1):
                 print(weight,component)
                 multi_components[component] = weight
@@ -939,30 +998,34 @@ while running:
             elif(components_amount == 4):
                 multi_components = saved_settings.component_amounts_for_hardness(weight, hardness)
                 print(weight, hardness, saved_settings.hardness_to_ratio(hardness), multi_components)
-
-            requested_ml = [multi_components[i] / dispense.density_of_liquid for i in range(4)]
-            short = [str(i + 1) for i in range(4) if requested_ml[i] > saved_settings.bucket_volume(i)]
-            if short:
-                dispense_warning_message = "Insufficient bucket volume (" + ", ".join(short) + ") — refill before dispensing"
-                print(dispense_warning_message)
-                for i in range(4):
-                    print(f"  Bucket {i + 1} needs {requested_ml[i]:.1f} ml, has {saved_settings.bucket_volume(i)} ml")
+            else:
+                dispense_warning_message = "No dispense amount selected"
                 menu = MENU_START
                 location = 0
-            else:
-                dispense_and_track_volume(multi_components)
-                threading.Thread(target=doWork, daemon=True).start()
-                dispense_started = True
+
+            if menu == MENU_DISPENSING:
+                requested_ml = [multi_components[i] / dispense.density_of_liquid for i in range(4)]  # Dispensing screen UI: requested component volume used for bucket volume checks.
+                short = [str(i + 1) for i in range(4) if requested_ml[i] > saved_settings.bucket_volume(i)]  # Dispensing screen UI: bucket numbers that do not have enough volume.
+                if short:
+                    dispense_warning_message = "Insufficient bucket volume (" + ", ".join(short) + ") — refill before dispensing"
+                    print(dispense_warning_message)
+                    for i in range(4):
+                        print(f"  Bucket {i + 1} needs {requested_ml[i]:.1f} ml, has {saved_settings.bucket_volume(i)} ml")
+                    menu = MENU_START
+                    location = 0
+                elif not dispensing_job.start(multi_components, dispense):
+                    dispense_warning_message = "Dispensing is already running"
+                    menu = MENU_START
+                    location = 0
+                else:
+                    dispense_started = True
         if dispense_started:
-            screen.fill(DISPENSING_BACKGROUND_COLOR)
-            screen.blit(mengen_bezig, mengen_bezig_rect)  # draw "mengen bezig" text in the center of the screen
-            #progress bar for loading
-            if loading_progress < 100:
-                loading_bar_width = loading_progress*width/2//100
-                loading_bar_image = pygame.transform.scale(loading_bar_image, (int(loading_bar_width), 50))  # scale loading bar based on progress
-                loading_bar_image_rect = loading_bar_image.get_rect(midleft=(200, 3/4*height))  # update loading bar position
-                screen.blit(loading_bar_image, loading_bar_image_rect)  # draw loading bar
-            elif loading_progress >= 100:
+            dispense_snapshot = dispensing_job.snapshot()  # Dispensing screen UI: thread-safe copy of worker progress for drawing.
+            dispensing_progress_view.draw(screen, dispense_snapshot)
+            if dispense_snapshot["done"]:
+                if dispense_snapshot["error"]:
+                    dispense_warning_message = "Dispensing error: " + dispense_snapshot["error"]
+                dispensing_job.reset()
                 menu = MENU_START
                 location = 0
                 dispense_started = False

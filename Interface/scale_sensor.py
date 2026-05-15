@@ -3,15 +3,22 @@
 This intentionally does not import or modify Weight_sensor.py. That file can
 stay as a standalone hardware test script.
 """
-
+import numpy as np
 from hx711 import HX711
 
+grams  = [55.85,35.543, 22.245, 66.604+28.887]
+counts = [880400, 560400,350800, 1505000]
+
+slope, intercept = np.polyfit(counts, grams, 1)
+
+print(f"Scale factor: {1/slope:,.1f} counts/g")
+print(f"Zero offset:  {intercept:.4f}g")
 
 DOUT_PIN = 29
 PD_SCK_PIN = 31
 READING_BYTE_FORMAT = "MSB"
 READING_BIT_FORMAT = "MSB"
-REFERENCE_UNIT = 15880
+REFERENCE_UNIT = 1/slope
 TARE_SAMPLES = 31
 READ_SAMPLES = 31
 

@@ -63,7 +63,7 @@ slope, intercept = np.polyfit(counts, grams, 1)
 print(f"Scale factor: {1/slope:,.1f} counts/g")
 print(f"Zero offset:  {intercept:.4f}g")
 
-hx.set_reference_unit(1/slope)
+hx.set_reference_unit(referenceUnit)
 
 print("reset")
 hx.reset()
