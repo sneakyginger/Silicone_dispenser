@@ -7,7 +7,7 @@ from pygame.locals import *
 import pygame.gfxdraw
 import time
 import threading
-import dispense
+import dispenser
 #import Encoder
 #import Weight_sensor
 
@@ -1129,17 +1129,16 @@ while running:
         sprites = 4
         if(components_amount == 1):
             print(weight,component)
-            multi_components[component] = weight
+            dispenser.total_dispense_1comp(component,weight)
         elif(components_amount == 2):
             print(weight,component)
-            multi_components[component*2] = weight/2
-            multi_components[component*2+1] = weight/2
+            dispenser.total_dispense_1comp(component*2,weight/2)
+            dispenser.total_dispense_1comp(component*2+1,weight/2)
         elif(components_amount == 4):
             while(i<4):
-                multi_components[i] = weight/4
+                dispenser.total_dispense_1comp(i,weight/4)
                 i+=1
             print(weight, hardness)
-        dispense.multi_dispense(multi_components)
         if threading.active_count() == 1:  # check if the work thread is not already running
             threading.Thread(target=doWork).start()  # start the work in a separate thread
         screen.fill((0,0,0))          # clear screen (black background)
