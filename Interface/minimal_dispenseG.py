@@ -51,7 +51,7 @@ def move_stepper(motor_id, microsteps):
     for _ in range(int(microsteps)):
         GPIO.output(pin, 1); time.sleep(STEP_DELAY / 2)
         GPIO.output(pin, 0); time.sleep(STEP_DELAY / 2)
-    GPIO.output(MF_pin, 0) # Disable steppers
+    GPIO.output(MF_PIN, 0) # Disable steppers
 
 
 def set_servos(positions):
