@@ -77,5 +77,46 @@ def set_servos(positions):
 def multi_dispense(amounts, progress_callback=None, progress_interval=10):
     # Report progress to the UI by calling, at most once per `progress_interval` seconds:
     #     progress_callback(component_index, grams_dispensed_so_far)
-    
-    raise NotImplementedError
+    for i, amount in enumerate(amounts):
+        if amount > 0:
+            dispense_1comp(i + 1, amount, progress_callback)
+
+def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=10):
+    # Simple PI controller, tuned conservatively to avoid overshoot.
+    positions = [1, 1, 1, 1]
+    positions[bucket_id - 1] = 0
+    set_servos(positions)
+
+    start_weight = measure_weight()
+    target = start_weight + amount
+
+    Kp = 50.0       # microsteps per gram of error
+    Ki = 2.0        # microsteps per (gram·s) of accumulated error
+    MAX_STEPS = 200
+    TOL = 0.2       # grams
+    DT = 0.1        # s between control updates
+
+    integral = 0.0
+    last_report = 0.0
+
+    while True:
+        w = measure_weight()
+        error = target - w
+        if error <= TOL:
+            break
+
+        integral += error * DT
+        steps = int(Kp * error + Ki * integral)
+        steps = max(1, min(MAX_STEPS, steps))
+        move_stepper(bucket_id, steps)
+
+        now = time.monotonic()
+        if progress_callback and now - last_report >= progress_interval:
+            progress_callback(bucket_id - 1, w - start_weight)
+            last_report = now
+
+        time.sleep(DT)
+
+    set_servos([1, 1, 1, 1])
+    if progress_callback:
+        progress_callback(bucket_id - 1, measure_weight() - start_weight)
