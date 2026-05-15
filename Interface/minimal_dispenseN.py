@@ -25,7 +25,7 @@ manual_sensor = keyboard_weight_entry  # backwards-compatible alias.
 STEPPER_PINS = [7, 11, 13, 15]   # BOARD pin per motor (1..4)
 MF_PIN = 16                      # microstep-full pin
 DIR_PIN = 18                     # direction pin
-STEP_DELAY = 0.01                # seconds per microstep pulse
+STEP_DELAY = 0.001                # seconds per microstep pulse
 
 SERVO_PINS = [12, 32, 35, 33]    # BOARD pin per servo (1..4)
 SERVO_ANGLE_DISPENSE = 90        # degrees for the "dispense" position
@@ -94,7 +94,7 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
 
     Kp = 50.0       # microsteps per gram of error
     Ki = 2.0        # microsteps per (gram·s) of accumulated error
-    MAX_STEPS = 200
+    MAX_STEPS = 600
     TOL = 0.04       # grams
     DT = 0.1        # s between control updates
 
