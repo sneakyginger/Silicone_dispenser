@@ -445,7 +445,7 @@ bottle_img_size = (bottle_img_size[0]//4,bottle_img_size[1]//4)
 button_bottle_a_image, button_bottle_a_image_rect = load_image(r'./Sprites/button_bottle_a.png', bottle_img_size, (loci[0]))
 button_bottle_b_image, button_bottle_b_image_rect = load_image(r'./Sprites/button_bottle_b.png', bottle_img_size, (loci[1]))
 button_bottle_c_image, button_bottle_c_image_rect = load_image(r'./Sprites/button_bottle_c.png', bottle_img_size, (loci[2]))
-button_bottle_d_image, button_bottle_d_image_rect = load_image(r'./Sprites/button_bottle_d.png', bottle_img_size, (loci[3]))
+button_bottle_d_image, button_bottle_d_image_rect = load_image(r'./Sprites/button_bottle_c.png', bottle_img_size, (loci[3]))
 
 loci = locus(2)
 #load yes and no sprite
@@ -454,6 +454,7 @@ no_image, no_image_rect = load_image(r'./Sprites/no.png', button_size, (loci[1])
 
 button_bottle_ab_image, button_bottle_ab_image_rect = load_image(r'./Sprites/button_2comp_1.png', bottle_img_size, (loci[0]))
 button_bottle_cd_image, button_bottle_cd_image_rect = load_image(r'./Sprites/button_2comp_2.png', bottle_img_size, (loci[1]))
+
 
 def draw_selection_cursor():
     if location == sprites and menu_has_return_button(menu):
