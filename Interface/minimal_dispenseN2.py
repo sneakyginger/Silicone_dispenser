@@ -91,7 +91,9 @@ def multi_dispense(amounts, progress_callback=None, progress_interval=10):
 
 
 def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=10):
-    # dispense 90% of what is still needed until within 0.01g.
+    # First pulse dispenses ~50% of `amount` using the default calibration,
+    # then we recompute steps-per-gram from the actual delta and use that
+    # for the rest of this call.
     print(f"\n>>> dispense_1comp called: bucket={bucket_id}, amount={amount} g")
 
     start_weight = measure_weight()
@@ -102,6 +104,25 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
     positions = [1, 1, 1, 1]
     positions[bucket_id - 1] = 0
     set_servos(positions)
+
+    # --- Calibration pulse: dispense ~50% using the default rate ---
+    cal_steps = max(MIN_STEPS, int(amount * 0.5 * MICROSTEPS_PER_GRAM))
+    print(f"calibration pulse: motor {bucket_id} for {cal_steps} microsteps (~50% of {amount:.2f} g)")
+    move_stepper(bucket_id, cal_steps)
+
+    positions = [1, 1, 1, 1]
+    set_servos(positions)
+    after_cal = measure_weight()
+    positions[bucket_id - 1] = 0
+    set_servos(positions)
+
+    delta = after_cal - start_weight
+    if delta > 0.01:
+        steps_per_gram = cal_steps / delta
+        print(f"    calibrated: {delta:.3f} g in {cal_steps} steps -> {steps_per_gram:.2f} steps/g (default {MICROSTEPS_PER_GRAM})")
+    else:
+        steps_per_gram = MICROSTEPS_PER_GRAM
+        print(f"    calibration pulse dispensed too little ({delta:.3f} g); falling back to default {MICROSTEPS_PER_GRAM} steps/g")
 
     while True:
         positions = [1, 1, 1, 1]
@@ -115,7 +136,7 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
             set_servos(positions)
             print(f"Finished dispensing component {bucket_id}: target={target:.2f} g, actual={current:.2f} g")
             break
-        steps = max(MIN_STEPS, int(remaining * 0.8 * MICROSTEPS_PER_GRAM))
+        steps = max(MIN_STEPS, int(remaining * 0.8 * steps_per_gram))
         print(f"moving motor {bucket_id} for {steps} microsteps (remaining: {remaining:.2f} g)")
         move_stepper(bucket_id, steps)
 
