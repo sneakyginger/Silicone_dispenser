@@ -33,6 +33,16 @@ microsteps_per_revolution = 200 * microsteps_per_step  # 200 steps/rev with 16 m
 length_per_step = (arm_length * 2 * math.pi) / microsteps_per_revolution  # in mm
 volume_per_step = length_per_step * tube_cross_section_area / 1000/1.5  # in ml
 
+def circulate(bucket_id, time):
+    speed = 0.01
+    for i in range(4):
+        if i == bucket_id-1:
+            positions[i] = 1
+        else:
+            positions[i] = 0
+    set_servo_positions(positions)
+    move_motor(bucket_id, time/speed, speed)    
+
 
 def total_dispense_1comp(bucket_id, weight,step_delay = 0.001):
     if weight > 5:
