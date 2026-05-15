@@ -440,7 +440,7 @@ button2_image, button2_image_rect = load_image(r'./Sprites/button.png', button_s
 button3_image, button3_image_rect = load_image(r'./Sprites/button.png', button_size, (loci[2]))
 button4_image, button4_image_rect = load_image(r'./Sprites/button.png', button_size, (loci[3]))
 
-bottle_img_size = (116,626)
+bottle_img_size = (150,626)
 bottle_img_size = (bottle_img_size[0]//4,bottle_img_size[1]//4)
 button_bottle_a_image, button_bottle_a_image_rect = load_image(r'./Sprites/button_bottle_a.png', bottle_img_size, (loci[0]))
 button_bottle_b_image, button_bottle_b_image_rect = load_image(r'./Sprites/button_bottle_b.png', bottle_img_size, (loci[1]))
@@ -452,8 +452,8 @@ loci = locus(2)
 yes_image, yes_image_rect = load_image(r'./Sprites/yes.png', button_size, (loci[0]))
 no_image, no_image_rect = load_image(r'./Sprites/no.png', button_size, (loci[1]))
 
-button_bottle_ab_image, button_bottle_ab_image_rect = load_image(r'./Sprites/button_2comp_1.png', bottle_img_size, (loci[0]))
-button_bottle_cd_image, button_bottle_cd_image_rect = load_image(r'./Sprites/button_2comp_2.png', bottle_img_size, (loci[1]))
+button_bottle_ab_image, button_bottle_ab_image_rect = load_image(r'./Sprites/button_2comp_1.png', button_size, (loci[0]))
+button_bottle_cd_image, button_bottle_cd_image_rect = load_image(r'./Sprites/button_2comp_2.png', button_size, (loci[1]))
 
 
 def draw_selection_cursor():
