@@ -382,7 +382,7 @@ selection_image, selection_image_rect = load_image(r'./Sprites/rond.png', (145, 
 return_selection_image, return_selection_image_rect = load_image(r'./Sprites/rond.png', (100, 100), loci[-1])  # Return button UI: default-size selector used when the back button is selected.
 
 #loud in 2 component mixing sprite
-two_component_image, two_component_image_rect = load_image(r'./Sprites/button_2comp.png',(175,175),loci[0])
+two_component_image, two_component_image_rect = load_image(r'./Sprites/button_2comp_1.png',(175,175),loci[0])
 
 #loud in 4 component mixing sprite
 four_component_image, four_component_image_rect = load_image(r'./Sprites/button_4comp.png',(175,175),loci[1])
@@ -444,8 +444,8 @@ loci = locus(2)
 yes_image, yes_image_rect = load_image(r'./Sprites/YES.png', button_size, (loci[0]))
 no_image, no_image_rect = load_image(r'./Sprites/no.png', button_size, (loci[1]))
 
-button_bottle_ab_image, button_bottle_ab_image_rect = load_image(r'./Sprites/button_bottle_a.png', bottle_img_size, (loci[0]))
-button_bottle_cd_image, button_bottle_cd_image_rect = load_image(r'./Sprites/button_bottle_b.png', bottle_img_size, (loci[1]))
+button_bottle_ab_image, button_bottle_ab_image_rect = load_image(r'./Sprites/button_2comp_1.png', bottle_img_size, (loci[0]))
+button_bottle_cd_image, button_bottle_cd_image_rect = load_image(r'./Sprites/button_2comp_2.png', bottle_img_size, (loci[1]))
 
 def draw_selection_cursor():
     if location == sprites and menu_has_return_button(menu):
