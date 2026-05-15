@@ -1,6 +1,7 @@
 #python -m venv dispenser_venv
 #dispenser_venv\Scripts\activate
 
+import sys
 import pygame
 from pygame.locals import *
 import pygame.gfxdraw
@@ -8,6 +9,8 @@ import time
 import threading
 import random
 import saved_settings
+
+use_dispenser2 = "-d2" in sys.argv[1:]
 import dispensing_job
 import dispensing_progress_view
 import mixing_settings_form
@@ -35,7 +38,10 @@ def is_raspberry_pi():
 Pin_left, Pin_right, Pin_click = 11, 15, 13
 
 if is_raspberry_pi():
-    import dispense
+    if use_dispenser2:
+        import dispenser as dispense
+    else:
+        import dispense
     import Encoder
     import RPi.GPIO as GPIO
     GPIO.cleanup()

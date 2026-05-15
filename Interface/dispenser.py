@@ -40,6 +40,26 @@ def total_dispense_1comp(bucket_id, weight,step_delay = 0.001):
     while(dispensed < weight-0.1):
         step_delay = np.interp(weight - dispensed, [0, 100], [1, 0.0005])
         dispensed = dispense_and_measure(bucket_id, weight - dispensed)
+    return dispensed
+
+def multi_dispense(amounts, progress_callback=None, progress_interval=10):
+    measured = [0.0, 0.0, 0.0, 0.0]
+    active = [i for i, w in enumerate(amounts) if w and w > 0]
+    if len(active) == 1:
+        i = active[0]
+        weight = float(amounts[i])
+        dispensed = total_dispense_1comp(i + 1, weight)
+        measured[i] = dispensed if dispensed is not None else weight
+        if progress_callback is not None:
+            progress_callback(i, measured[i])
+    else:
+        for i in active:
+            weight = float(amounts[i])
+            dispense(i + 1, weight, step_delay)
+            measured[i] = weight
+            if progress_callback is not None:
+                progress_callback(i, weight)
+    return measured
 
 def dispense_and_measure(bucket_id, weight,step_delay):
     tare_weight = scale_sensor.read_weight()
