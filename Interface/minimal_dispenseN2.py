@@ -100,6 +100,7 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
         if remaining <= 0.01:
             break
         steps = max(1, int(remaining * 0.9 * MICROSTEPS_PER_GRAM))
+        print(f"moving motor {bucket_id} for {steps} microsteps (remaining: {remaining:.2f} g)")
         move_stepper(bucket_id, steps)
 
         now = time.monotonic()
