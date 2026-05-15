@@ -61,7 +61,9 @@ _servo_pwms = None
 def set_servos(positions):
     """Move the 4 servos. `positions` is a list of 4 ints: 0=dispense, 1=mix."""
     assert len(positions) == 4 and all(p in (0, 1) for p in positions)
-    angles = [SERVO_ANGLE_DISPENSE if p == 0 else SERVO_ANGLE_MIX for p in positions]
+    # Servo 2 is mounted inverted, so its horn must travel the opposite way.
+    effective = [(1 - p) if i == 1 else p for i, p in enumerate(positions)]
+    angles = [SERVO_ANGLE_DISPENSE if p == 0 else SERVO_ANGLE_MIX for p in effective]
     global _servo_pwms
     if _servo_pwms is None:
         GPIO.setmode(GPIO.BOARD)
