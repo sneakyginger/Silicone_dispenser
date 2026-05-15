@@ -36,21 +36,23 @@ volume_per_step = length_per_step * tube_cross_section_area / 1000  # in ml
 
 def total_dispense_1comp(bucket_id, weight,step_delay = 0.001):
     if weight > 5:
-        step_delay = 0.0005
-    elif weight > 1:
         step_delay = 0.001
-    else:
+    elif weight > 1:
         step_delay = 0.01
+    else:
+        step_delay = 0.1
     dispensed = dispense_and_measure(bucket_id, weight,step_delay)
+    print(dispensed)
     while(dispensed < weight-0.1):
         step_delay = np.interp(weight - dispensed, [0, 100], [0.0005, 0.1])
         dispensed = dispense_and_measure(bucket_id, weight - dispensed,step_delay)
+        print(dispensed)
         if weight > 5:
-            step_delay = 0.0005
-        elif weight > 1:
             step_delay = 0.001
-        else:
+        elif weight > 1:
             step_delay = 0.01
+        else:
+            step_delay = 0.1
     return dispensed
 
 def multi_dispense(amounts, progress_callback=None, progress_interval=10):
