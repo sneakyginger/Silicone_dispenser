@@ -115,6 +115,7 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
         positions[bucket_id - 1] = 0
         remaining = target - current
         if remaining <= 0.05:
+            positions = [1, 1, 1, 1]
             print(f"Finished dispensing component {bucket_id}: target={target:.2f} g, actual={current:.2f} g")
             break
         steps = max(MIN_STEPS, int(remaining * 0.8 * MICROSTEPS_PER_GRAM))
