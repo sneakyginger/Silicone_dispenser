@@ -31,7 +31,7 @@ microsteps_per_step = 1
 microsteps_per_revolution = 200 * microsteps_per_step  # 200 steps/rev with 16 microsteps
 
 length_per_step = (arm_length * 2 * math.pi) / microsteps_per_revolution  # in mm
-volume_per_step = length_per_step * tube_cross_section_area / 1000/2  # in ml
+volume_per_step = length_per_step * tube_cross_section_area / 1000/1.5  # in ml
 
 
 def total_dispense_1comp(bucket_id, weight,step_delay = 0.001):
