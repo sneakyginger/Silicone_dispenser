@@ -27,7 +27,14 @@ DEFAULT_CARTRIDGE_CONFIG = {
         "bucket_2": {"component": "B", "hardness_group": "small", "hardness": 5, "volume": 100},
         "bucket_3": {"component": "A", "hardness_group": "big", "hardness": 50, "volume": 100},
         "bucket_4": {"component": "B", "hardness_group": "big", "hardness": 50, "volume": 100},
-    }
+    },
+    "mixing_settings": {
+        "frequency": "daily",
+        "weekday": 0,
+        "hour": 9,
+        "minute": 0,
+        "duration_minutes": 3,
+    },
 }
 
 # Python lists use index 0..3, but the machine labels the physical reservoirs
@@ -60,7 +67,8 @@ def default_cartridge_config():
         "buckets": {
             bucket_key: dict(bucket)
             for bucket_key, bucket in DEFAULT_CARTRIDGE_CONFIG["buckets"].items()
-        }
+        },
+        "mixing_settings": dict(DEFAULT_CARTRIDGE_CONFIG["mixing_settings"]),
     }
 
 
@@ -156,7 +164,33 @@ def migrate_cartridge_config(config):
                 bucket[field] = default_value
                 migrated = True
 
+    if "mixing_settings" not in config:
+        config["mixing_settings"] = dict(defaults["mixing_settings"])
+        migrated = True
+    else:
+        mixing_settings = config["mixing_settings"]
+        for field, default_value in defaults["mixing_settings"].items():
+            if field not in mixing_settings:
+                mixing_settings[field] = default_value
+                migrated = True
+
     return migrated
+
+
+def mixing_settings():
+    """Return the saved mixing schedule settings."""
+    return dict(cartridge_config["mixing_settings"])
+
+
+def set_mixing_settings(settings):
+    """Save mixing schedule settings."""
+    current_settings = cartridge_config["mixing_settings"]
+    current_settings["frequency"] = settings.get("frequency", current_settings["frequency"])
+    current_settings["weekday"] = int(settings.get("weekday", current_settings["weekday"])) % 7
+    current_settings["hour"] = int(settings.get("hour", current_settings["hour"])) % 24
+    current_settings["minute"] = int(settings.get("minute", current_settings["minute"])) % 60
+    current_settings["duration_minutes"] = min(10, max(1, int(settings.get("duration_minutes", current_settings["duration_minutes"]))))
+    save_settings(cartridge_config)
 
 
 def bucket_volume(idx):
