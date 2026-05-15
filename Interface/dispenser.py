@@ -18,9 +18,6 @@ servo_pins = [12, 32, 35, 33]  # BOARD pin numbers for servos 1–4 (hardware PW
 SERVO_ANGLE_DISPENSE = 90   # degrees — change here to recalibrate the dispense position
 SERVO_ANGLE_MIX      = 0  # degrees — change here to recalibrate the mix position
 
-
-comps_dispensed = [0, 0, 0, 0]  # in gram # for testing, to keep track of how much has been dispensed from each motor
-
 density_of_liquid = 1.06  # in g/ml, density of the liquid being dispensed
 
 tube_inner_diameter = 5  # in mm
@@ -44,7 +41,8 @@ def circulate(bucket_id, time):
     for i in range(4):
         if i == bucket_id-1:
             positions[i] = 1
-
+        else:
+            positions[i] = 0
     set_servo_positions(positions)
     move_motor(bucket_id, time/speed, speed)    
 
@@ -56,13 +54,11 @@ def total_dispense_1comp(bucket_id, weight,step_delay = 0.001):
         step_delay = 0.01
     else:
         step_delay = 0.1
-    dispensed = dispense_and_measure(bucket_id, weight,step_delay)
-    total_dispensed = dispensed
-    print(dispensed)
-    while(total_dispensed < weight-0.1):
-        dispensed = dispense_and_measure(bucket_id, weight - total_dispensed,step_delay)
-        total_dispensed += dispensed
-        print(total_dispensed)
+    tare = tare()
+    dispensed = dispense_and_measure(bucket_id, weight, tare,step_delay)
+    while(dispensed < weight-0.06):
+        dispensed = dispense_and_measure(bucket_id, weight - dispensed, tare,step_delay)
+        print(dispensed)
         if weight > 5:
             step_delay = 0.005
         elif weight > 1:
@@ -78,10 +74,19 @@ def multi_dispense(amounts, progress_callback=None, progress_interval=10):
             measured[i] = total_dispense_1comp(i + 1, float(amounts[i]), step_delay)
             if progress_callback is not None:
                 progress_callback(i, measured[i])
+    error =  max(measured)-min(measured)
+    if error > 0.06:
+        for i in range(len(measured)):
+            if measured[i] == min(measured):
+                total_dispense_1comp(i + 1, error, step_delay)
+
     return measured
 
-def dispense_and_measure(bucket_id, weight,step_delay):
+def tare():
     tare_weight = scale_sensor.read_weight()
+    return tare_weight
+
+def dispense_and_measure(bucket_id, weight, tare_weight,step_delay):
     dispense(bucket_id, weight,step_delay)
     time.sleep(5)
     measured_weight = scale_sensor.read_weight()
