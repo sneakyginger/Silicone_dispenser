@@ -84,9 +84,14 @@ def set_servos(positions):
 def multi_dispense(amounts, progress_callback=None, progress_interval=10):
     # Report progress to the UI by calling, at most once per `progress_interval` seconds:
     #     progress_callback(component_index, grams_dispensed_so_far)
+    print(f"\n=== multi_dispense called with amounts={amounts} ===")
     for i, amount in enumerate(amounts):
+        print(f"=== multi_dispense iter i={i}, amount={amount} ===")
         if amount > 0:
             dispense_1comp(i + 1, amount, progress_callback)
+        else:
+            print(f"    (skipping bucket {i + 1}, amount={amount})")
+    print(f"=== multi_dispense done ===")
 
 
 def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=10):
