@@ -69,9 +69,11 @@ def set_servos(positions):
         for pin in SERVO_PINS:
             GPIO.setup(pin, GPIO.OUT)
             _servo_pwms.append(GPIO.PWM(pin, 50))  # 50 Hz servo signal
-    for pwm, angle in zip(_servo_pwms, angles):
+    for i, (pwm, angle, p) in enumerate(zip(_servo_pwms, angles, positions), start=1):
         duty = 2.5 + (angle / 180) * (13.5 - 2.5)
         pwm.start(duty)
+        action = "opening (dispense)" if p == 0 else "closing (mix)"
+        print(f"servo {i}: {action} -> {angle}° (duty {duty:.2f}%)")
     time.sleep(2)  # let servos physically reach their position
     for pwm in _servo_pwms:
         pwm.stop()  # fully halt PWM thread; restarted next call via .start()
