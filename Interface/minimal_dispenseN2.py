@@ -56,23 +56,27 @@ def move_stepper(motor_id, microsteps):
     GPIO.output(MF_PIN, 0) # Disable steppers
 
 
+_servo_pwms = None
+
 def set_servos(positions):
     """Move the 4 servos. `positions` is a list of 4 ints: 0=dispense, 1=mix."""
     assert len(positions) == 4 and all(p in (0, 1) for p in positions)
     angles = [SERVO_ANGLE_DISPENSE if p == 0 else SERVO_ANGLE_MIX for p in positions]
-    GPIO.setmode(GPIO.BOARD)
-    pwms = []
-    for pin in SERVO_PINS:
-        GPIO.setup(pin, GPIO.OUT)
-        pwm = GPIO.PWM(pin, 50)  # 50 Hz servo signal
-        pwm.start(0)
-        pwms.append(pwm)
-    for pwm, angle in zip(pwms, angles):
+    global _servo_pwms
+    if _servo_pwms is None:
+        GPIO.setmode(GPIO.BOARD)
+        _servo_pwms = []
+        for pin in SERVO_PINS:
+            GPIO.setup(pin, GPIO.OUT)
+            pwm = GPIO.PWM(pin, 50)  # 50 Hz servo signal
+            pwm.start(0)
+            _servo_pwms.append(pwm)
+    for pwm, angle in zip(_servo_pwms, angles):
         duty = 2.5 + (angle / 180) * (13.5 - 2.5)
         pwm.ChangeDutyCycle(duty)
     time.sleep(2)  # let servos physically reach their position
-    for pwm in pwms:
-        pwm.ChangeDutyCycle(0); pwm.stop()
+    for pwm in _servo_pwms:
+        pwm.ChangeDutyCycle(0)  # release holding torque, keep PWM alive for reuse
 
 
 # --- The one function other files call --------------------------------------
