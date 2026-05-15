@@ -81,6 +81,7 @@ def multi_dispense(amounts, progress_callback=None, progress_interval=10):
         if amount > 0:
             dispense_1comp(i + 1, amount, progress_callback)
 
+
 def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=10):
     # Simple PI controller, tuned conservatively to avoid overshoot.
     positions = [1, 1, 1, 1]
@@ -118,5 +119,7 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
         time.sleep(DT)
 
     set_servos([1, 1, 1, 1])
+    final_dispensed = measure_weight() - start_weight
     if progress_callback:
-        progress_callback(bucket_id - 1, measure_weight() - start_weight)
+        progress_callback(bucket_id - 1, final_dispensed)
+    print(f"Bucket {bucket_id}: requested {amount:.2f} g, dispensed {final_dispensed:.2f} g")
