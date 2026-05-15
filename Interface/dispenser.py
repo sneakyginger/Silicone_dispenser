@@ -40,11 +40,11 @@ def multi_circulate(time):
 
 def circulate(bucket_id, time):
     speed = 0.01
+    positions = [0,0,0,0]
     for i in range(4):
         if i == bucket_id-1:
             positions[i] = 1
-        else:
-            positions[i] = 0
+
     set_servo_positions(positions)
     move_motor(bucket_id, time/speed, speed)    
 
