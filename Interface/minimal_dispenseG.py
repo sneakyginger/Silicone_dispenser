@@ -117,3 +117,15 @@ def dispense_and_measure(bucket_id, weight,step_delay):
     measured_weight = scale_sensor.read_weight()
     net_weight = measured_weight - tare_weight
     return net_weight
+
+
+def dispense(bucket_id, weight,step_delay):
+    amount = weight / density_of_liquid  # convert weight to volume
+    print(f"Dispensing bucket {bucket_id}, amount: {amount:.4f} ml")
+
+    positions = [0 if i == bucket_id - 1 else 1 for i in range(4)]  # only this bucket's servo to dispense
+    set_servo_positions(positions)
+
+    move_motor(bucket_id, amount / volume_per_step, step_delay)
+
+    set_servo_positions([1, 1, 1, 1])  # return all servos to mix position after dispensing
