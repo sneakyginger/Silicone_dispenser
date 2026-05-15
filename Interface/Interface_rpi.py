@@ -37,7 +37,7 @@ if is_raspberry_pi():
     GPIO.cleanup()
 else:
     class _DispenseStub:
-        density_of_liquid = 1.0
+        density_of_liquid = 1.06
         @staticmethod
         def multi_dispense(amounts):
             print(f"[laptop sim] multi_dispense({amounts})")
