@@ -73,7 +73,6 @@ def set_servos(positions):
         duty = 2.5 + (angle / 180) * (13.5 - 2.5)
         pwm.start(duty)
         action = "opening (dispense)" if p == 0 else "closing (mix)"
-        print(f"servo {i}: {action} -> {angle}° (duty {duty:.2f}%)")
     time.sleep(2)  # let servos physically reach their position
     for pwm in _servo_pwms:
         pwm.stop()  # fully halt PWM thread; restarted next call via .start()
@@ -84,14 +83,11 @@ def set_servos(positions):
 def multi_dispense(amounts, progress_callback=None, progress_interval=10):
     # Report progress to the UI by calling, at most once per `progress_interval` seconds:
     #     progress_callback(component_index, grams_dispensed_so_far)
-    print(f"\n=== multi_dispense called with amounts={amounts} ===")
     for i, amount in enumerate(amounts):
-        print(f"=== multi_dispense iter i={i}, amount={amount} ===")
         if amount > 0:
             dispense_1comp(i + 1, amount, progress_callback)
         else:
             print(f"    (skipping bucket {i + 1}, amount={amount})")
-    print(f"=== multi_dispense done ===")
 
 
 def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=10):
@@ -105,9 +101,7 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
 
     positions = [1, 1, 1, 1]
     positions[bucket_id - 1] = 0
-    print(f"    about to call set_servos({positions})")
     set_servos(positions)
-    print(f"    set_servos returned")
 
     while True:
         positions = [1, 1, 1, 1]
