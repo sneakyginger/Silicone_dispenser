@@ -6,8 +6,8 @@ stay as a standalone hardware test script.
 import numpy as np
 from hx711 import HX711
 
-grams  = [14.682, 25.099, 37.111, 54.681, 61.71, 79.030, 141.891, 195.712, 155.761]
-counts = [233000, 398500, 589420, 868650, 979700, 1255451, 2253661, 3108360, 2473600]
+grams  = [55.85,35.543, 22.245, 66.604+28.887]
+counts = [880400, 560400,350800, 1505000]
 
 slope, intercept = np.polyfit(counts, grams, 1)
 
