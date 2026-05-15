@@ -32,6 +32,9 @@ SERVO_ANGLE_DISPENSE = 90        # degrees for the "dispense" position
 SERVO_ANGLE_MIX = 0              # degrees for the "mix" position
 
 
+step_delay = 0.001  # in seconds, delay between each microstep pulse1 #max speed 0.000005
+
+
 # --- Helpers available to your implementation -------------------------------
 
 def measure_weight():
@@ -106,3 +109,11 @@ def total_dispense_1comp(bucket_id, weight,step_delay = 0.001):
         else:
             step_delay = 0.1
     return total_dispensed
+
+def dispense_and_measure(bucket_id, weight,step_delay):
+    tare_weight = scale_sensor.read_weight()
+    dispense(bucket_id, weight,step_delay)
+    time.sleep(5)
+    measured_weight = scale_sensor.read_weight()
+    net_weight = measured_weight - tare_weight
+    return net_weight
