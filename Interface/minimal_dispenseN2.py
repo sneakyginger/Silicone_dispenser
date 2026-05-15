@@ -91,15 +91,18 @@ def multi_dispense(amounts, progress_callback=None, progress_interval=10):
 
 def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=10):
     # dispense 90% of what is still needed until within 0.01g.
-    
+    print(f"\n>>> dispense_1comp called: bucket={bucket_id}, amount={amount} g")
 
     start_weight = measure_weight()
     target = start_weight + amount
     last_report = 0.0
+    print(f"    start_weight={start_weight:.3f} g, target={target:.3f} g")
 
     positions = [1, 1, 1, 1]
     positions[bucket_id - 1] = 0
+    print(f"    about to call set_servos({positions})")
     set_servos(positions)
+    print(f"    set_servos returned")
 
     while True:
         positions = [1, 1, 1, 1]
