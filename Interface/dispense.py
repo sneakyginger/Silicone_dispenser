@@ -86,23 +86,6 @@ def dispense_and_measure(bucket_id, amount, progress_callback=None, progress_int
     return measured
 
 
-def under_tolerance_buckets(measured_results, amounts, relative_tolerance, target_ratio=1.0):
-    """Return list of (index, shortfall) for buckets below target_ratio * target by more than tolerance.
-
-    target_ratio is the shared ratio all buckets should reach (e.g. the ratio of the most
-    over-dispensed bucket). Each bucket's proportional target is amounts[i] * target_ratio,
-    so all buckets are corrected to the same fraction of their individual targets rather than
-    to their absolute targets independently.
-
-    Buckets with amounts[i] == 0 are skipped — they were not requested.
-    """
-    return [
-        (i, amounts[i] * target_ratio - measured)
-        for i, (measured, _) in enumerate(zip(measured_results, amounts))
-        if amounts[i] > 0 and amounts[i] * target_ratio - measured > relative_tolerance
-    ]
-
-
 def biggest_ratio_difference(measured_results, amounts):
     """Return (i, j, ratios, diff_pct) for the pair of active buckets with the biggest % ratio difference.
 
@@ -118,87 +101,78 @@ def biggest_ratio_difference(measured_results, amounts):
     return i, j, ratios_by_index, diff_pct
 
 
-def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, max_iterations=10,
+def multi_dispense(amounts, relative_tolerance=0.1, safety_factor=0.95, max_iterations=10,
                    progress_callback=None, progress_interval=10):
     assert len(amounts) in (2, 4), "Must provide amounts for 2 or 4 motors."
 
+    active = [i for i, a in enumerate(amounts) if a > 0]
+    if not active:
+        print("No buckets requested — nothing to dispense.")
+        return [0.0] * len(amounts)
+
     print("Dispensing multiple buckets:")
-    for i, amount in enumerate(amounts):
-        print(f"Bucket {i+1}: {amount} grams.")
+    for i in active:
+        print(f"Bucket {i+1}: {amounts[i]} grams.")
     print("")
 
-    # initial dispense pass — skip motors with amount == 0 so we don't move them or re-prompt the scale
-    measured_results = [
-        dispense_and_measure(
+    measured = [0.0] * len(amounts)
+    for i in active:
+        measured[i] = dispense_and_measure(
             i + 1,
-            amount,
+            amounts[i],
             progress_callback=progress_callback,
             progress_interval=progress_interval,
-        ) if amount > 0 else 0.0
-        for i, amount in enumerate(amounts)
-    ]
+        )
 
-    print("Measured weights after dispensing:")
-    for i, measured in enumerate(measured_results):
-        print(f"Bucket {i+1}: {measured:.3f} grams.")
+    print("Measured weights after initial dispense:")
+    for i in active:
+        print(f"Bucket {i+1}: {measured[i]:.3f} g (ratio {measured[i]/amounts[i]:.4f})")
 
-    # warn about buckets whose ratio deviates from the most over-dispensed bucket
-    ratios = [m / t if t > 0 else 0.0 for m, t in zip(measured_results, amounts)]
-    active_ratios = [r for r, t in zip(ratios, amounts) if t > 0]
-    if not active_ratios:
-        print("No buckets requested — nothing to dispense.")
-        return measured_results
-    max_ratio = max(active_ratios)
-    for i, (measured, target) in enumerate(zip(measured_results, amounts)):
-        if target == 0:
-            continue
-        shortfall_from_ratio = target * max_ratio - measured
-        if shortfall_from_ratio > relative_tolerance:
-            print(f"Warning: Bucket {i+1} is behind proportional target. "
-                  f"Measured: {measured:.3f}g, Proportional target: {target * max_ratio:.3f}g "
-                  f"(ratio {max_ratio:.4f}), shortfall: {shortfall_from_ratio:.3f}g.")
-
-    # correction loop: top up buckets that are below the fixed target ratio
-    # target_ratio is fixed once from the initial dispense — it must NOT be updated inside the loop,
-    # otherwise any overshoot caused by noise would raise the target and trigger a runaway chain reaction
-    target_ratio = max_ratio
     iterations_used = 0
-    while iterations_used < max_iterations:
-        to_correct = under_tolerance_buckets(measured_results, amounts, relative_tolerance, target_ratio=target_ratio)
+    for iterations_used in range(1, max_iterations + 1):
+        target_ratio = max(measured[i] / amounts[i] for i in active)
 
+        to_correct = [
+            (i, amounts[i] * target_ratio - measured[i])
+            for i in active
+            if amounts[i] * target_ratio - measured[i] > relative_tolerance
+        ]
         if not to_correct:
-            print("All buckets within proportional tolerance.")
+            print(f"All buckets within proportional tolerance after {iterations_used - 1} correction pass(es).")
             break
 
         for i, shortfall in to_correct:
-            correction = min(shortfall, amounts[i] * correction_fraction)
-            print(f"Bucket {i+1}: shortfall {shortfall:.3f}g from proportional target, correcting by {correction:.3f}g.")
-            measured_before_correction = measured_results[i]
-            def report_correction_progress(bucket_index, grams):
+            # safety_factor < 1 biases toward slight undershoot, so an overshoot from noise
+            # only nudges target_ratio up by ~noise size — no runaway chain reaction.
+            correction = shortfall * safety_factor
+            print(f"Bucket {i+1}: shortfall {shortfall:.3f}g (target ratio {target_ratio:.4f}), "
+                  f"correcting by {correction:.3f}g.")
+            measured_before_correction = measured[i]
+
+            def report_correction_progress(bucket_index, grams, _before=measured_before_correction):
                 if progress_callback is not None:
-                    progress_callback(bucket_index, measured_before_correction + grams)
-            measured_results[i] += dispense_and_measure(
+                    progress_callback(bucket_index, _before + grams)
+
+            measured[i] += dispense_and_measure(
                 i + 1,
                 correction,
                 progress_callback=report_correction_progress,
                 progress_interval=progress_interval,
             )
             if progress_callback is not None:
-                progress_callback(i, measured_results[i])
-
-        iterations_used += 1
+                progress_callback(i, measured[i])
     else:
         print("Warning: max correction iterations reached. Some buckets may still be out of proportional tolerance.")
 
     print(f"Total correction iterations used: {iterations_used}")
 
-    # report biggest ratio difference (only meaningful when 2+ buckets were active)
-    result = biggest_ratio_difference(measured_results, amounts)
+    result = biggest_ratio_difference(measured, amounts)
     if result is not None:
         i, j, ratios, max_diff_pct = result
-        print(f"Biggest % difference: Bucket {i+1} ({ratios[i]*100:.2f}% of target) vs Bucket {j+1} ({ratios[j]*100:.2f}% of target): {max_diff_pct:.2f}%")
+        print(f"Biggest % difference: Bucket {i+1} ({ratios[i]*100:.2f}% of target) vs "
+              f"Bucket {j+1} ({ratios[j]*100:.2f}% of target): {max_diff_pct:.2f}%")
 
-    return measured_results
+    return measured
 
 
 def mix(rotations=10):
