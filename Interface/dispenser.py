@@ -124,6 +124,7 @@ def move_motor(motor_id, steps, step_delay=0.001):
         GPIO.output(pin, 0)
         time.sleep(0.01 / 2)
         i+=1
+    GPIO.output(MF_pin, 0) # Disable steppers
 
 def _angle_to_duty(angle):
     """Convert a servo angle in degrees to a PWM duty cycle percentage (for 50 Hz signal).

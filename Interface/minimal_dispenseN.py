@@ -51,6 +51,8 @@ def move_stepper(motor_id, microsteps):
     for _ in range(int(microsteps)):
         GPIO.output(pin, 1); time.sleep(STEP_DELAY / 2)
         GPIO.output(pin, 0); time.sleep(STEP_DELAY / 2)
+    
+    GPIO.output(MF_pin, 0) # Disable steppers
 
 
 def set_servos(positions):
@@ -94,7 +96,7 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
     Kp = 50.0       # microsteps per gram of error
     Ki = 2.0        # microsteps per (gram·s) of accumulated error
     MAX_STEPS = 200
-    TOL = 0.2       # grams
+    TOL = 0.04       # grams
     DT = 0.1        # s between control updates
 
     integral = 0.0
@@ -108,7 +110,8 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
 
         integral += error * DT
         steps = int(Kp * error + Ki * integral)
-        steps = max(1, min(MAX_STEPS, steps))
+        cap = 10 if error < 1.0 else MAX_STEPS
+        steps = max(1, min(cap, steps))
         move_stepper(bucket_id, steps)
 
         now = time.monotonic()
