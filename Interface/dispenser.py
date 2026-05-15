@@ -44,21 +44,11 @@ def total_dispense_1comp(bucket_id, weight,step_delay = 0.001):
 
 def multi_dispense(amounts, progress_callback=None, progress_interval=10):
     measured = [0.0, 0.0, 0.0, 0.0]
-    active = [i for i, w in enumerate(amounts) if w and w > 0]
-    if len(active) == 1:
-        i = active[0]
-        weight = float(amounts[i])
-        dispensed = total_dispense_1comp(i + 1, weight)
-        measured[i] = dispensed if dispensed is not None else weight
-        if progress_callback is not None:
-            progress_callback(i, measured[i])
-    else:
-        for i in active:
-            weight = float(amounts[i])
-            dispense(i + 1, weight, step_delay)
-            measured[i] = weight
+    for i in range(len(amounts)):
+        if amounts[i] != 0:
+            measured[i] = total_dispense_1comp(i + 1, float(amounts[i]), step_delay)
             if progress_callback is not None:
-                progress_callback(i, weight)
+                progress_callback(i, measured[i])
     return measured
 
 def dispense_and_measure(bucket_id, weight,step_delay):
