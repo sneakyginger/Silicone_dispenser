@@ -6,12 +6,19 @@ stay as a standalone hardware test script.
 
 from hx711 import HX711
 
+grams  = [14.682, 25.099, 37.111, 54.681, 61.71, 79.030, 141.891, 195.712, 155.761]
+counts = [233000, 398500, 589420, 868650, 979700, 1255451, 2253661, 3108360, 2473600]
+
+slope, intercept = np.polyfit(counts, grams, 1)
+
+print(f"Scale factor: {1/slope:,.1f} counts/g")
+print(f"Zero offset:  {intercept:.4f}g")
 
 DOUT_PIN = 29
 PD_SCK_PIN = 31
 READING_BYTE_FORMAT = "MSB"
 READING_BIT_FORMAT = "MSB"
-REFERENCE_UNIT = 15880
+REFERENCE_UNIT = 1/slope
 TARE_SAMPLES = 31
 READ_SAMPLES = 31
 
