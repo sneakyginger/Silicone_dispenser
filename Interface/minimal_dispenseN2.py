@@ -68,15 +68,13 @@ def set_servos(positions):
         _servo_pwms = []
         for pin in SERVO_PINS:
             GPIO.setup(pin, GPIO.OUT)
-            pwm = GPIO.PWM(pin, 50)  # 50 Hz servo signal
-            pwm.start(0)
-            _servo_pwms.append(pwm)
+            _servo_pwms.append(GPIO.PWM(pin, 50))  # 50 Hz servo signal
     for pwm, angle in zip(_servo_pwms, angles):
         duty = 2.5 + (angle / 180) * (13.5 - 2.5)
-        pwm.ChangeDutyCycle(duty)
+        pwm.start(duty)
     time.sleep(2)  # let servos physically reach their position
     for pwm in _servo_pwms:
-        pwm.ChangeDutyCycle(0)  # release holding torque, keep PWM alive for reuse
+        pwm.stop()  # fully halt PWM thread; restarted next call via .start()
 
 
 # --- The one function other files call --------------------------------------
