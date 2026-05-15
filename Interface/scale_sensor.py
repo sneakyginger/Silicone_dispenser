@@ -3,7 +3,7 @@
 This intentionally does not import or modify Weight_sensor.py. That file can
 stay as a standalone hardware test script.
 """
-
+import numpy as np
 from hx711 import HX711
 
 grams  = [14.682, 25.099, 37.111, 54.681, 61.71, 79.030, 141.891, 195.712, 155.761]
