@@ -2,30 +2,36 @@ import random
 import math
 import time
 
-#import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
+
+import scale_sensor
 
 
-RASPBERRY = False
+RASPBERRY = True
 # GPIO pins [7, 11, 13, 15] -> [26, 23, 33, 10]
 #control_pins = [26, 23, 33, 10]  # BOARD pin numbers, one per motor
 control_pins = [7, 11, 13, 15]
+MF_pin = 16  # BOARD pin number for the MF input input (RPi 4)
+DIR_pin = 18  # BOARD pin number for the DIR input (RPi 4)
 
 step_delay = 0.01  # in seconds, delay between each microstep pulse1
 
 servo_pins = [12, 32, 35, 33]  # BOARD pin numbers for servos 1–4 (hardware PWM, RPi 5)
 
-SERVO_ANGLE_DISPENSE = 0   # degrees — change here to recalibrate the dispense position
-SERVO_ANGLE_MIX      = 90  # degrees — change here to recalibrate the mix position
+SERVO_ANGLE_DISPENSE = 90   # degrees — change here to recalibrate the dispense position
+SERVO_ANGLE_MIX      = 0  # degrees — change here to recalibrate the mix position
 
 
 comps_dispensed = [0, 0, 0, 0]  # in gram # for testing, to keep track of how much has been dispensed from each motor
 
-manual_sensor = True  # if True, prompts the user to enter the scale reading manually instead of simulating it
+keyboard_weight_entry = False  # if True, prompts the user to enter the scale reading manually in the CLI
+
+manual_sensor = keyboard_weight_entry  # backwards-compatible alias for tests and older scripts
 
 # to simulate dispensing, we will add noise to the process
-dispensing_noise_factor = 15/100  # in %,  noise in dispensing, for testing purposes
+dispensing_noise_factor = 0*15/100  # in %,  noise in dispensing, for testing purposes
 
-measurement_noise_factor = 0.04  # in g, noise in measurement, for testing purposes
+measurement_noise_factor = 0*0.04  # in g, noise in measurement, for testing purposes
 
 
 density_of_liquid = 1.06  # in g/ml, density of the liquid being dispensed
@@ -40,7 +46,7 @@ microsteps_per_revolution = 200 * microsteps_per_step  # 200 steps/rev with 16 m
 
 
 length_per_step = (arm_length * 2 * math.pi) / microsteps_per_revolution  # in mm
-volume_per_step = length_per_step * tube_cross_section_area / 1000  # in ml
+volume_per_step = length_per_step * tube_cross_section_area / 1000 /4 # in ml
 
 
 def main():
@@ -54,88 +60,109 @@ def main():
     show_dispensed_amounts()
 
 
-def dispense_and_measure(component_id, amount):
+def dispense_and_measure(bucket_id, amount):
     """Dispense a given weight and return the actually measured dispensed amount."""
     before = measure_weight()
-    dispense(component_id, amount)
+    dispense(bucket_id, amount)
     return measure_weight() - before
 
 
-def under_tolerance_components(measured_results, amounts, relative_tolerance, target_ratio=1.0):
-    """Return list of (index, shortfall) for components below target_ratio * target by more than tolerance.
+def under_tolerance_buckets(measured_results, amounts, relative_tolerance, target_ratio=1.0):
+    """Return list of (index, shortfall) for buckets below target_ratio * target by more than tolerance.
 
-    target_ratio is the shared ratio all components should reach (e.g. the ratio of the most
-    over-dispensed component). Each component's proportional target is amounts[i] * target_ratio,
-    so all components are corrected to the same fraction of their individual targets rather than
+    target_ratio is the shared ratio all buckets should reach (e.g. the ratio of the most
+    over-dispensed bucket). Each bucket's proportional target is amounts[i] * target_ratio,
+    so all buckets are corrected to the same fraction of their individual targets rather than
     to their absolute targets independently.
+
+    Buckets with amounts[i] == 0 are skipped — they were not requested.
     """
     return [
         (i, amounts[i] * target_ratio - measured)
         for i, (measured, _) in enumerate(zip(measured_results, amounts))
-        if amounts[i] * target_ratio - measured > relative_tolerance
+        if amounts[i] > 0 and amounts[i] * target_ratio - measured > relative_tolerance
     ]
 
 
 def biggest_ratio_difference(measured_results, amounts):
-    """Return (i, j, ratios, diff_pct) for the pair of components with the biggest % ratio difference."""
-    ratios = [measured / target for measured, target in zip(measured_results, amounts)]
-    i = max(range(len(ratios)), key=lambda k: ratios[k])
-    j = min(range(len(ratios)), key=lambda k: ratios[k])
-    diff_pct = (ratios[i] - ratios[j]) * 100
-    return i, j, ratios, diff_pct
+    """Return (i, j, ratios, diff_pct) for the pair of active buckets with the biggest % ratio difference.
+
+    Buckets with amounts == 0 are excluded. Returns None if fewer than two buckets were active.
+    """
+    active = [(k, m / t) for k, (m, t) in enumerate(zip(measured_results, amounts)) if t > 0]
+    if len(active) < 2:
+        return None
+    ratios_by_index = dict(active)
+    i = max(ratios_by_index, key=ratios_by_index.get)
+    j = min(ratios_by_index, key=ratios_by_index.get)
+    diff_pct = (ratios_by_index[i] - ratios_by_index[j]) * 100
+    return i, j, ratios_by_index, diff_pct
 
 
-def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, max_iterations=10):
+def multi_dispense(amounts, relative_tolerance=0.1, correction_fraction=0.10, max_iterations=100):
     assert len(amounts) in (2, 4), "Must provide amounts for 2 or 4 motors."
 
-    print("Dispensing multiple components:")
+    print("Dispensing multiple buckets:")
     for i, amount in enumerate(amounts):
-        print(f"Component {i+1}: {amount} grams.")
+        print(f"Bucket {i+1}: {amount} grams.")
     print("")
 
-    # initial dispense pass
-    measured_results = [dispense_and_measure(i + 1, amount) for i, amount in enumerate(amounts)]
+    # initial dispense pass — skip motors with amount == 0 so we don't move them or re-prompt the scale
+    measured_results = [
+        dispense_and_measure(i + 1, amount) if amount > 0 else 0.0
+        for i, amount in enumerate(amounts)
+    ]
 
     print("Measured weights after dispensing:")
     for i, measured in enumerate(measured_results):
-        print(f"Component {i+1}: {measured:.3f} grams.")
+        print(f"Bucket {i+1}: {measured:.3f} grams.")
 
-    # warn about components whose ratio deviates from the most over-dispensed component
-    ratios = [m / t for m, t in zip(measured_results, amounts)]
-    max_ratio = max(ratios)
+    # warn about buckets whose ratio deviates from the most over-dispensed bucket
+    ratios = [m / t if t > 0 else 0.0 for m, t in zip(measured_results, amounts)]
+    active_ratios = [r for r, t in zip(ratios, amounts) if t > 0]
+    if not active_ratios:
+        print("No buckets requested — nothing to dispense.")
+        return measured_results
+    max_ratio = max(active_ratios)
     for i, (measured, target) in enumerate(zip(measured_results, amounts)):
+        if target == 0:
+            continue
         shortfall_from_ratio = target * max_ratio - measured
         if shortfall_from_ratio > relative_tolerance:
-            print(f"Warning: Component {i+1} is behind proportional target. "
+            print(f"Warning: Bucket {i+1} is behind proportional target. "
                   f"Measured: {measured:.3f}g, Proportional target: {target * max_ratio:.3f}g "
                   f"(ratio {max_ratio:.4f}), shortfall: {shortfall_from_ratio:.3f}g.")
 
-    # correction loop: top up components that are below the fixed target ratio
+    # correction loop: top up buckets that are below the fixed target ratio
     # target_ratio is fixed once from the initial dispense — it must NOT be updated inside the loop,
     # otherwise any overshoot caused by noise would raise the target and trigger a runaway chain reaction
     target_ratio = max_ratio
     iterations_used = 0
     while iterations_used < max_iterations:
-        to_correct = under_tolerance_components(measured_results, amounts, relative_tolerance, target_ratio=target_ratio)
+        to_correct = under_tolerance_buckets(measured_results, amounts, relative_tolerance, target_ratio=target_ratio)
 
         if not to_correct:
-            print("All components within proportional tolerance.")
+            print("All buckets within proportional tolerance.")
             break
 
         for i, shortfall in to_correct:
             correction = min(shortfall, amounts[i] * correction_fraction)
-            print(f"Component {i+1}: shortfall {shortfall:.3f}g from proportional target, correcting by {correction:.3f}g.")
+            print(f"Bucket {i+1}: shortfall {shortfall:.3f}g from proportional target, correcting by {correction:.3f}g.")
             measured_results[i] += dispense_and_measure(i + 1, correction)
 
         iterations_used += 1
     else:
-        print("Warning: max correction iterations reached. Some components may still be out of proportional tolerance.")
+        print("Warning: max correction iterations reached. Some buckets may still be out of proportional tolerance.")
 
     print(f"Total correction iterations used: {iterations_used}")
 
-    # report biggest ratio difference
-    i, j, ratios, max_diff_pct = biggest_ratio_difference(measured_results, amounts)
-    print(f"Biggest % difference: Component {i+1} ({ratios[i]*100:.2f}% of target) vs Component {j+1} ({ratios[j]*100:.2f}% of target): {max_diff_pct:.2f}%")
+    # report biggest ratio difference (only meaningful when 2+ buckets were active)
+    result = biggest_ratio_difference(measured_results, amounts)
+    if result is not None:
+        i, j, ratios, max_diff_pct = result
+        print(f"Biggest % difference: Bucket {i+1} ({ratios[i]*100:.2f}% of target) vs Bucket {j+1} ({ratios[j]*100:.2f}% of target): {max_diff_pct:.2f}%")
+
+    return measured_results
 
 
 def mix(rotations=10):
@@ -153,26 +180,24 @@ def show_dispensed_amounts():
     print("")
     print("Dispensed amounts:")
     for i, amount in enumerate(comps_dispensed):
-        print(f"Component {i+1}: {amount:.3f} grams.")
+        print(f"Bucket {i+1}: {amount:.3f} grams.")
 
 
 def measure_weight():
-    if manual_sensor:
+    if keyboard_weight_entry:
         return float(input("Enter current scale reading (g): "))
-    # TODO: replace with real scale read once hardware is available
-    noise = random.uniform(-measurement_noise_factor, measurement_noise_factor)
-    return sum(comps_dispensed) + noise  # fixed absolute noise, not % of total
+    return scale_sensor.read_weight()
 
 
-def dispense(component_id, weight):
+def dispense(bucket_id, weight):
     amount = weight / density_of_liquid  # convert weight to volume
-    print(f"Dispensing component {component_id}, amount: {amount:.4f} ml")
+    print(f"Dispensing bucket {bucket_id}, amount: {amount:.4f} ml")
 
-    positions = [0 if i == component_id - 1 else 1 for i in range(4)]  # only this component's servo to dispense
+    positions = [0 if i == bucket_id - 1 else 1 for i in range(4)]  # only this bucket's servo to dispense
     set_servo_positions(positions)
 
     amount_with_noise = amount * (1 + random.uniform(-dispensing_noise_factor, dispensing_noise_factor))
-    move_motor(component_id, amount_with_noise / volume_per_step)
+    move_motor(bucket_id, amount_with_noise / volume_per_step)
 
     set_servo_positions([1, 1, 1, 1])  # return all servos to mix position after dispensing
 
@@ -188,6 +213,10 @@ def move_motor(motor_id, steps):
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(pin, GPIO.OUT)
         GPIO.output(pin, 0)
+        GPIO.setup(MF_pin, GPIO.OUT)
+        GPIO.output(MF_pin, 1)  # set MF high for microstepping
+        GPIO.setup(DIR_pin, GPIO.OUT)
+        GPIO.output(DIR_pin, 0)  # set direction (1 or 0 depending on desired direction)
 
         for i in range(microsteps):
             GPIO.output(pin, 1)
@@ -195,7 +224,6 @@ def move_motor(motor_id, steps):
             GPIO.output(pin, 0)
             time.sleep(step_delay / 2)
 
-        GPIO.cleanup(pin)
     else:
         comps_dispensed[motor_id - 1] += steps * volume_per_step * density_of_liquid  # in gram
 
@@ -207,7 +235,7 @@ def _angle_to_duty(angle):
     Adjust min_duty/max_duty here if the servo doesn't reach its physical limits.
     """
     min_duty = 2.5   # duty cycle at 0°  → increase if servo doesn't reach full left
-    max_duty = 12.5  # duty cycle at 180° → increase if servo doesn't reach full right
+    max_duty = 13.5  # duty cycle at 180° → increase if servo doesn't reach full right
     return min_duty + (angle / 180) * (max_duty - min_duty)
 
 
@@ -244,6 +272,7 @@ def set_servo_positions(positions):
     assert len(positions) == 4, "Must provide exactly 4 positions."
     assert all(p in (0, 1) for p in positions), "Each position must be 0 (dispense) or 1 (mix)."
 
+
     angles = [SERVO_ANGLE_DISPENSE if p == 0 else SERVO_ANGLE_MIX for p in positions]
 
     for i, (pin, angle) in enumerate(zip(servo_pins, angles)):
@@ -268,7 +297,6 @@ def set_servo_positions(positions):
             pwm.ChangeDutyCycle(0)  # stop PWM signal to prevent jitter
             pwm.stop()
 
-        GPIO.cleanup(servo_pins)
 
 
 if __name__ == "__main__":

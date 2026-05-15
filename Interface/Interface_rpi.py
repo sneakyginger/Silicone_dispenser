@@ -6,12 +6,52 @@ from pygame.locals import *
 import pygame.gfxdraw
 import time
 import threading
-import dispense
-import Encoder
+import saved_settings
+import top_bar
+import theme
 #import Weight_sensor
 
+TEXT_COLOR = theme.BLACK
+BACKGROUND_COLOR = theme.WHITE
+DISPENSING_BACKGROUND_COLOR = theme.BLACK
+DISPENSING_TEXT_COLOR = theme.WHITE
+SELECTION_BAR_TRACK_COLOR = theme.SELECTION_BAR_TRACK  # Selection bar UI: background color behind adjustable weight, hardness, and refill bars.
+
+is_rpi = False
+try:
+    with open("/proc/device-tree/model", "r"):
+        is_rpi = True
+except FileNotFoundError:
+    is_rpi = False
+
+def is_raspberry_pi():
+    return is_rpi
+
 #PINS
-Pin_left, Pin_right, Pin_click = 17, 27, 22
+Pin_left, Pin_right, Pin_click = 11, 15, 13
+
+if is_raspberry_pi():
+    import dispense
+    import Encoder
+    import RPi.GPIO as GPIO
+    GPIO.cleanup()
+else:
+    class _DispenseStub:
+        density_of_liquid = 1.0
+        @staticmethod
+        def multi_dispense(amounts):
+            print(f"[laptop sim] multi_dispense({amounts})")
+            time.sleep(0.5)
+            return list(amounts)
+    dispense = _DispenseStub()
+    Encoder = None
+
+def dispense_and_track_volume(amounts):
+    """Run multi_dispense and decrement each bucket's volume by its measured grams."""
+    measured = dispense.multi_dispense(amounts)
+    if measured is None:
+        return
+    saved_settings.decrement_bucket_volumes(measured, dispense.density_of_liquid)
 
 
 # Menu constants
@@ -29,20 +69,20 @@ MENU_MIXING_DURATION = 10
 MENU_MIXING_START_TIME = 11
 MENU_1COMPONENT_SELECT = 12
 MENU_1COMPONENT_WEIGHT = 13
-MENU_REPLACE_HARDNESS = 14
 MENU_DISPENSING = -1
 MENU_2COMPONENT_SELECTION = 15
 
 max_weight_1component = 100
-max_weight_2component = 10
-max_weight_4component = 20
-max_weight_replacement = 100
-max_hardness_4component = 2
-max_hardness_replacement = 50
+max_weight_2component = 100
+max_weight_4component = 100
+max_volume_replacement = 500  # Refilling UI: visual full-scale point for the refill bar, not a refill limit.
+volume_replacement_step = 10.0  # Refilling UI: refill volume changes by 10 ml for each encoder step.
+min_hardness_4component, max_hardness_4component = saved_settings.hardness_limits()
 components_amount = -1
 component = -1
 weight = -1
 hardness = -1
+bucket_being_replaced = -1  # 0=bucket 1, 1=bucket 2, 2=bucket 3, 3=bucket 4
 
 
 def load_image(path, size, location):
@@ -56,11 +96,11 @@ def load_image(path, size, location):
 pygame.font.init()
 
 # Create a font (font name, size) - None uses the default font
-font = pygame.font.SysFont(None, 48)
-font_small = pygame.font.SysFont(None, 36)
-font_big = pygame.font.SysFont(None, 72)
+font = pygame.font.SysFont(theme.DEFAULT_FONT, theme.FONT_SIZE_NORMAL)
+font_small = pygame.font.SysFont(theme.DEFAULT_FONT, theme.FONT_SIZE_SMALL)
+font_big = pygame.font.SysFont(theme.DEFAULT_FONT, theme.FONT_SIZE_BIG)
 
-def create_text(text, position, color=(255,255,255), font_type="normal"):
+def create_text(text, position, color=theme.WHITE, font_type="normal"):
     if font_type == "small":
         surface_text = font_small.render(text, True, color)
         surface_text = font_small.render(text, True, color)
@@ -131,25 +171,25 @@ def display_time_selection(width, height,selected_time, location, time_selecting
             selection_image_rect.center = (width /6*5, height // 2)
             screen.blit(selection_image, selection_image_rect)  # draw cursor
         elif location == 3:
-            selection_image_rect.center = (width-50, height-50)
-            screen.blit(selection_image, selection_image_rect)  # draw cursor
+            return_selection_image_rect.center = (width-50, height-50)
+            screen.blit(return_selection_image, return_selection_image_rect)  # draw cursor
     #draw days hours and minutes
-    day_text, day_text_rect = create_text(f"{day}", (width /6, height // 2+25), (0,0,0),"big")
+    day_text, day_text_rect = create_text(f"{day}", (width /6, height // 2+25), TEXT_COLOR, "big")
     screen.blit(day_text, day_text_rect)  # draw days
-    hour_text, hour_text_rect = create_text(f"{hour}", (width/6*3, height // 2+25), (0,0,0),"big")
+    hour_text, hour_text_rect = create_text(f"{hour}", (width/6*3, height // 2+25), TEXT_COLOR, "big")
     screen.blit(hour_text, hour_text_rect)  # draw hours
-    minute_text, minute_text_rect = create_text(f"{minute}", (width /6*5, height // 2+25), (0,0,0),"big")
+    minute_text, minute_text_rect = create_text(f"{minute}", (width /6*5, height // 2+25), TEXT_COLOR, "big")
     screen.blit(minute_text, minute_text_rect)  # draw minutes
-    partition_text, partition_text_rect = create_text(":", (width/6*2, height // 2+25), (0,0,0),"big")
+    partition_text, partition_text_rect = create_text(":", (width/6*2, height // 2+25), TEXT_COLOR, "big")
     screen.blit(partition_text, partition_text_rect)  # draw :
-    partition_text, partition_text_rect = create_text(":", (width/6*4, height // 2+25), (0,0,0),"big")
+    partition_text, partition_text_rect = create_text(":", (width/6*4, height // 2+25), TEXT_COLOR, "big")
     screen.blit(partition_text, partition_text_rect)  # draw :
     # annotate days hours and minutes
-    day_annotate_text, day_annotate_text_rect = create_text("DAYS", (width /6, height // 2-25), (0,0,0),"small")
+    day_annotate_text, day_annotate_text_rect = create_text("DAYS", (width /6, height // 2-25), TEXT_COLOR, "small")
     screen.blit(day_annotate_text, day_annotate_text_rect)  # draw annotation day
-    hour_annotate_text, hour_annotate_text_rect = create_text("HOURS", (width/6*3, height // 2-25), (0,0,0),"small")
+    hour_annotate_text, hour_annotate_text_rect = create_text("HOURS", (width/6*3, height // 2-25), TEXT_COLOR, "small")
     screen.blit(hour_annotate_text, hour_annotate_text_rect)  # draw annotation hour
-    minute_annotate_text, minute_annotate_text_rect = create_text("MINUTES", (width /6*5, height // 2-25), (0,0,0),"small")
+    minute_annotate_text, minute_annotate_text_rect = create_text("MINUTES", (width /6*5, height // 2-25), TEXT_COLOR, "small")
     screen.blit(minute_annotate_text, minute_annotate_text_rect)  # draw annotation minute
     return
 work = 5000000
@@ -172,6 +212,14 @@ def available_locations(current_location, direction, options):
             current_location = options
     return current_location
 
+def menu_has_return_button(menu):
+    return menu not in (MENU_START, MENU_MIX_CONFIRM, MENU_DISPENSING)
+
+def available_menu_locations(menu, sprites):
+    if menu_has_return_button(menu):
+        return sprites
+    return sprites - 1
+
 pygame.init()
 #screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 screen = pygame.display.set_mode((800, 480))
@@ -187,70 +235,110 @@ previous_menu = MENU_START
 button_size = (75,75)
 
 
+def get_click_target(mouse_pos, menu, sprites, loci):
+    """Map a mouse click position to the location index it activates, or None."""
+    if menu == MENU_DISPENSING:
+        return None
+
+    return_rect = pygame.Rect(0, 0, 120, 120)
+    return_rect.center = (width - 50, height - 50)
+
+    if menu in (MENU_MIXING_FREQUENCY, MENU_MIXING_DURATION, MENU_MIXING_START_TIME):
+        time_centers = [(width / 6, height / 2),
+                        (width / 6 * 3, height / 2),
+                        (width / 6 * 5, height / 2)]
+        for i, c in enumerate(time_centers):
+            r = pygame.Rect(0, 0, 160, 160)
+            r.center = c
+            if r.collidepoint(mouse_pos):
+                return i
+        if return_rect.collidepoint(mouse_pos):
+            return sprites
+        return None
+
+    # Weight/hardness slider menus have only a return button — the bar itself
+    # is adjusted by the rotary encoder.
+    if menu in (MENU_2COMPONENT_WEIGHT, MENU_4COMPONENT_WEIGHT, MENU_4COMPONENT_HARDNESS,
+                MENU_REPLACE_WEIGHT, MENU_1COMPONENT_WEIGHT):
+        if return_rect.collidepoint(mouse_pos):
+            return sprites
+        return None
+
+    for i in range(sprites):
+        r = pygame.Rect(0, 0, 180, 180)
+        r.center = loci[i]
+        if r.collidepoint(mouse_pos):
+            return i
+    if menu_has_return_button(menu) and return_rect.collidepoint(mouse_pos):
+        return sprites
+    return None
+
+
 
 #Maak teks voor tijdens mengen
-mengen_bezig, mengen_bezig_rect = create_text("MIXING", (width // 2, height // 2), (255,255,255))
+mengen_bezig, mengen_bezig_rect = create_text("MIXING", (width // 2, height // 2), DISPENSING_TEXT_COLOR)
 #Text menu MENU_START
-menu0_text, menu0_text_rect = create_text("START", (width // 2, 25), (0,0,0))
+menu0_text, menu0_text_rect = create_text("START", (width // 2, 25), TEXT_COLOR)
 
 #Text menu MENU_2COMPONENT_WEIGHT
-menu1_text, menu1_text_rect = create_text("2 component dispensing", (width // 2, 25), (0,0,0))
+menu1_text, menu1_text_rect = create_text("2 component dispensing", (width // 2, 25), TEXT_COLOR)
 #Text menu MENU_4COMPONENT_WEIGHT
-menu2_text, menu2_text_rect = create_text("4 component dispensing", (width //2, 25), (0,0,0))
+menu2_text, menu2_text_rect = create_text("4 component dispensing", (width //2, 25), TEXT_COLOR)
 #Text menu MENU_4COMPONENT_HARDNESS
-menu3_text, menu3_text_rect = create_text("4 component dispensing", (width // 2, 25), (0,0,0))
+menu3_text, menu3_text_rect = create_text("4 component dispensing", (width // 2, 25), TEXT_COLOR)
 #Text menu MENU_MIX_CONFIRM
-menu4_text, menu4_text_rect = create_text("Would you like to start mixing?", (width // 2, 25), (0,0,0))
+menu4_text, menu4_text_rect = create_text("Would you like to start mixing?", (width // 2, 25), TEXT_COLOR)
 #Text menu MENU_SETTINGS
-menu5_text, menu5_text_rect = create_text("Settings", (width // 2, 25), (0,0,0))
+menu5_text, menu5_text_rect = create_text("Settings", (width // 2, 25), TEXT_COLOR)
 #Text menu MENU_MIXING_SETTINGS
-menu6_text, menu6_text_rect = create_text("Mixing Settings", (width // 2, 25), (0,0,0))
+menu6_text, menu6_text_rect = create_text("Mixing Settings", (width // 2, 25), TEXT_COLOR)
 #Text menu MENU_REPLACE_CARTRIDGE
-menu7_text, menu7_text_rect = create_text("Replace cartridge", (width // 2, 25), (0,0,0))
+menu7_text, menu7_text_rect = create_text("Refill bucket", (width // 2, 25), TEXT_COLOR)
 #Text menu MENU_REPLACE_WEIGHT
-menu8_text, menu8_text_rect = create_text("Select hardness of new cartridge", (width // 2, 25), (0,0,0))
+menu8_text, menu8_text_rect = create_text("Select hardness of new cartridge", (width // 2, 25), TEXT_COLOR)
 #Text menu MENU_MIXING_FREQUENCY
-menu9_text, menu9_text_rect = create_text("Time between mixes", (width // 2, 25), (0,0,0))
+menu9_text, menu9_text_rect = create_text("Time between mixes", (width // 2, 25), TEXT_COLOR)
 #Text menu MENU_MIXING_DURATION
-menu10_text, menu10_text_rect = create_text("Select mixing duration", (width // 2, 25), (0,0,0))
+menu10_text, menu10_text_rect = create_text("Select mixing duration", (width // 2, 25), TEXT_COLOR)
 #Text menu MENU_MIXING_START_TIME
-menu11_text, menu11_text_rect = create_text("Select time until next mix", (width // 2, 25), (0,0,0))
+menu11_text, menu11_text_rect = create_text("Select time until next mix", (width // 2, 25), TEXT_COLOR)
 #Text menu MENU_1COMPONENT_SELECT
-menu12_text, menu12_text_rect = create_text("Select component to dispense", (width // 2, 25), (0,0,0))
+menu12_text, menu12_text_rect = create_text("Select component to dispense", (width // 2, 25), TEXT_COLOR)
 #Text menu MENU_1COMPONENT_WEIGHT
-menu13_text, menu13_text_rect = create_text("Select desired weight", (width // 2, 25), (0,0,0))
+menu13_text, menu13_text_rect = create_text("Select desired weight", (width // 2, 25), TEXT_COLOR)
 #text return
-return_, return_rect = create_text("Return to previous menu", (width // 2, height // 2), (0,0,0), "normal")
+return_, return_rect = create_text("Return to previous menu", (width // 2, height // 2), TEXT_COLOR, "normal")
 
 
 loci = locus(4)
 #menus names text
-two_component_text,two_component_text_rect = create_text("2 component", (loci[0][0], loci[0][1]+50), (0,0,0), "small")
-four_component_text, four_component_text_rect = create_text("4 component", (loci[1][0], loci[1][1]+50), (0,0,0), "small")
-mixing_menu_text, mixing_menu_text_rect = create_text("Mixing", (loci[2][0], loci[2][1]+50), (0,0,0), "small")
-settings_text, settings_text_rect = create_text("Settings", (loci[3][0], loci[3][1]+50), (0,0,0), "small")
+two_component_text,two_component_text_rect = create_text("2 component", (loci[0][0], loci[0][1]+90), TEXT_COLOR, "small")
+four_component_text, four_component_text_rect = create_text("4 component", (loci[1][0], loci[1][1]+90), TEXT_COLOR, "small")
+mixing_menu_text, mixing_menu_text_rect = create_text("Mixing", (loci[2][0], loci[2][1]+90), TEXT_COLOR, "small")
+settings_text, settings_text_rect = create_text("Settings", (loci[3][0], loci[3][1]+90), TEXT_COLOR, "small")
 
 loci = locus(3)
 #Setting options text
-mixing_settings_text, mixing_settings_text_rect = create_text("Mixing settings", (loci[0][0], loci[0][1]+50), (0,0,0), "small")
-replace_cartridge_text, replace_cartridge_text_rect = create_text("Replace cartridge", (loci[1][0], loci[1][1]+50), (0,0,0), "small")
-one_component_dispensing_text, one_component_dispensing_text_rect = create_text("One component", (loci[2][0], loci[2][1]+50), (0,0,0), "small")
-one_component_dispensing_line2_text, one_component_dispensing_line2_text_rect = create_text("dispensing", (loci[2][0], loci[2][1]+75), (0,0,0), "small")
+mixing_settings_text, mixing_settings_text_rect = create_text("Mixing settings", (loci[0][0], loci[0][1]+90), TEXT_COLOR, "small")
+replace_cartridge_text, replace_cartridge_text_rect = create_text("Refill bucket", (loci[1][0], loci[1][1]+90), TEXT_COLOR, "small")
+one_component_dispensing_text, one_component_dispensing_text_rect = create_text("One component", (loci[2][0], loci[2][1]+90), TEXT_COLOR, "small")
+one_component_dispensing_line2_text, one_component_dispensing_line2_text_rect = create_text("dispensing", (loci[2][0], loci[2][1]+115), TEXT_COLOR, "small")
 
 loci = locus(3)
 #mixing settings options text
-frequency_text, frequency_text_rect = create_text("Mixing frequency", (loci[0][0], loci[0][1]+50), (0,0,0), "small")
-duration_text, duration_text_rect = create_text("Mixing duration", (loci[1][0], loci[1][1]+50), (0,0,0), "small")
-mixing_start_time_text, mixing_start_time_text_rect = create_text("Time until", (loci[2][0], loci[2][1]+50), (0,0,0), "small")
-mixing_start_time_line2_text, mixing_start_time_line2_text_rect = create_text("next mix", (loci[2][0], loci[2][1]+75), (0,0,0), "small")
+frequency_text, frequency_text_rect = create_text("Mixing frequency", (loci[0][0], loci[0][1]+90), TEXT_COLOR, "small")
+duration_text, duration_text_rect = create_text("Mixing duration", (loci[1][0], loci[1][1]+90), TEXT_COLOR, "small")
+mixing_start_time_text, mixing_start_time_text_rect = create_text("Time until", (loci[2][0], loci[2][1]+90), TEXT_COLOR, "small")
+mixing_start_time_line2_text, mixing_start_time_line2_text_rect = create_text("next mix", (loci[2][0], loci[2][1]+115), TEXT_COLOR, "small")
 
 
 #cartridge replacement options text
-select_cartridge_text, select_cartridge_text_rect = create_text("Select cartridge that is replaced", (width/2, height/2+50), (0,0,0), "small")
+select_cartridge_text, select_cartridge_text_rect = create_text("Select bucket to refill", (width/2, loci[0][1]+90), TEXT_COLOR, "small")
 
 loci = locus(4)
 #load in selection sprite
-selection_image, selection_image_rect = load_image(r'./Sprites/rond.png', (100, 100), loci[0])
+selection_image, selection_image_rect = load_image(r'./Sprites/rond.png', (145, 145), loci[0])
+return_selection_image, return_selection_image_rect = load_image(r'./Sprites/rond.png', (100, 100), loci[-1])  # Return button UI: default-size selector used when the back button is selected.
 
 #loud in 2 component mixing sprite
 two_component_image, two_component_image_rect = load_image(r'./Sprites/button_2comp.png',(175,175),loci[0])
@@ -273,28 +361,26 @@ loading_bar_width = 8
 weight_1component_progress = max_weight_1component//2
 weight_2component_progress = max_weight_2component//2
 weight_4component_progress = max_weight_4component//2
-weight_replacement_progress = max_weight_replacement//2
+volume_replacement_progress = max_volume_replacement / 2  # Refilling UI: keep math as float; display converts to int.
 
 scaling_weight_1 = width/2//max_weight_1component
 scaling_weight_2 = width/2//max_weight_2component
 scaling_weight_4 = width/2//max_weight_4component
-scaling_weight_replacement = width/2//max_weight_replacement
+scaling_volume_replacement = (width / 2) / max_volume_replacement  # Refilling UI: pixels per ml; real division avoids rounding to 0.
 
 x_bar_weight_1 = width/2-max_weight_1component*scaling_weight_1/2
 x_bar_weight_2 = width/2-max_weight_2component*scaling_weight_2/2
 x_bar_weight_4 = width/2-max_weight_4component*scaling_weight_4/2
-x_bar_weight_re = width/2-max_weight_replacement*scaling_weight_replacement/2
+x_bar_volume_re = width/2-max_volume_replacement*scaling_volume_replacement/2
 
 weight_bar_width = 8
 weight_bar_image, weight_bar_image_rect = load_image(r'./Sprites/black.png',(weight_bar_width, 50) ,(200, height//2))
 
-hardness_4component_progress = max_hardness_4component//2
-hardness_replacement_progress = max_hardness_replacement//2
-scaling_hardness_4 = width/2//max_hardness_4component
-scaling_hardness_re = width/2//max_hardness_replacement
+hardness_4component_progress = (min_hardness_4component + max_hardness_4component) // 2
+hardness_4component_span = max_hardness_4component - min_hardness_4component
+scaling_hardness_4 = width/2//hardness_4component_span
 
-x_bar_har_4 = width/2-max_hardness_4component*scaling_hardness_4/2
-x_bar_har_re = width/2-max_hardness_replacement*scaling_hardness_re/2
+x_bar_har_4 = width/2-hardness_4component_span*scaling_hardness_4/2
 hardness_bar_width = 8
 hardness_bar_image, hardness_bar_image_rect = load_image(r'./Sprites/black.png',(hardness_bar_width, 50) ,(200, height//2))
 
@@ -320,17 +406,63 @@ no_image, no_image_rect = load_image(r'./Sprites/no.png', button_size, (loci[1])
 button_bottle_ab_image, button_bottle_ab_image_rect = load_image(r'./Sprites/button_bottle_a.png', bottle_img_size, (loci[0]))
 button_bottle_cd_image, button_bottle_cd_image_rect = load_image(r'./Sprites/button_bottle_b.png', bottle_img_size, (loci[1]))
 
+def draw_selection_cursor():
+    if location == sprites and menu_has_return_button(menu):
+        screen.blit(return_selection_image, return_selection_image_rect)  # draw cursor
+    else:
+        screen.blit(selection_image, selection_image_rect)  # draw cursor
+
+def draw_bar_track(x, y, bar_width):
+    """Draw the selection-bar background used behind adjustable bar menus."""
+    pygame.draw.rect(screen, SELECTION_BAR_TRACK_COLOR, pygame.Rect(x, y, int(bar_width), 50))
+
+dispense_started = False
+dispense_warning_message = ""
+LOW_VOLUME_THRESHOLD_ML = 20
 running = True
 while running:
     loci = locus(sprites)
     selection_image_rect.center = (loci[location]) 
-    screen.fill((255, 255, 255))# clear screen (white background)
+    return_selection_image_rect.center = (loci[location])
+    screen.fill(BACKGROUND_COLOR)# clear screen
 
-    encoder = Encoder.def_encoder(Pin_left, Pin_right, Pin_click)
+    if is_raspberry_pi():
+        encoder = Encoder.def_encoder(Pin_left, Pin_right, Pin_click)
+    else:
+        encoder = None
+
+    mouse_click_pos = None
+    right_click = False
+    wheel_direction = None
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                mouse_click_pos = event.pos
+            elif event.button == 3:
+                right_click = True
+        elif event.type == pygame.MOUSEWHEEL:
+            if event.y > 0:
+                wheel_direction = "Right"
+            elif event.y < 0:
+                wheel_direction = "Left"
+
+    if mouse_click_pos is not None and encoder not in ("Left", "Right", "Click"):
+        target = get_click_target(mouse_click_pos, menu, sprites, loci)
+        if target is not None:
+            location = target
+            encoder = "Click"
+
+    if right_click and encoder not in ("Left", "Right", "Click"):
+        encoder = "Click"
+
+    if wheel_direction is not None and encoder not in ("Left", "Right", "Click"):
+        encoder = wheel_direction
 
     if encoder == "Right": #changing location
         location += 1
-        location = available_locations(location, "right", sprites)
+        location = available_locations(location, "right", available_menu_locations(menu, sprites))
         if menu == MENU_2COMPONENT_WEIGHT:
             if weight_2component_progress < max_weight_2component:
                 location  = 0
@@ -351,25 +483,14 @@ while running:
                 location  = 0
                 hardness_4component_progress += 1
             else:
-                hardness_4component_progress = max_hardness_4component+1
+                hardness_4component_progress = max_hardness_4component
                 location = sprites
         elif menu == MENU_MIX_CONFIRM:
             if location == 2:
                 location = 0
         elif menu == MENU_REPLACE_WEIGHT:
-            if weight_replacement_progress < max_weight_replacement:
-                location  = 0
-                weight_replacement_progress += 1
-            else:
-                weight_replacement_progress = max_weight_replacement+1
-                location = sprites
-        elif menu == MENU_REPLACE_HARDNESS:
-            if hardness_replacement_progress < max_hardness_replacement:
-                location  = 0
-                hardness_replacement_progress += 1
-            else:
-                hardness_replacement_progress = max_hardness_replacement+1
-                location = sprites
+            location  = 0
+            volume_replacement_progress += volume_replacement_step
         elif menu == MENU_MIXING_FREQUENCY:
             if start_time_selection:
                 time_frequency = select_time(time_frequency, "right", time_increment_selection)
@@ -389,7 +510,7 @@ while running:
 
     elif encoder == "Left":
         location -= 1
-        location = available_locations(location, "left", sprites)
+        location = available_locations(location, "left", available_menu_locations(menu, sprites))
         if menu == MENU_2COMPONENT_WEIGHT:
             if weight_2component_progress > 0:
                 location  = 0
@@ -405,28 +526,21 @@ while running:
                 weight_4component_progress = 0
                 location = sprites
         elif menu == MENU_4COMPONENT_HARDNESS:
-            if hardness_4component_progress > 0:
+            if hardness_4component_progress > min_hardness_4component:
                 location  = 0
                 hardness_4component_progress -= 1
             else:
-                hardness_4component_progress = 0
+                hardness_4component_progress = min_hardness_4component
                 location = sprites
         elif menu == MENU_MIX_CONFIRM:
             if location == 2:
                 location = 1
         elif menu == MENU_REPLACE_WEIGHT:
-            if weight_replacement_progress > 0:
+            if volume_replacement_progress > 0:
                 location  = 0
-                weight_replacement_progress -= 1
+                volume_replacement_progress = max(0.0, volume_replacement_progress - volume_replacement_step)
             else:
-                weight_replacement_progress = 0
-                location = sprites
-        elif menu == MENU_REPLACE_HARDNESS:
-            if hardness_replacement_progress > 0:
-                location  = 0
-                hardness_replacement_progress -= 1
-            else:
-                hardness_replacement_progress = 0
+                volume_replacement_progress = 0.0
                 location = sprites
         elif menu == MENU_MIXING_FREQUENCY:
             location = available_locations(location, "left", 4)
@@ -450,6 +564,7 @@ while running:
 
     elif encoder == "Click": #state machine for menu navigation
         if menu == MENU_START:
+            dispense_warning_message = ""
             if location == 0:
                 menu = MENU_2COMPONENT_SELECTION
                 location = 1
@@ -460,8 +575,6 @@ while running:
             elif location == 3:
                 menu = MENU_SETTINGS
                 location = 2
-            elif location == sprites:
-                menu = MENU_START
 
 
         elif menu == MENU_2COMPONENT_SELECTION:
@@ -477,7 +590,7 @@ while running:
         elif menu == MENU_2COMPONENT_WEIGHT:
             if location == sprites:
                 menu = MENU_START
-            else:
+            elif weight_2component_progress > 0:
                 components_amount = 2
                 weight = weight_2component_progress
                 menu = MENU_DISPENSING
@@ -485,7 +598,7 @@ while running:
         elif menu == MENU_4COMPONENT_WEIGHT:
             if location == sprites:
                 menu = MENU_START
-            else:
+            elif weight_4component_progress > 0:
                 weight = weight_4component_progress
                 components_amount = 4
                 menu = MENU_4COMPONENT_HARDNESS
@@ -531,19 +644,17 @@ while running:
             if location == sprites:
                 menu = MENU_SETTINGS
             else:
+                bucket_being_replaced = location  # 0=bucket 1, 1=bucket 2, 2=bucket 3, 3=bucket 4
+                volume_replacement_progress = float(saved_settings.bucket_volume(location))
                 menu = MENU_REPLACE_WEIGHT
 
         elif menu == MENU_REPLACE_WEIGHT:
             if location == sprites:
                 menu = MENU_REPLACE_CARTRIDGE
             else:
-                menu = MENU_REPLACE_HARDNESS
-
-        elif menu == MENU_REPLACE_HARDNESS:
-            if location == sprites:
-                menu = MENU_REPLACE_WEIGHT
-            else:
-                menu = MENU_DISPENSING
+                saved_settings.set_bucket_volume(bucket_being_replaced, volume_replacement_progress)
+                saved_settings.save_settings(saved_settings.cartridge_config)
+                menu = MENU_START
 
 
         elif menu == MENU_MIXING_FREQUENCY:
@@ -611,7 +722,7 @@ while running:
         elif menu == MENU_1COMPONENT_WEIGHT:
             if location == sprites:
                 menu = MENU_1COMPONENT_SELECT
-            else:
+            elif weight_1component_progress > 0:
                 weight = weight_1component_progress
                 menu = MENU_DISPENSING
         location = 0
@@ -620,9 +731,8 @@ while running:
     if menu == MENU_START: #draw start menu
         sprites = 4
         screen.blit(menu0_text, menu0_text_rect)  # draw menu text in the center of the screen
-        screen.blit(selection_image, selection_image_rect)  # draw cursor
+        draw_selection_cursor()
         screen.blit(settings_image, settings_image_rect)  # draw settings image
-        screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         screen.blit(two_component_image, two_component_image_rect)  # draw button 1
         screen.blit(two_component_text, two_component_text_rect)  # draw two component text
         screen.blit(four_component_image, four_component_image_rect)  # draw button 2
@@ -631,10 +741,21 @@ while running:
         screen.blit(mixing_menu_text, mixing_menu_text_rect)  # draw mixing menu text
         screen.blit(settings_text, settings_text_rect)  # draw settings text
 
+        if dispense_warning_message:
+            warn_text, warn_rect = create_text(dispense_warning_message, (width // 2, 130), theme.WARNING, "small")
+            screen.blit(warn_text, warn_rect)
+        low_buckets = [str(i + 1) for i in range(4)
+                       if saved_settings.bucket_volume(i) < LOW_VOLUME_THRESHOLD_ML]
+        if low_buckets:
+            low_text_str = "Low bucket volume: " + ", ".join(low_buckets)
+            low_text, low_rect = create_text(low_text_str, (width // 2, height - 30), theme.CAUTION, "small")
+            screen.blit(low_text, low_rect)
+
     if menu == MENU_2COMPONENT_SELECTION: #draw 2 component selection menu
         sprites = 2
         screen.blit(menu1_text, menu1_text_rect)  # draw menu text in the center of the screen
-        screen.blit(selection_image, selection_image_rect)  # draw cursor
+        draw_selection_cursor()
+        screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         screen.blit(button_bottle_ab_image, button_bottle_ab_image_rect)  # draw component A image
         screen.blit(button_bottle_cd_image, button_bottle_cd_image_rect)  # draw component B image
 
@@ -642,14 +763,15 @@ while running:
         sprites = 1
         screen.blit(menu1_text, menu1_text_rect)  # draw menu text in the center of the screen
         if location == sprites:
-            screen.blit(selection_image, selection_image_rect)  # draw cursor
+            draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         weight_bar_width = abs(weight_2component_progress)*scaling_weight_2
         weight_bar_image_use = pygame.transform.scale(weight_bar_image, (int(weight_bar_width), 50))  # scale loading bar based on selected weight
         weight_bar_image_use_rect = weight_bar_image_use.get_rect(midleft=(x_bar_weight_2, 3/4*height))  # update loading bar position
         if weight_2component_progress <= max_weight_2component and weight_2component_progress >= 0:
+            draw_bar_track(x_bar_weight_2, weight_bar_image_use_rect.y, max_weight_2component*scaling_weight_2)
             screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
-            weight_text,weight_rect = create_text(f"Desired weight: {weight_2component_progress} g", (width // 2, height // 2), (0,0,0))
+            weight_text,weight_rect = create_text(f"Desired weight: {weight_2component_progress} g", (width // 2, height // 2), TEXT_COLOR)
             screen.blit(weight_text, weight_rect)  # draw weight text in the center
         else:
             screen.blit(return_,return_rect)
@@ -658,15 +780,16 @@ while running:
         sprites = 1
         screen.blit(menu2_text, menu2_text_rect)  # draw menu text in the center of the screen
         if location == sprites:
-            screen.blit(selection_image, selection_image_rect)  # draw cursor
+            draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
 
         weight_bar_width = abs(weight_4component_progress)*scaling_weight_4
         weight_bar_image_use = pygame.transform.scale(weight_bar_image, (int(weight_bar_width), 50))  # scale loading bar based on selected weight
         weight_bar_image_use_rect = weight_bar_image_use.get_rect(midleft=(x_bar_weight_4, 3/4*height))  # update loading bar position
         if weight_4component_progress <= max_weight_4component and weight_4component_progress >= 0:
+            draw_bar_track(x_bar_weight_4, weight_bar_image_use_rect.y, max_weight_4component*scaling_weight_4)
             screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
-            weight_text,weight_rect = create_text(f"Total desired weight: {weight_4component_progress} g", (width // 2, height // 2), (0,0,0))
+            weight_text,weight_rect = create_text(f"Total desired weight: {weight_4component_progress} g", (width // 2, height // 2), TEXT_COLOR)
             screen.blit(weight_text, weight_rect)  # draw weight text in the center
         else:
             screen.blit(return_,return_rect)
@@ -675,15 +798,16 @@ while running:
         sprites = 1
         screen.blit(menu3_text, menu3_text_rect)  # draw menu text in the center of the screen
         if location == sprites:
-            screen.blit(selection_image, selection_image_rect)  # draw cursor
+            draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
 
-        hardness_bar_width = abs(hardness_4component_progress)*scaling_hardness_4
-        hardness_bar_image_use = pygame.transform.scale(hardness_bar_image, (int(hardness_bar_width), 50))  # scale loading bar based on selected weight
+        hardness_bar_width = (hardness_4component_progress - min_hardness_4component)*scaling_hardness_4
+        hardness_bar_image_use = pygame.transform.scale(hardness_bar_image, (max(int(hardness_bar_width), 1), 50))  # scale loading bar based on selected weight
         hardness_bar_image_use_rect = hardness_bar_image_use.get_rect(midleft=(x_bar_har_4, 3/4*height))  # update loading bar position
-        if hardness_4component_progress <= max_hardness_4component and hardness_4component_progress >= 0:
+        if min_hardness_4component <= hardness_4component_progress <= max_hardness_4component:
+            draw_bar_track(x_bar_har_4, hardness_bar_image_use_rect.y, hardness_4component_span*scaling_hardness_4)
             screen.blit(hardness_bar_image_use, hardness_bar_image_use_rect)  # draw loading bar
-            hardness_text,hardness_rect = create_text(f"Desired hardness: {hardness_4component_progress}", (width // 2, height // 2), (0,0,0))
+            hardness_text,hardness_rect = create_text(f"Desired hardness: {hardness_4component_progress} shore", (width // 2, height // 2), TEXT_COLOR)
             screen.blit(hardness_text, hardness_rect)  # draw hardness text in the center
         else:
             screen.blit(return_,return_rect)
@@ -696,7 +820,7 @@ while running:
             location = 1
         sprites = 2
         screen.blit(menu4_text, menu4_text_rect)  # draw menu text in the center of the screen
-        screen.blit(selection_image, selection_image_rect)  # draw cursor
+        draw_selection_cursor()
         screen.blit(yes_image, yes_image_rect)  # draw yes image
         screen.blit(no_image, no_image_rect)  # draw no image
 
@@ -704,7 +828,7 @@ while running:
     if menu == MENU_SETTINGS: #draw settings menu
         sprites = 3
         screen.blit(menu5_text, menu5_text_rect)  # draw menu text in the center of the screen
-        screen.blit(selection_image, selection_image_rect)  # draw cursor
+        draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner   
         screen.blit(mixing_settings_text, mixing_settings_text_rect)  # draw mixing settings text
         screen.blit(replace_cartridge_text, replace_cartridge_text_rect)  # draw replace cartridge text
@@ -714,7 +838,7 @@ while running:
     if menu == MENU_MIXING_SETTINGS: #draw mixing settings menu
         sprites = 3
         screen.blit(menu6_text, menu6_text_rect)  # draw menu text in the center of the screen
-        screen.blit(selection_image, selection_image_rect)  # draw cursor
+        draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
         screen.blit(frequency_text, frequency_text_rect)  # draw frequency text
         screen.blit(duration_text, duration_text_rect)  # draw duration text
@@ -742,56 +866,40 @@ while running:
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
     
 
-    if menu == MENU_REPLACE_CARTRIDGE: #draw cartridge replacement menu
+    if menu == MENU_REPLACE_CARTRIDGE: #draw cartridge replacement menu (pick which bucket)
         sprites = 4
         screen.blit(menu7_text, menu7_text_rect)  # draw menu text in the center of the screen
-        screen.blit(selection_image, selection_image_rect)  # draw cursor
+        draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
-        screen.blit(select_cartridge_text, select_cartridge_text_rect)  # draw select cartridge text
+        screen.blit(select_cartridge_text, select_cartridge_text_rect)  # draw select bucket text
 
-        screen.blit(button_bottle_a_image, button_bottle_a_image_rect)  # draw button 1
-        screen.blit(button_bottle_b_image, button_bottle_b_image_rect)  # draw button 2
-        screen.blit(button_bottle_c_image, button_bottle_c_image_rect)  # draw button 3
-        screen.blit(button_bottle_d_image, button_bottle_d_image_rect)  # draw button 4
+        screen.blit(button_bottle_a_image, button_bottle_a_image_rect)  # bucket 1
+        screen.blit(button_bottle_b_image, button_bottle_b_image_rect)  # bucket 2
+        screen.blit(button_bottle_c_image, button_bottle_c_image_rect)  # bucket 3
+        screen.blit(button_bottle_d_image, button_bottle_d_image_rect)  # bucket 4
 
-    if menu == MENU_REPLACE_WEIGHT: #Select replacement weight
+    if menu == MENU_REPLACE_WEIGHT: #Select replacement volume
         sprites = 1
         screen.blit(menu7_text, menu7_text_rect)  # draw menu text in the center of the screen
         if location == sprites:
-            screen.blit(selection_image, selection_image_rect)  # draw cursor
+            draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
 
-        weight_bar_width = abs(weight_replacement_progress)*scaling_weight_replacement
-        weight_bar_image_use = pygame.transform.scale(weight_bar_image, (int(weight_bar_width), 50))  # scale loading bar based on selected weight
-        weight_bar_image_use_rect = weight_bar_image_use.get_rect(midleft=(x_bar_weight_re, 3/4*height))  # update loading bar position
-        if weight_replacement_progress <= max_weight_replacement and weight_replacement_progress >= 0:
-            cartridge_weight_text, cartridge_weight_text_rect = create_text(f"Weight of new cartridge: {weight_replacement_progress}", (width // 2, height // 2), (0,0,0))
-            screen.blit(cartridge_weight_text, cartridge_weight_text_rect)  # draw hardness text in the center
-            screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
-        else:
-            screen.blit(return_,return_rect)
-
-    if menu == MENU_REPLACE_HARDNESS: #Select replacement hardness
-        sprites = 1
-        screen.blit(menu7_text, menu7_text_rect)  # draw menu text in the center of the screen
-        if location == sprites:
-            screen.blit(selection_image, selection_image_rect)  # draw cursor
-        screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
-        screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
-        hardness_bar_width = abs(hardness_replacement_progress)*scaling_hardness_re
-        hardness_bar_image_use = pygame.transform.scale(hardness_bar_image, (int(hardness_bar_width), 50))  # scale loading bar based on selected weight
-        hardness_bar_image_use_rect = hardness_bar_image_use.get_rect(midleft=(x_bar_har_re, 3/4*height))  # update loading bar position
-        if hardness_replacement_progress <= max_hardness_replacement and hardness_replacement_progress >= 0:
-            screen.blit(hardness_bar_image_use, hardness_bar_image_use_rect)  # draw loading bar
-            cartridge_hardness_text, cartridge_hardness_text_rect = create_text(f"Hardness of new cartridge: {hardness_replacement_progress}", (width // 2, height // 2), (0,0,0))
-            screen.blit(cartridge_hardness_text, cartridge_hardness_text_rect)  # draw hardness text in the center
-        else:
-            screen.blit(return_,return_rect)
+        volume_bar_progress = min(max(volume_replacement_progress, 0.0), max_volume_replacement)
+        volume_bar_track_width = max_volume_replacement*scaling_volume_replacement
+        volume_bar_width = volume_bar_progress*scaling_volume_replacement
+        volume_bar_image_use = pygame.transform.scale(weight_bar_image, (max(int(volume_bar_width), 1), 50))  # scale loading bar based on selected volume
+        volume_bar_image_use_rect = volume_bar_image_use.get_rect(midleft=(x_bar_volume_re, 3/4*height))  # update loading bar position
+        volume_bar_track_rect = pygame.Rect(x_bar_volume_re, volume_bar_image_use_rect.y, int(volume_bar_track_width), 50)
+        cartridge_volume_text, cartridge_volume_text_rect = create_text(f"Total bucket volume: {int(volume_replacement_progress)} ml", (width // 2, height // 2), TEXT_COLOR)
+        screen.blit(cartridge_volume_text, cartridge_volume_text_rect)  # draw volume text in the center
+        draw_bar_track(volume_bar_track_rect.x, volume_bar_track_rect.y, volume_bar_track_rect.width)
+        screen.blit(volume_bar_image_use, volume_bar_image_use_rect)  # draw loading bar
 
     if menu == MENU_1COMPONENT_SELECT: #draw one component component selection menu
         sprites = 4
         screen.blit(menu12_text, menu12_text_rect)  # draw menu text in the center of the screen
-        screen.blit(selection_image, selection_image_rect)  # draw cursor
+        draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
 
         screen.blit(button_bottle_a_image, button_bottle_a_image_rect)  # draw button 1
@@ -803,53 +911,67 @@ while running:
         sprites = 1
         screen.blit(menu13_text, menu13_text_rect)  # draw menu text in the center of the screen
         if location == sprites:
-            screen.blit(selection_image, selection_image_rect)  # draw cursor
+            draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
 
         weight_bar_width = abs(weight_1component_progress)*scaling_weight_1
         weight_bar_image_use = pygame.transform.scale(weight_bar_image, (int(weight_bar_width), 50))  # scale loading bar based on selected weight
         weight_bar_image_use_rect = weight_bar_image_use.get_rect(midleft=(x_bar_weight_1, 3/4*height))  # update loading bar position
         if weight_1component_progress <= max_weight_1component and weight_1component_progress >= 0:
+            draw_bar_track(x_bar_weight_1, weight_bar_image_use_rect.y, max_weight_1component*scaling_weight_1)
             screen.blit(weight_bar_image_use, weight_bar_image_use_rect)  # draw loading bar
-            weight_text,weight_rect = create_text(f"Desired weight: {weight_1component_progress} g", (width // 2, height // 2), (0,0,0))
+            weight_text,weight_rect = create_text(f"Desired weight: {weight_1component_progress} g", (width // 2, height // 2), TEXT_COLOR)
             screen.blit(weight_text, weight_rect)  # draw weight text in the center
         else:
             screen.blit(return_,return_rect)
     
     if menu == MENU_DISPENSING: #draw loading bar
-        multi_components = [0,0,0,0]
         sprites = 4
-        if(components_amount == 1):
-            print(weight,component)
-            multi_components[component] = weight
-        elif(components_amount == 2):
-            print(weight,component)
-            multi_components[component*2] = weight/2
-            multi_components[component*2+1] = weight/2
-        elif(components_amount == 4):
-            while(i<4):
-                multi_components[i] = weight/4
-                i+=1
-            print(weight, hardness)
-        dispense.multi_dispense(multi_components)
-        if threading.active_count() == 1:  # check if the work thread is not already running
-            threading.Thread(target=doWork).start()  # start the work in a separate thread
-        screen.fill((0,0,0))          # clear screen (black background)
-        screen.blit(mengen_bezig, mengen_bezig_rect)  # draw "mengen bezig" text in the center of the screen
-        #progress bar for loading
-        if loading_progress < 100:
-            loading_bar_width = loading_progress*width/2//100
-            loading_bar_image = pygame.transform.scale(loading_bar_image, (int(loading_bar_width), 50))  # scale loading bar based on progress
-            loading_bar_image_rect = loading_bar_image.get_rect(midleft=(200, 3/4*height))  # update loading bar position
-            screen.blit(loading_bar_image, loading_bar_image_rect)  # draw loading bar
-        elif loading_progress >= 100:
-            menu = MENU_START
-            location = 0
-        #resetting variables for next mixing session
-        weight_1component_progress = max_weight_1component//2
-        weight_2component_progress = max_weight_2component//2
-        weight_4component_progress = max_weight_4component//2
-        hardness_4component_progress = max_hardness_4component//2
+        if not dispense_started:
+            multi_components = [0,0,0,0]
+            if(components_amount == 1):
+                print(weight,component)
+                multi_components[component] = weight
+            elif(components_amount == 2):
+                print(weight,component)
+                multi_components[component*2] = weight/2
+                multi_components[component*2+1] = weight/2
+            elif(components_amount == 4):
+                multi_components = saved_settings.component_amounts_for_hardness(weight, hardness)
+                print(weight, hardness, saved_settings.hardness_to_ratio(hardness), multi_components)
+
+            requested_ml = [multi_components[i] / dispense.density_of_liquid for i in range(4)]
+            short = [str(i + 1) for i in range(4) if requested_ml[i] > saved_settings.bucket_volume(i)]
+            if short:
+                dispense_warning_message = "Insufficient bucket volume (" + ", ".join(short) + ") — refill before dispensing"
+                print(dispense_warning_message)
+                for i in range(4):
+                    print(f"  Bucket {i + 1} needs {requested_ml[i]:.1f} ml, has {saved_settings.bucket_volume(i)} ml")
+                menu = MENU_START
+                location = 0
+            else:
+                dispense_and_track_volume(multi_components)
+                threading.Thread(target=doWork, daemon=True).start()
+                dispense_started = True
+        if dispense_started:
+            screen.fill(DISPENSING_BACKGROUND_COLOR)
+            screen.blit(mengen_bezig, mengen_bezig_rect)  # draw "mengen bezig" text in the center of the screen
+            #progress bar for loading
+            if loading_progress < 100:
+                loading_bar_width = loading_progress*width/2//100
+                loading_bar_image = pygame.transform.scale(loading_bar_image, (int(loading_bar_width), 50))  # scale loading bar based on progress
+                loading_bar_image_rect = loading_bar_image.get_rect(midleft=(200, 3/4*height))  # update loading bar position
+                screen.blit(loading_bar_image, loading_bar_image_rect)  # draw loading bar
+            elif loading_progress >= 100:
+                menu = MENU_START
+                location = 0
+                dispense_started = False
+                loading_progress = 0
+            #resetting variables for next mixing session
+            weight_1component_progress = max_weight_1component//2
+            weight_2component_progress = max_weight_2component//2
+            weight_4component_progress = max_weight_4component//2
+            hardness_4component_progress = (min_hardness_4component + max_hardness_4component) // 2
 
     if menu != previous_menu:
         if menu != MENU_MIX_CONFIRM:
@@ -858,5 +980,6 @@ while running:
             location = 1
 
         previous_menu = menu
+    top_bar.draw(screen)
     pygame.display.flip()           # update display
 pygame.quit()

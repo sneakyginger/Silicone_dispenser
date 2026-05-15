@@ -1,9 +1,9 @@
 import RPi.GPIO as GPIO
 import queue
 
-Pin_left  = 17  # CLK
-Pin_right = 27  # DT
-Pin_click = 22  # SW
+Pin_left  = 11  # CLK
+Pin_right = 15  # DT
+Pin_click = 13  # SW
 
 event_queue = queue.Queue()
 last_state = None  # Stores previous (CLK, DT) pair
@@ -35,7 +35,7 @@ def encoder_callback(channel):
     last_state = state
 
 def setup_encoder(pin_left, pin_right, pin_click):
-    GPIO.setmode(GPIO.BCM)
+    GPIO.setmode(GPIO.BOARD)
     GPIO.setup(pin_left,  GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.setup(pin_right, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.setup(pin_click, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -47,7 +47,7 @@ def setup_encoder(pin_left, pin_right, pin_click):
     # Detect ALL edges on both encoder pins — no bouncetime
     GPIO.add_event_detect(pin_left,  GPIO.BOTH, callback=encoder_callback)
     GPIO.add_event_detect(pin_right, GPIO.BOTH, callback=encoder_callback)
-    GPIO.add_event_detect(pin_click, GPIO.BOTH, callback=encoder_callback, bouncetime=200)
+    GPIO.add_event_detect(pin_click, GPIO.BOTH, callback=encoder_callback, bouncetime=20)
 
 def run_encoder(pin_left, pin_right, pin_click):
     setup_encoder(pin_left, pin_right, pin_click)
