@@ -1,0 +1,64 @@
+STEP translation to Solid Edge
+Date: donderdag,mei 14,2026 10:32
+Source File: C:\Users\david\Downloads\nema-23-84mm-frame-stepper-motor-1.snapshot.2\NEMA 23 84mm Frame Stepper Motor.step
+Author: Unknown
+Organization: Unknown
+Source System: FreeCAD
+
+Hardware:
+Processor: AMD Ryzen 5 7640U w/ Radeon 760M Graphics      
+Operating System: Windows 11 Version:25H2 Build:26200 System Type:64-bit
+Installed Memory: 15.3 GB
+
+Software Information
+Parasolid Version: 37.0.118
+PSBodyShop Version: 37.0.94
+Step Adapter Version: 15.0.142
+Solid Edge Version: 225.00.00.114 x64
+
+Step Import Options
+Import Faceted Bodies: On
+Import Check Bodies: Off
+Import Curves: On
+Import DoNotSave: On
+Import Multiple Bodies As Single Part File: On
+Import Optimize:Off
+Import Stitch Surfaces: On
+Import Boolean Solids: On
+Make Base Feature: On
+Simplify Geometry: On
+Import Imprint Curves: On
+Import Drive: C:
+Import Stitch Surfaces: On
+Import Surfaces: On
+Import Output Path: C:\Users\david\Downloads\nema-23-84mm-frame-stepper-motor-1.snapshot.2
+Import Enable Default Output Path: On
+Import PMI: Off
+Import As Internal Components: Off
+Import Path: 
+
+Translating to Parasolid data types...
++Begin Assembly: 1
++Created SE Assembly File C:\Users\david\Downloads\nema-23-84mm-frame-stepper-motor-1.snapshot.2\NEMA 23 84mm Frame Stepper Motor.asm
+|--+Created SE Part File C:\Users\david\Downloads\nema-23-84mm-frame-stepper-motor-1.snapshot.2\Face.par
+|--+Created SE Part File C:\Users\david\Downloads\nema-23-84mm-frame-stepper-motor-1.snapshot.2\Main Body.par
+|--+Created SE Part File C:\Users\david\Downloads\nema-23-84mm-frame-stepper-motor-1.snapshot.2\Cap.par
+|--+Created SE Part File C:\Users\david\Downloads\nema-23-84mm-frame-stepper-motor-1.snapshot.2\Screw 2.par
+|--+Created SE Part File C:\Users\david\Downloads\nema-23-84mm-frame-stepper-motor-1.snapshot.2\Screw 3.par
+|--+Created SE Part File C:\Users\david\Downloads\nema-23-84mm-frame-stepper-motor-1.snapshot.2\Screw 4.par
+|--+Created SE Part File C:\Users\david\Downloads\nema-23-84mm-frame-stepper-motor-1.snapshot.2\Strain Relief.par
+|--+Created SE Part File C:\Users\david\Downloads\nema-23-84mm-frame-stepper-motor-1.snapshot.2\Armature.par
+|--+Created SE Part File C:\Users\david\Downloads\nema-23-84mm-frame-stepper-motor-1.snapshot.2\Wire - Black.par
+|--+Created SE Part File C:\Users\david\Downloads\nema-23-84mm-frame-stepper-motor-1.snapshot.2\Screw 1.par
+|--+Created SE Part File C:\Users\david\Downloads\nema-23-84mm-frame-stepper-motor-1.snapshot.2\Wire - Green.par
+|--+Created SE Part File C:\Users\david\Downloads\nema-23-84mm-frame-stepper-motor-1.snapshot.2\Wire - Blue.par
+|--+Created SE Part File C:\Users\david\Downloads\nema-23-84mm-frame-stepper-motor-1.snapshot.2\Wire - Red.par
+|--+Created SE Part File C:\Users\david\Downloads\nema-23-84mm-frame-stepper-motor-1.snapshot.2\Face001.par
+|--+Created SE Part File C:\Users\david\Downloads\nema-23-84mm-frame-stepper-motor-1.snapshot.2\Body020.par
++Total Parts: 30
++Assemblies: 0
++Solid Bodies: 30
++Sheet Bodies: 0
++End Assembly: 1
+Translation process completed
+Total time required to translate and post process:00 : 00 : 01
