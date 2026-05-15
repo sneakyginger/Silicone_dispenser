@@ -449,7 +449,7 @@ button_bottle_d_image, button_bottle_d_image_rect = load_image(r'./Sprites/butto
 
 loci = locus(2)
 #load yes and no sprite
-yes_image, yes_image_rect = load_image(r'./Sprites/YES.png', button_size, (loci[0]))
+yes_image, yes_image_rect = load_image(r'./Sprites/yes.png', button_size, (loci[0]))
 no_image, no_image_rect = load_image(r'./Sprites/no.png', button_size, (loci[1]))
 
 button_bottle_ab_image, button_bottle_ab_image_rect = load_image(r'./Sprites/button_2comp_1.png', bottle_img_size, (loci[0]))
