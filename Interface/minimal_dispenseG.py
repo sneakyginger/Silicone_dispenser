@@ -76,7 +76,33 @@ def set_servos(positions):
 # --- The one function other files call --------------------------------------
 
 def multi_dispense(amounts, progress_callback=None, progress_interval=10):
-    # Report progress to the UI by calling, at most once per `progress_interval` seconds:
-    #     progress_callback(component_index, grams_dispensed_so_far)
-    
-    raise NotImplementedError
+    measured = [0.0, 0.0, 0.0, 0.0]
+    for i in range(len(amounts)):
+        if amounts[i] != 0:
+            measured[i] = total_dispense_1comp(i + 1, float(amounts[i]), step_delay)
+            if progress_callback is not None:
+                progress_callback(i, measured[i])
+    return measured
+
+
+def total_dispense_1comp(bucket_id, weight,step_delay = 0.001):
+    if weight > 5:
+        step_delay = 0.005
+    elif weight > 1:
+        step_delay = 0.01
+    else:
+        step_delay = 0.1
+    dispensed = dispense_and_measure(bucket_id, weight,step_delay)
+    total_dispensed = dispensed
+    print(dispensed)
+    while(total_dispensed < weight-0.1):
+        dispensed = dispense_and_measure(bucket_id, weight - total_dispensed,step_delay)
+        total_dispensed += dispensed
+        print(total_dispensed)
+        if weight > 5:
+            step_delay = 0.005
+        elif weight > 1:
+            step_delay = 0.01
+        else:
+            step_delay = 0.1
+    return total_dispensed
