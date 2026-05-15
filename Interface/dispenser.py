@@ -65,7 +65,7 @@ def total_dispense_1comp(bucket_id, weight,step_delay = 0.001):
             step_delay = 0.01
         else:
             step_delay = 0.1
-    return total_dispensed
+    return dispensed
 
 def multi_dispense(amounts, progress_callback=None, progress_interval=10):
     measured = [0.0, 0.0, 0.0, 0.0]
