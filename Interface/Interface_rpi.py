@@ -150,11 +150,15 @@ pygame.font.init()
 font = pygame.font.SysFont(theme.DEFAULT_FONT, theme.FONT_SIZE_NORMAL)
 font_small = pygame.font.SysFont(theme.DEFAULT_FONT, theme.FONT_SIZE_SMALL)
 font_big = pygame.font.SysFont(theme.DEFAULT_FONT, theme.FONT_SIZE_BIG)
+font_smaller = pygame.font.SysFont(theme.DEFAULT_FONT, theme.FONT_SIZE_SMALLER)
 
 def create_text(text, position, color=theme.WHITE, font_type="normal"):
     if font_type == "small":
         surface_text = font_small.render(text, True, color)
         surface_text = font_small.render(text, True, color)
+    elif font_type == "smaller":
+        surface_text = font_smaller.render(text, True, color)
+        surface_text = font_smaller.render(text, True, color)
     elif font_type == "normal":
         surface_text = font.render(text, True, color)
         surface_text = font.render(text, True, color)
@@ -251,7 +255,7 @@ def doWork():
 def locus(amount_sprites):
     loci = []
     for i in range(amount_sprites):
-        loci.append((width/(amount_sprites+1)*(i+1), height/2))
+        loci.append((width/(amount_sprites+1)*(i+1), (height-22)/2+22))
     loci.append((width-50, height-50)) #return sprite location
     return loci
 def available_locations(current_location, direction, options):
@@ -328,82 +332,88 @@ def get_click_target(mouse_pos, menu, sprites, loci):
 
 
 #Maak teks voor tijdens mengen
-mengen_bezig, mengen_bezig_rect = create_text("MIXING", (width // 2, height // 2), DISPENSING_TEXT_COLOR)
+mengen_bezig, mengen_bezig_rect = create_text("CIRCULATING", (width // 2, height // 2), DISPENSING_TEXT_COLOR)
 #Text menu MENU_START
-menu0_text, menu0_text_rect = create_text("START", (width // 2, 25), TEXT_COLOR)
+menu0_text, menu0_text_rect = create_text("START", (width // 2, 100), TEXT_COLOR)
 
 #Text menu MENU_2COMPONENT_WEIGHT
-menu1_text, menu1_text_rect = create_text("2 component dispensing", (width // 2, 25), TEXT_COLOR)
+menu1_text, menu1_text_rect = create_text("2 component dispensing", (width // 2, 100), TEXT_COLOR)
 #Text menu MENU_4COMPONENT_WEIGHT
-menu2_text, menu2_text_rect = create_text("4 component dispensing", (width //2, 25), TEXT_COLOR)
+menu2_text, menu2_text_rect = create_text("4 component dispensing", (width //2, 100), TEXT_COLOR)
 #Text menu MENU_4COMPONENT_HARDNESS
-menu3_text, menu3_text_rect = create_text("4 component dispensing", (width // 2, 25), TEXT_COLOR)
+menu3_text, menu3_text_rect = create_text("4 component dispensing", (width // 2, 100), TEXT_COLOR)
 #Text menu MENU_MIX_CONFIRM
-menu4_text, menu4_text_rect = create_text("Would you like to start mixing?", (width // 2, 25), TEXT_COLOR)
+menu4_text, menu4_text_rect = create_text("Would you like to start circulating?", (width // 2, 100), TEXT_COLOR)
 #Text menu MENU_SETTINGS
-menu5_text, menu5_text_rect = create_text("Settings", (width // 2, 25), TEXT_COLOR)
+menu5_text, menu5_text_rect = create_text("Settings", (width // 2, 100), TEXT_COLOR)
 #Text menu MENU_MIXING_SETTINGS
-menu6_text, menu6_text_rect = create_text("Mixing Settings", (width // 2, 25), TEXT_COLOR)
+menu6_text, menu6_text_rect = create_text("Circulation Settings", (width // 2, 100), TEXT_COLOR)
 #Text menu MENU_REPLACE_CARTRIDGE
-menu7_text, menu7_text_rect = create_text("Refill bucket", (width // 2, 25), TEXT_COLOR)
+menu7_text, menu7_text_rect = create_text("Refill bucket", (width // 2, 100), TEXT_COLOR)
 #Text menu MENU_REPLACE_WEIGHT
-menu8_text, menu8_text_rect = create_text("Select hardness of new cartridge", (width // 2, 25), TEXT_COLOR)
+menu8_text, menu8_text_rect = create_text("Select hardness of new cartridge", (width // 2, 100), TEXT_COLOR)
 #Text menu MENU_MIXING_FREQUENCY
-menu9_text, menu9_text_rect = create_text("Time between mixes", (width // 2, 25), TEXT_COLOR)
+menu9_text, menu9_text_rect = create_text("Time between circulations", (width // 2, 100), TEXT_COLOR)
 #Text menu MENU_MIXING_DURATION
-menu10_text, menu10_text_rect = create_text("Select mixing duration", (width // 2, 25), TEXT_COLOR)
+menu10_text, menu10_text_rect = create_text("Select circulating duration", (width // 2, 100), TEXT_COLOR)
 #Text menu MENU_MIXING_START_TIME
-menu11_text, menu11_text_rect = create_text("Select time until next mix", (width // 2, 25), TEXT_COLOR)
+menu11_text, menu11_text_rect = create_text("Select time until next circulation", (width // 2, 100), TEXT_COLOR)
 #Text menu MENU_1COMPONENT_SELECT
-menu12_text, menu12_text_rect = create_text("Select component to dispense", (width // 2, 25), TEXT_COLOR)
+menu12_text, menu12_text_rect = create_text("Select component to dispense", (width // 2, 100), TEXT_COLOR)
 #Text menu MENU_1COMPONENT_WEIGHT
-menu13_text, menu13_text_rect = create_text("Select desired weight", (width // 2, 25), TEXT_COLOR)
+menu13_text, menu13_text_rect = create_text("Select desired weight", (width // 2, 100), TEXT_COLOR)
 #text return
 return_, return_rect = create_text("Return to previous menu", (width // 2, height // 2), TEXT_COLOR, "normal")
 
 
-loci = locus(4)
+loci = locus(5)
 #menus names text
-two_component_text,two_component_text_rect = create_text("2 component", (loci[0][0], loci[0][1]+90), TEXT_COLOR, "small")
-four_component_text, four_component_text_rect = create_text("4 component", (loci[1][0], loci[1][1]+90), TEXT_COLOR, "small")
-mixing_menu_text, mixing_menu_text_rect = create_text("Mixing", (loci[2][0], loci[2][1]+90), TEXT_COLOR, "small")
-settings_text, settings_text_rect = create_text("Settings", (loci[3][0], loci[3][1]+90), TEXT_COLOR, "small")
+one_component_text, one_component_text_rect = create_text("1 component", (loci[0][0], loci[0][1]+90), TEXT_COLOR, "smaller")
+two_component_text,two_component_text_rect = create_text("2 component", (loci[1][0], loci[1][1]+90), TEXT_COLOR, "smaller")
+four_component_text, four_component_text_rect = create_text("4 component", (loci[2][0], loci[2][1]+90), TEXT_COLOR, "smaller")
+mixing_menu_text, mixing_menu_text_rect = create_text("Circulation", (loci[3][0], loci[3][1]+90), TEXT_COLOR, "smaller")
+settings_text, settings_text_rect = create_text("Settings", (loci[4][0], loci[4][1]+90), TEXT_COLOR, "smaller")
 
-loci = locus(3)
+loci = locus(2)
 #Setting options text
-mixing_settings_text, mixing_settings_text_rect = create_text("Mixing settings", (loci[0][0], loci[0][1]+90), TEXT_COLOR, "small")
+mixing_settings_text, mixing_settings_text_rect = create_text("Cicrculation settings", (loci[0][0], loci[0][1]+90), TEXT_COLOR, "small")
 replace_cartridge_text, replace_cartridge_text_rect = create_text("Refill bucket", (loci[1][0], loci[1][1]+90), TEXT_COLOR, "small")
 one_component_dispensing_text, one_component_dispensing_text_rect = create_text("One component", (loci[2][0], loci[2][1]+90), TEXT_COLOR, "small")
 one_component_dispensing_line2_text, one_component_dispensing_line2_text_rect = create_text("dispensing", (loci[2][0], loci[2][1]+115), TEXT_COLOR, "small")
 
 loci = locus(3)
 #mixing settings options text
-frequency_text, frequency_text_rect = create_text("Mixing frequency", (loci[0][0], loci[0][1]+90), TEXT_COLOR, "small")
-duration_text, duration_text_rect = create_text("Mixing duration", (loci[1][0], loci[1][1]+90), TEXT_COLOR, "small")
+frequency_text, frequency_text_rect = create_text("Cicrculation frequency", (loci[0][0], loci[0][1]+90), TEXT_COLOR, "small")
+duration_text, duration_text_rect = create_text("Circulating duration", (loci[1][0], loci[1][1]+90), TEXT_COLOR, "small")
 mixing_start_time_text, mixing_start_time_text_rect = create_text("Time until", (loci[2][0], loci[2][1]+90), TEXT_COLOR, "small")
-mixing_start_time_line2_text, mixing_start_time_line2_text_rect = create_text("next mix", (loci[2][0], loci[2][1]+115), TEXT_COLOR, "small")
+mixing_start_time_line2_text, mixing_start_time_line2_text_rect = create_text("next circulation", (loci[2][0], loci[2][1]+115), TEXT_COLOR, "small")
 
 
 #cartridge replacement options text
-select_cartridge_text, select_cartridge_text_rect = create_text("Select bucket to refill", (width/2, loci[0][1]+90), TEXT_COLOR, "small")
+select_cartridge_text, select_cartridge_text_rect = create_text("Select bucket to refill", (width/2, loci[0][1]+120), TEXT_COLOR, "small")
 
-loci = locus(4)
+loci = locus(5)
 #load in selection sprite
-selection_image, selection_image_rect = load_image(r'./Sprites/rond.png', (145, 145), loci[0])
+selection_image, selection_image_rect = load_image(r'./Sprites/rond.png', (150, 150), loci[0])
 return_selection_image, return_selection_image_rect = load_image(r'./Sprites/rond.png', (100, 100), loci[-1])  # Return button UI: default-size selector used when the back button is selected.
 
-#loud in 2 component mixing sprite
-two_component_image, two_component_image_rect = load_image(r'./Sprites/button_2comp_1.png',(175,175),loci[0])
+#load in 1 component mixing sprite
+one_component_image, one_component_image_rect = load_image(r'./Sprites/button_bottle_a.png', (40,120), (loci[0]))
 
-#loud in 4 component mixing sprite
-four_component_image, four_component_image_rect = load_image(r'./Sprites/button_4comp.png',(175,175),loci[1])
+#load in 2 component mixing sprite
+two_component_image, two_component_image_rect = load_image(r'./Sprites/button_2comp_1.png',(200,200),loci[1])
+
+#load in 4 component mixing sprite
+four_component_image, four_component_image_rect = load_image(r'./Sprites/button_4comp.png',(120,120),loci[2])
+
+circulating_image, circulating_image_rect = load_image(r'./Sprites/circulate.png', (100,100), (loci[3]))
 
 #load in settings sprite
-settings_image, settings_image_rect = load_image(r'./Sprites/settings.png', button_size, loci[3])
+settings_image, settings_image_rect = load_image(r'./Sprites/settings.png', button_size, loci[4])
 
 #load in return sprite
 return_image, return_image_rect = load_image(r'./Sprites/return.png', button_size, loci[-1])
-
+loci = locus(4)
 #load in loading bar sprite
 loading_bar_image, loading_bar_image_rect = load_image(r'./Sprites/white.png',(8,150) ,(200, height//2))
 loading_progress = 0
@@ -443,20 +453,22 @@ button2_image, button2_image_rect = load_image(r'./Sprites/button.png', button_s
 button3_image, button3_image_rect = load_image(r'./Sprites/button.png', button_size, (loci[2]))
 button4_image, button4_image_rect = load_image(r'./Sprites/button.png', button_size, (loci[3]))
 
-bottle_img_size = (150,626)
-bottle_img_size = (bottle_img_size[0]//4,bottle_img_size[1]//4)
+bottle_img_size = (40,120)
 button_bottle_a_image, button_bottle_a_image_rect = load_image(r'./Sprites/button_bottle_a.png', bottle_img_size, (loci[0]))
 button_bottle_b_image, button_bottle_b_image_rect = load_image(r'./Sprites/button_bottle_b.png', bottle_img_size, (loci[1]))
 button_bottle_c_image, button_bottle_c_image_rect = load_image(r'./Sprites/button_bottle_c.png', bottle_img_size, (loci[2]))
-button_bottle_d_image, button_bottle_d_image_rect = load_image(r'./Sprites/button_bottle_c.png', bottle_img_size, (loci[3]))
+button_bottle_d_image, button_bottle_d_image_rect = load_image(r'./Sprites/button_bottle_d.png', bottle_img_size, (loci[3]))
 
 loci = locus(2)
 #load yes and no sprite
 yes_image, yes_image_rect = load_image(r'./Sprites/yes.png', button_size, (loci[0]))
 no_image, no_image_rect = load_image(r'./Sprites/no.png', button_size, (loci[1]))
 
-button_bottle_ab_image, button_bottle_ab_image_rect = load_image(r'./Sprites/button_2comp_1.png', button_size, (loci[0]))
-button_bottle_cd_image, button_bottle_cd_image_rect = load_image(r'./Sprites/button_2comp_2.png', button_size, (loci[1]))
+button_bottle_ab_image, button_bottle_ab_image_rect = load_image(r'./Sprites/button_2comp_1.png', (175,175), (loci[0]))
+button_bottle_cd_image, button_bottle_cd_image_rect = load_image(r'./Sprites/button_2comp_2.png', (175,175), (loci[1]))
+
+circulating_settings_image, circulating_settings_image_rect = load_image(r'./Sprites/circulate.png', (100,100), (loci[0]))
+refill_image, refill_image_rect = load_image(r'./Sprites/circulate.png', (100,100), (loci[1]))
 
 
 def draw_selection_cursor():
@@ -631,14 +643,17 @@ while running:
         if menu == MENU_START:
             dispense_warning_message = ""
             if location == 0:
+                menu = MENU_1COMPONENT_SELECT
+                location = 0
+            elif location == 1:
                 menu = MENU_2COMPONENT_SELECTION
                 location = 1
-            elif location == 1:
-                menu = MENU_4COMPONENT_WEIGHT
             elif location == 2:
+                menu = MENU_4COMPONENT_WEIGHT
+            elif location == 3:
                 components_amount = -1
                 menu = MENU_MIX_CONFIRM
-            elif location == 3:
+            elif location == 4:
                 menu = MENU_SETTINGS
                 location = 2
 
@@ -689,8 +704,6 @@ while running:
                 menu = MENU_MIXING_SETTINGS
             elif location == 1:
                 menu = MENU_REPLACE_CARTRIDGE
-            elif location == 2:
-                menu = MENU_1COMPONENT_SELECT
             elif location == sprites:
                 menu = MENU_START
 
@@ -775,7 +788,7 @@ while running:
 
         elif menu == MENU_1COMPONENT_SELECT:
             if location == sprites:
-                menu = MENU_SETTINGS
+                menu = MENU_START
             else:
                 components_amount = 1
                 component = location
@@ -793,15 +806,17 @@ while running:
 
 
     if menu == MENU_START: #draw start menu
-        sprites = 4
+        sprites = 5
         screen.blit(menu0_text, menu0_text_rect)  # draw menu text in the center of the screen
         draw_selection_cursor()
+        screen.blit(one_component_image, one_component_image_rect)  # draw button 1
+        screen.blit(one_component_text, one_component_text_rect)  # draw one component text
         screen.blit(settings_image, settings_image_rect)  # draw settings image
         screen.blit(two_component_image, two_component_image_rect)  # draw button 1
         screen.blit(two_component_text, two_component_text_rect)  # draw two component text
         screen.blit(four_component_image, four_component_image_rect)  # draw button 2
         screen.blit(four_component_text, four_component_text_rect)  # draw four component text
-        screen.blit(button3_image, button3_image_rect)  # draw button 3
+        screen.blit(circulating_image, circulating_image_rect)  # draw button 3
         screen.blit(mixing_menu_text, mixing_menu_text_rect)  # draw mixing menu text
         screen.blit(settings_text, settings_text_rect)  # draw settings text
 
@@ -890,14 +905,14 @@ while running:
 
 
     if menu == MENU_SETTINGS: #draw settings menu
-        sprites = 3
+        sprites = 2
         screen.blit(menu5_text, menu5_text_rect)  # draw menu text in the center of the screen
         draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner   
         screen.blit(mixing_settings_text, mixing_settings_text_rect)  # draw mixing settings text
         screen.blit(replace_cartridge_text, replace_cartridge_text_rect)  # draw replace cartridge text
-        screen.blit(one_component_dispensing_text, one_component_dispensing_text_rect)  # draw settings image
-        screen.blit(one_component_dispensing_line2_text, one_component_dispensing_line2_text_rect)  # draw settings image
+        screen.blit(refill_image, refill_image_rect)  # draw replace cartridge image
+        screen.blit(circulating_settings_image, circulating_settings_image_rect)  # draw
 
     if menu == MENU_MIXING_SETTINGS: #draw mixing settings menu
         sprites = 3
@@ -907,7 +922,7 @@ while running:
             draw_selection_cursor()
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
 
-
+    """
     if menu == MENU_MIXING_FREQUENCY: #draw frequency of mixing menu
         sprites = 3
         screen.blit(menu9_text, menu9_text_rect)  # draw menu text in the center of the screen
@@ -926,7 +941,7 @@ while running:
         screen.blit(menu11_text, menu11_text_rect)  # draw menu text in the center of the screen
         display_time_selection(width, height, time_start_time, location, start_time_selection)  # draw time selection
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner
-    
+    """
 
     if menu == MENU_REPLACE_CARTRIDGE: #draw cartridge replacement menu (pick which bucket)
         sprites = 4
