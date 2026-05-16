@@ -23,10 +23,10 @@ CARTRIDGE_CONFIG_PATH = SETTINGS_PATH
 
 DEFAULT_CARTRIDGE_CONFIG = {
     "buckets": {
-        "bucket_1": {"component": "A", "hardness_group": "small", "hardness": 5, "volume": 100},
-        "bucket_2": {"component": "B", "hardness_group": "small", "hardness": 5, "volume": 100},
-        "bucket_3": {"component": "A", "hardness_group": "big", "hardness": 50, "volume": 100},
-        "bucket_4": {"component": "B", "hardness_group": "big", "hardness": 50, "volume": 100},
+        "bucket_1": {"component": "A", "hardness_group": "small", "hardness": 5, "volume": 100, "microsteps_per_gram": 82.47},
+        "bucket_2": {"component": "B", "hardness_group": "small", "hardness": 5, "volume": 100, "microsteps_per_gram": 82.47},
+        "bucket_3": {"component": "A", "hardness_group": "big", "hardness": 50, "volume": 100, "microsteps_per_gram": 82.47},
+        "bucket_4": {"component": "B", "hardness_group": "big", "hardness": 50, "volume": 100, "microsteps_per_gram": 82.47},
     },
     "mixing_settings": {
         "frequency": "daily",
@@ -201,6 +201,17 @@ def bucket_volume(idx):
 def set_bucket_volume(idx, value):
     """Set remaining volume in ml for index 0=bucket 1 through 3=bucket 4."""
     cartridge_config["buckets"][bucket_keys(idx)]["volume"] = float(value)
+
+
+def bucket_microsteps_per_gram(idx):
+    """Return saved calibration for index 0=bucket 1 through 3=bucket 4."""
+    return cartridge_config["buckets"][bucket_keys(idx)]["microsteps_per_gram"]
+
+
+def set_bucket_microsteps_per_gram(idx, value):
+    """Save calibration for index 0=bucket 1 through 3=bucket 4."""
+    cartridge_config["buckets"][bucket_keys(idx)]["microsteps_per_gram"] = float(value)
+    save_settings(cartridge_config)
 
 
 def decrement_bucket_volumes(measured_grams, density):
