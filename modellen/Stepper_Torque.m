@@ -2,7 +2,7 @@ clear all
 close all
 clc
 %%
-Tube_diameter = 0.003; %m
+Tube_diameter = 0.005; %m
 Surface_tube = pi*(Tube_diameter/2)^2 %m²
 motor_arm_radius = 0.03;%m
 step_size = 1.8*(2*pi/360) %rad
@@ -12,7 +12,7 @@ Tube_Length = 2; %m
 viscosity = 15000 * 10^-3; %Pa.s
 density = 1030; %kg/m³
 %% Flows
-minimum_displaced_V = motor_arm_radius*Surface_tube*10^6 %ml/step
+minimum_displaced_V = step_size*motor_arm_radius*Surface_tube*10^6 %ml/step
 minimum_dislpaced_m = minimum_displaced_V*1.03
 motor_speed_max = 1000;%RPM
 Min_needed_flow = 0.5; %ml/s
