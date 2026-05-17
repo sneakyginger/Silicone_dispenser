@@ -397,16 +397,18 @@ loci = locus(5)
 selection_image, selection_image_rect = load_image(r'./Sprites/rond.png', (150, 150), loci[0])
 return_selection_image, return_selection_image_rect = load_image(r'./Sprites/rond.png', (100, 100), loci[-1])  # Return button UI: default-size selector used when the back button is selected.
 
-bottle_img_size = (133,345)
+bottle_img_size = (133,345-45)
 bottle_img_size = (bottle_img_size[0]//3, bottle_img_size[1]//3)
 #load in 1 component mixing sprite
 one_component_image, one_component_image_rect = load_image(r'./Sprites/button_bottle_a.png', bottle_img_size, (loci[0]))
 
 #load in 2 component mixing sprite
-two_component_image, two_component_image_rect = load_image(r'./Sprites/button_2comp_1.png',(200,200),loci[1])
+two_component_image, two_component_image_rect = load_image(r'./Sprites/button_2comp_1.png',(115,115),loci[1])
 
 #load in 4 component mixing sprite
-four_component_image, four_component_image_rect = load_image(r'./Sprites/button_4comp.png',(120,120),loci[2])
+ratio4 = (5,4)
+size4 = (ratio4[0]*23, ratio4[1]*29)
+four_component_image, four_component_image_rect = load_image(r'./Sprites/button_4comp.png', size4, loci[2])
 
 circulating_image, circulating_image_rect = load_image(r'./Sprites/circulate.png', (100,100), (loci[3]))
 
@@ -467,8 +469,8 @@ loci = locus(2)
 yes_image, yes_image_rect = load_image(r'./Sprites/yes.png', button_size, (loci[0]))
 no_image, no_image_rect = load_image(r'./Sprites/no.png', button_size, (loci[1]))
 
-button_bottle_ab_image, button_bottle_ab_image_rect = load_image(r'./Sprites/button_2comp_1.png', (175,175), (loci[0]))
-button_bottle_cd_image, button_bottle_cd_image_rect = load_image(r'./Sprites/button_2comp_2.png', (175,175), (loci[1]))
+button_bottle_ab_image, button_bottle_ab_image_rect = load_image(r'./Sprites/button_2comp_1.png', (150,150), (loci[0]))
+button_bottle_cd_image, button_bottle_cd_image_rect = load_image(r'./Sprites/button_2comp_2.png', (150,150), (loci[1]))
 
 circulating_settings_image, circulating_settings_image_rect = load_image(r'./Sprites/circulation_settings.png', (100,100), (loci[0]))
 refill_image, refill_image_rect = load_image(r'./Sprites/circulate.png', (100,100), (loci[1]))
