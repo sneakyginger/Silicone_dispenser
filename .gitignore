@@ -13,3 +13,6 @@ dispenser_venv/
 # Python cache files
 __pycache__/
 *.py[cod]
+
+# Agents
+AGENTS.md
