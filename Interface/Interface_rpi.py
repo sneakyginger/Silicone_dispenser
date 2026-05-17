@@ -502,7 +502,7 @@ LOW_VOLUME_THRESHOLD_ML = 20
 running = True
 while running:
     dt = dt + clock.tick()
-    if dt > 100:
+    if dt > 1000/60:
         dt = 0
         pygame.display.flip()
     loci = locus(sprites)
