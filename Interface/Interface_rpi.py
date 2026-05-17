@@ -417,7 +417,7 @@ four_component_image, four_component_image_rect = load_image(r'./Sprites/button_
 circulating_image, circulating_image_rect = load_image(r'./Sprites/circulate.png', (100,100), (loci[3]))
 
 #load in settings sprite
-settings_image, settings_image_rect = load_image(r'./Sprites/settings.png', button_size, loci[4])
+settings_image, settings_image_rect = load_image(r'./Sprites/settings.png', (100,100), loci[4])
 
 #load in return sprite
 return_image, return_image_rect = load_image(r'./Sprites/return.png', button_size, loci[-1])
