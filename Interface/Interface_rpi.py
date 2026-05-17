@@ -477,7 +477,9 @@ button_bottle_ab_image, button_bottle_ab_image_rect = load_image(r'./Sprites/but
 button_bottle_cd_image, button_bottle_cd_image_rect = load_image(r'./Sprites/button_2comp_2.png', (150,150), (loci[1]))
 
 circulating_settings_image, circulating_settings_image_rect = load_image(r'./Sprites/circulation_settings.png', (100,100), (loci[0]))
-refill_image, refill_image_rect = load_image(r'./Sprites/circulate.png', (100,100), (loci[1]))
+refill_image_1, refill_image_rect_1  = load_image(r'./Sprites/cup_empty.png', (100,150), (loci[1]))
+refill_image_2, refill_image_rect_2  = load_image(r'./Sprites/cup_half.png', (100,150), (loci[1][0]+2, loci[1][1]))
+refill_image_3, refill_image_rect_3  = load_image(r'./Sprites/cup_full.png', (100,150), (loci[1][0]-1, loci[1][1]))
 
 
 def draw_selection_cursor():
@@ -664,6 +666,7 @@ while running:
                 menu = MENU_MIX_CONFIRM
             elif location == 4:
                 menu = MENU_SETTINGS
+                animation_frame = 0
                 location = 2
 
 
@@ -923,8 +926,14 @@ while running:
         screen.blit(return_image, return_image_rect)  # draw return image in bottom right corner   
         screen.blit(mixing_settings_text, mixing_settings_text_rect)  # draw mixing settings text
         screen.blit(replace_cartridge_text, replace_cartridge_text_rect)  # draw replace cartridge text
-        screen.blit(refill_image, refill_image_rect)  # draw replace cartridge image
         screen.blit(circulating_settings_image, circulating_settings_image_rect)  # draw
+        animation_frame = (animation_frame + 1) % 3000
+        if animation_frame < 1000:
+            screen.blit(refill_image_1, refill_image_rect_1)  # draw replace cartridge image
+        elif animation_frame < 2000:
+            screen.blit(refill_image_2, refill_image_rect_2)  # draw replace cartridge image
+        else:
+            screen.blit(refill_image_3, refill_image_rect_3)  # draw replace cartridge image
 
     if menu == MENU_MIXING_SETTINGS: #draw mixing settings menu
         sprites = 3
