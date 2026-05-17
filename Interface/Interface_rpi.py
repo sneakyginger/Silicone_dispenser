@@ -400,7 +400,7 @@ select_cartridge_text, select_cartridge_text_rect = create_text("Select bucket t
 
 loci = locus(5)
 #load in selection sprite
-selection_image, selection_image_rect = load_image(r'./Sprites/rond.png', (150, 150), loci[0])
+selection_image, selection_image_rect = load_image(r'./Sprites/rond.png', (150, 150), loci[-1])
 return_selection_image, return_selection_image_rect = load_image(r'./Sprites/rond.png', (100, 100), loci[-1])  # Return button UI: default-size selector used when the back button is selected.
 
 bottle_img_size = (133,345-45)
@@ -479,9 +479,11 @@ button_bottle_ab_image, button_bottle_ab_image_rect = load_image(r'./Sprites/but
 button_bottle_cd_image, button_bottle_cd_image_rect = load_image(r'./Sprites/button_2comp_2.png', (150,150), (loci[1]))
 
 circulating_settings_image, circulating_settings_image_rect = load_image(r'./Sprites/circulation_settings.png', (100,100), (loci[0]))
-refill_image_1, refill_image_rect_1  = load_image(r'./Sprites/cup_empty.png', (100,150), (loci[1]))
-refill_image_2, refill_image_rect_2  = load_image(r'./Sprites/cup_half.png', (100,150), (loci[1][0]+2, loci[1][1]))
-refill_image_3, refill_image_rect_3  = load_image(r'./Sprites/cup_full.png', (100,150), (loci[1][0]-1, loci[1][1]))
+ratio32 = (2,3)
+size_refill = (ratio32[0]*40, ratio32[1]*40)
+refill_image_1, refill_image_rect_1  = load_image(r'./Sprites/cup_empty.png', size_refill, (loci[1]))
+refill_image_2, refill_image_rect_2  = load_image(r'./Sprites/cup_half.png', size_refill, (loci[1][0]+2, loci[1][1]))
+refill_image_3, refill_image_rect_3  = load_image(r'./Sprites/cup_full.png', size_refill, (loci[1][0]-0.5, loci[1][1]))
 
 
 def draw_selection_cursor():
@@ -493,13 +495,16 @@ def draw_selection_cursor():
 def draw_bar_track(x, y, bar_width):
     """Draw the selection-bar background used behind adjustable bar menus."""
     pygame.draw.rect(screen, SELECTION_BAR_TRACK_COLOR, pygame.Rect(x, y, int(bar_width), 50))
-
+dt = 0
 dispense_started = False
 dispense_warning_message = ""
 LOW_VOLUME_THRESHOLD_ML = 20
 running = True
 while running:
-    clock.tick(60)
+    dt = dt + clock.tick()
+    if dt > 100:
+        dt = 0
+        pygame.display.flip()
     loci = locus(sprites)
     selection_image_rect.center = (loci[location]) 
     return_selection_image_rect.center = (loci[location])
@@ -909,9 +914,7 @@ while running:
         else:
             screen.blit(return_,return_rect)
 
-        
 
-    
     if menu == MENU_MIX_CONFIRM: #draw start mixing confirmation menu
         if location == 2:
             location = 1
@@ -930,11 +933,11 @@ while running:
         screen.blit(mixing_settings_text, mixing_settings_text_rect)  # draw mixing settings text
         screen.blit(replace_cartridge_text, replace_cartridge_text_rect)  # draw replace cartridge text
         screen.blit(circulating_settings_image, circulating_settings_image_rect)  # draw
-        animation_period = 90
+        animation_period = 6000
         animation_frame = (animation_frame + 1) % animation_period
-        if animation_frame < animation_period//3:
+        if animation_frame < animation_period//4:
             screen.blit(refill_image_1, refill_image_rect_1)  # draw replace cartridge image
-        elif animation_frame < 2 * animation_period//3:
+        elif animation_frame < 2 * animation_period//4:
             screen.blit(refill_image_2, refill_image_rect_2)  # draw replace cartridge image
         else:
             screen.blit(refill_image_3, refill_image_rect_3)  # draw replace cartridge image
@@ -1087,5 +1090,5 @@ while running:
 
         previous_menu = menu
     top_bar.draw(screen)
-    pygame.display.flip()           # update display
+    #pygame.display.flip()           # update display
 pygame.quit()
