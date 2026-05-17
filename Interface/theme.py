@@ -20,6 +20,7 @@ DEFAULT_FONT = SERIF_FONTS
 CLOCK_FONTS = "sfprodisplay,sfpro,helveticaneue,helvetica,arial,notosans,liberationsans,dejavusans"
 
 # Interface font sizes
+FONT_SIZE_SMALLER = 16
 FONT_SIZE_SMALL = 28
 FONT_SIZE_NORMAL = 28
 FONT_SIZE_BIG = 72

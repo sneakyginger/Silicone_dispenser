@@ -1,7 +1,7 @@
 import RPi.GPIO as GPIO
 import time
 
-pin = 7  # BOARD pin 12 = GPIO18, hardware PWM
+pin = 32  # BOARD pin 12 = GPIO18, hardware PWM
 
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(pin, GPIO.OUT)
@@ -23,5 +23,5 @@ while True:
 	set_angle(0)
 	time.sleep(1)
 	print("weer")
-	set_angle(180)
+	set_angle(90)
 	time.sleep(1)

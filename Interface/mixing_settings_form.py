@@ -64,9 +64,9 @@ def handle_click(state, location):
 
 def draw(screen, width, height, state, create_text):
     row_rects = [
-        pygame.Rect(80, 105, width - 160, 72),
-        pygame.Rect(80, 190, width - 160, 72),
-        pygame.Rect(80, 275, width - 160, 72),
+        pygame.Rect(80, (height-22)/5*2-72/2, width - 160, 72),
+        pygame.Rect(80, (height-22)/5*3-72/2, width - 160, 72),
+        pygame.Rect(80, (height-22)/5*4-72/2, width - 160, 72),
     ]
     rows = [
         ("Frequency", _frequency_label(state), FIELD_FREQUENCY),

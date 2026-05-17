@@ -54,10 +54,11 @@ def total_dispense_1comp(bucket_id, weight,step_delay = 0.001):
         step_delay = 0.01
     else:
         step_delay = 0.1
-    tare = tare()
-    dispensed = dispense_and_measure(bucket_id, weight, tare,step_delay)
+    tare_weight = tare()
+    dispensed = dispense_and_measure(bucket_id, weight, tare_weight,step_delay)
+    print(dispensed)
     while(dispensed < weight-0.06):
-        dispensed = dispense_and_measure(bucket_id, weight - dispensed, tare,step_delay)
+        dispensed = dispense_and_measure(bucket_id, weight - dispensed, tare_weight,step_delay)
         print(dispensed)
         if weight > 5:
             step_delay = 0.005
@@ -65,16 +66,20 @@ def total_dispense_1comp(bucket_id, weight,step_delay = 0.001):
             step_delay = 0.01
         else:
             step_delay = 0.1
-    return total_dispensed
+    return dispensed
 
 def multi_dispense(amounts, progress_callback=None, progress_interval=10):
     measured = [0.0, 0.0, 0.0, 0.0]
+    measures = []
     for i in range(len(amounts)):
         if amounts[i] != 0:
             measured[i] = total_dispense_1comp(i + 1, float(amounts[i]), step_delay)
             if progress_callback is not None:
                 progress_callback(i, measured[i])
-    error =  max(measured)-min(measured)
+    for i in range(len(measured)):
+        if measured[i] != 0:
+            measures.append(measured[i])
+    error =  max(measures)-min(measures)
     if error > 0.06:
         for i in range(len(measured)):
             if measured[i] == min(measured):

@@ -4,25 +4,36 @@
       "component": "A",
       "hardness_group": "small",
       "hardness": 5,
-      "volume": 3.43
+      "volume": 3.43,
+      "microsteps_per_gram": 82.47
     },
     "bucket_2": {
       "component": "B",
       "hardness_group": "small",
       "hardness": 5,
-      "volume": 62.53
+      "volume": 62.53,
+      "microsteps_per_gram": 82.47
     },
     "bucket_3": {
       "component": "A",
       "hardness_group": "big",
       "hardness": 50,
-      "volume": 152.78
+      "volume": 152.78,
+      "microsteps_per_gram": 82.47
     },
     "bucket_4": {
       "component": "B",
       "hardness_group": "big",
       "hardness": 50,
-      "volume": 767.97
+      "volume": 767.97,
+      "microsteps_per_gram": 82.47
     }
+  },
+  "mixing_settings": {
+    "frequency": "daily",
+    "weekday": 0,
+    "hour": 9,
+    "minute": 0,
+    "duration_minutes": 3
   }
 }

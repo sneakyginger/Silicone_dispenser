@@ -109,7 +109,7 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
 
         integral += error * DT
         steps = int(Kp * error + Ki * integral)
-        cap = 10 if error < 1.0 else MAX_STEPS
+        cap = 50 if error < 1.0 else MAX_STEPS
         steps = max(1, min(cap, steps))
         move_stepper(bucket_id, steps)
 
