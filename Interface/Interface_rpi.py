@@ -255,7 +255,7 @@ def doWork():
 def locus(amount_sprites):
     loci = []
     for i in range(amount_sprites):
-        loci.append((width/(amount_sprites+1)*(i+1), (height-22)/2+22))
+        loci.append((width/(amount_sprites+1)*(i+1), (height-22)/2+30))
     loci.append((width-50, height-50)) #return sprite location
     return loci
 def available_locations(current_location, direction, options):
@@ -373,6 +373,10 @@ two_component_text,two_component_text_rect = create_text("2 component", (loci[1]
 four_component_text, four_component_text_rect = create_text("4 component", (loci[2][0], loci[2][1]+90), TEXT_COLOR, "smaller")
 mixing_menu_text, mixing_menu_text_rect = create_text("Circulation", (loci[3][0], loci[3][1]+90), TEXT_COLOR, "smaller")
 settings_text, settings_text_rect = create_text("Settings", (loci[4][0], loci[4][1]+90), TEXT_COLOR, "smaller")
+dispensing_one_component_text, dispensing_one_component_text_rect = create_text("Dispensing", (loci[0][0], loci[0][1]+105), TEXT_COLOR, "smaller")
+dispensing_two_component_text, dispensing_two_component_text_rect = create_text("Dispensing", (loci[1][0], loci[1][1]+105), TEXT_COLOR, "smaller")
+dispensing_four_component_text, dispensing_four_component_text_rect = create_text("Dispensing", (loci[2][0], loci[2][1]+105), TEXT_COLOR, "smaller")
+
 
 loci = locus(2)
 #Setting options text
@@ -824,6 +828,9 @@ while running:
         screen.blit(circulating_image, circulating_image_rect)  # draw button 3
         screen.blit(mixing_menu_text, mixing_menu_text_rect)  # draw mixing menu text
         screen.blit(settings_text, settings_text_rect)  # draw settings text
+        screen.blit(dispensing_one_component_text, dispensing_one_component_text_rect)  # draw one component dispensing text
+        screen.blit(dispensing_two_component_text, dispensing_two_component_text_rect)  # draw two component dispensing text
+        screen.blit(dispensing_four_component_text, dispensing_four_component_text_rect)  # draw four component dispensing text
 
         if dispense_warning_message:
             warn_text, warn_rect = create_text(dispense_warning_message, (width // 2, 130), theme.WARNING, "small")
