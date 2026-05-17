@@ -21,6 +21,8 @@ import dispensing_progress_view
 import mixing_settings_form
 import top_bar
 import theme
+clock = pygame.time.Clock()
+
 #import Weight_sensor
 
 TEXT_COLOR = theme.BLACK
@@ -497,6 +499,7 @@ dispense_warning_message = ""
 LOW_VOLUME_THRESHOLD_ML = 20
 running = True
 while running:
+    clock.tick(60)
     loci = locus(sprites)
     selection_image_rect.center = (loci[location]) 
     return_selection_image_rect.center = (loci[location])
@@ -927,10 +930,11 @@ while running:
         screen.blit(mixing_settings_text, mixing_settings_text_rect)  # draw mixing settings text
         screen.blit(replace_cartridge_text, replace_cartridge_text_rect)  # draw replace cartridge text
         screen.blit(circulating_settings_image, circulating_settings_image_rect)  # draw
-        animation_frame = (animation_frame + 1) % 3000
-        if animation_frame < 1000:
+        animation_period = 90
+        animation_frame = (animation_frame + 1) % animation_period
+        if animation_frame < animation_period//3:
             screen.blit(refill_image_1, refill_image_rect_1)  # draw replace cartridge image
-        elif animation_frame < 2000:
+        elif animation_frame < 2 * animation_period//3:
             screen.blit(refill_image_2, refill_image_rect_2)  # draw replace cartridge image
         else:
             screen.blit(refill_image_3, refill_image_rect_3)  # draw replace cartridge image
