@@ -509,7 +509,6 @@ while running:
     loci = locus(sprites)
     screen.fill(BACKGROUND_COLOR)# clear screen
     selection_image_rect.center = (loci[location]) 
-    return_selection_image_rect.center = (loci[location])
 
     if is_raspberry_pi():
         encoder = Encoder.def_encoder(Pin_left, Pin_right, Pin_click)
