@@ -60,7 +60,7 @@ def move_stepper(motor_id, microsteps):
         GPIO.output(pin, 0); time.sleep(STEP_DELAY / 2)
     GPIO.output(DIR_PIN, 1)
     i = 0
-    while i<=100:
+    while i<=200:
         GPIO.output(pin, 1)
         time.sleep(0.015 / 2)
         GPIO.output(pin, 0)
