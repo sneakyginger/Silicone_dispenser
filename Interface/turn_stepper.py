@@ -1,4 +1,11 @@
-"""Turn one stepper by 5000 steps and report the weight difference."""
+"""Turn one stepper by 5000 steps and report the weight difference.
+
+Run with:
+    python3 turn_stepper.py <stepper>
+
+Example:
+    python3 turn_stepper.py 1
+"""
 
 import argparse
 import dispense_minimal
