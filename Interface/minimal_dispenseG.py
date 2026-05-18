@@ -26,7 +26,7 @@ manual_sensor = keyboard_weight_entry  # backwards-compatible alias.
 STEPPER_PINS = [7, 11, 13, 15]   # BOARD pin per motor (1..4)
 MF_PIN = 16                      # microstep-full pin
 DIR_PIN = 18                     # direction pin
-STEP_DELAY = 0.003                # seconds per microstep pulse
+STEP_DELAY = 0.015                # seconds per microstep pulse
 MICROSTEPS_PER_GRAM = 82.47      # calibrated: 5000 steps → 60.627 g
 MIN_STEPS = 40                   # minimum microsteps per pulse to overcome pump backlash
 
@@ -59,6 +59,7 @@ def move_stepper(motor_id, microsteps):
         GPIO.output(pin, 1); time.sleep(STEP_DELAY / 2)
         GPIO.output(pin, 0); time.sleep(STEP_DELAY / 2)
     GPIO.output(MF_PIN, 0) # Disable steppers
+
     while i<=40:
         GPIO.output(pin, 1)
         time.sleep(0.01 / 2)
@@ -144,6 +145,13 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
         positions[bucket_id - 1] = 0
         set_servos(positions)
         remaining = target - current
+        if remaining > 5: 
+            STEP_DELAY = 0.015
+        elif remaining > 1:
+            STEP_DELAY = 0.03
+        else:
+            STEP_DELAY = 0.06
+
         if remaining <= 0.05:
             positions = [1, 1, 1, 1]
             set_servos(positions)
