@@ -29,7 +29,7 @@ DIR_PIN = 18                     # direction pin
 RPM = 20
 steps_temp = RPM*200/60
 halfPeriod = (1 / steps_temp) / 2
-STEP_DELAY = halfPeriod * 2           # seconds per microstep pulse
+STEP_DELAY = 0.05         # seconds per microstep pulse
 MICROSTEPS_PER_GRAM = 82.47      # calibrated: 5000 steps → 60.627 g
 MIN_STEPS = 40                   # minimum microsteps per pulse to overcome pump backlash
 
