@@ -132,7 +132,7 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
 
     delta = after_cal - start_weight
     if delta > 0.01:
-        steps_per_gram = cal_steps / delta
+        steps_per_gram = cal_steps / delta-0.01
         saved_settings.set_bucket_microsteps_per_gram(bucket_id - 1, steps_per_gram)
         print(f"    calibrated: {delta:.3f} g in {cal_steps} steps -> {steps_per_gram:.2f} steps/g (previous {saved_steps_per_gram:.2f})")
     else:
