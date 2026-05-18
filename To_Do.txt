@@ -1,7 +1,0 @@
-To Do:
-alle opties testen in interface
-Testen 1 comp binnen tollerantie voor beide pompen
-testen 2 comp binne tollerantie
-Testen circulatie automatisch
-Testen circulatie instant
-Als alles werkt: meerdere testen 2 component voor repeatability (ideaal 29 metingen voor Cpk-analyse)
