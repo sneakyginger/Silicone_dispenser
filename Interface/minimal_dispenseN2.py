@@ -27,7 +27,7 @@ STEPPER_PINS = [7, 11, 13, 15]   # BOARD pin per motor (1..4)
 MF_PIN = 16                      # microstep-full pin
 DIR_PIN = 18                     # direction pin
 
-RPM = 20
+RPM = 10
 STEPS_PER_REV = 200
 
 STEP_DELAY = 60 / (RPM * STEPS_PER_REV)  # seconds per microstep pulse
