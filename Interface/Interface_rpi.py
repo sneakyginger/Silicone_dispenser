@@ -504,11 +504,12 @@ while running:
     dt = dt + clock.tick()
     if dt > 1000/60:
         dt = 0
+        newframe = True
         pygame.display.flip()
     loci = locus(sprites)
+    screen.fill(BACKGROUND_COLOR)# clear screen
     selection_image_rect.center = (loci[location]) 
     return_selection_image_rect.center = (loci[location])
-    screen.fill(BACKGROUND_COLOR)# clear screen
 
     if is_raspberry_pi():
         encoder = Encoder.def_encoder(Pin_left, Pin_right, Pin_click)
@@ -933,8 +934,10 @@ while running:
         screen.blit(mixing_settings_text, mixing_settings_text_rect)  # draw mixing settings text
         screen.blit(replace_cartridge_text, replace_cartridge_text_rect)  # draw replace cartridge text
         screen.blit(circulating_settings_image, circulating_settings_image_rect)  # draw
-        animation_period = 6000
-        animation_frame = (animation_frame + 1) % animation_period
+        animation_period = 60
+        if(newframe):
+            animation_frame = (animation_frame + 1) % animation_period
+            newframe = False
         if animation_frame < animation_period//4:
             screen.blit(refill_image_1, refill_image_rect_1)  # draw replace cartridge image
         elif animation_frame < 2 * animation_period//4:
