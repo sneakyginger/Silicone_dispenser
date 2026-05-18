@@ -26,7 +26,7 @@ manual_sensor = keyboard_weight_entry  # backwards-compatible alias.
 STEPPER_PINS = [7, 11, 13, 15]   # BOARD pin per motor (1..4)
 MF_PIN = 16                      # microstep-full pin
 DIR_PIN = 18                     # direction pin
-STEP_DELAY = 0.015                # seconds per microstep pulse
+STEP_DELAY = 0.017                # seconds per microstep pulse
 MICROSTEPS_PER_GRAM = 82.47      # calibrated: 5000 steps → 60.627 g
 MIN_STEPS = 40                   # minimum microsteps per pulse to overcome pump backlash
 
@@ -147,7 +147,7 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
         set_servos(positions)
         remaining = target - current
         if remaining > 5: 
-            STEP_DELAY = 0.015
+            STEP_DELAY = 0.017
         elif remaining > 1:
             STEP_DELAY = 0.03
         else:
