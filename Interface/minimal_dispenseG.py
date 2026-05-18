@@ -127,8 +127,7 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
     positions = [1, 1, 1, 1]
     set_servos(positions)
     after_cal = measure_weight()
-    positions[bucket_id - 1] = 0
-    set_servos(positions)
+
 
     delta = after_cal - start_weight
     if delta > 0.01:
