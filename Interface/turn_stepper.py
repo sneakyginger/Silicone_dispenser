@@ -8,7 +8,7 @@ Example:
 """
 
 import argparse
-import dispense_minimal
+import minimal_dispenseN2
 
 
 def parse_args():
@@ -27,16 +27,16 @@ def parse_args():
 def main():
     args = parse_args()
 
-    weight_before = dispense_minimal.measure_weight()
+    weight_before = minimal_dispenseN2.measure_weight()
     print(f"Weight before: {weight_before:.3f} g")
 
     servo_positions = [1, 1, 1, 1]
     servo_positions[args.stepper - 1] = 0
-    dispense_minimal.set_servos(servo_positions)
-    dispense_minimal.move_stepper(args.stepper, 5000)
-    dispense_minimal.set_servos([1, 1, 1, 1])
+    minimal_dispenseN2.set_servos(servo_positions)
+    minimal_dispenseN2.move_stepper(args.stepper, 5000)
+    minimal_dispenseN2.set_servos([1, 1, 1, 1])
 
-    weight_after = dispense_minimal.measure_weight()
+    weight_after = minimal_dispenseN2.measure_weight()
     print(f"Weight after:  {weight_after:.3f} g")
 
     print(f"Stepper:       {args.stepper}")
