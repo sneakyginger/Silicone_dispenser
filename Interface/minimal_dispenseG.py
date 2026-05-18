@@ -60,7 +60,7 @@ def move_stepper(motor_id, microsteps):
         GPIO.output(pin, 0); time.sleep(STEP_DELAY / 2)
     GPIO.output(DIR_PIN, 1)
     i = 0
-    while i<=50:
+    while i<=100:
         GPIO.output(pin, 1)
         time.sleep(0.015 / 2)
         GPIO.output(pin, 0)
@@ -123,7 +123,7 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
     cal_steps = max(MIN_STEPS, int(amount * calibration_steps_percentage * saved_steps_per_gram))
     print(f"calibration pulse: motor {bucket_id} for {cal_steps} microsteps (~{calibration_steps_percentage*100:.0f}% of {amount:.2f} g)")
     move_stepper(bucket_id, cal_steps)
-    time.sleep(0.1)
+    time.sleep(1)
     positions = [1, 1, 1, 1]
     set_servos(positions)
     after_cal = measure_weight()
