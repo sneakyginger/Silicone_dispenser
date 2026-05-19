@@ -144,6 +144,7 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
 
     while True:
         positions = [1, 1, 1, 1]
+        time.sleep(1)
         set_servos(positions)
         current = measure_weight()
         remaining = target - current
