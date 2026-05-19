@@ -160,12 +160,11 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
         
         positions[bucket_id - 1] = 0
         set_servos(positions)
-        if remaining > 5: 
-            STEP_DELAY = 0.02
-        elif remaining > 1:
-            STEP_DELAY = 0.04
+
+        if remaining > 1:
+            STEP_DELAY = 0.03
         else:
-            STEP_DELAY = 0.06
+            STEP_DELAY = 0.04
 
         
         steps = max(MIN_STEPS, int(remaining * dispensing_steps_percentage * steps_per_gram))
