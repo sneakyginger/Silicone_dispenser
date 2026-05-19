@@ -179,3 +179,23 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
 
     if progress_callback:
         progress_callback(bucket_id - 1, measure_weight() - start_weight)
+
+
+
+def circulate(progress_callback=None, progress_interval=1):
+    set_servos([1, 1, 1, 1])
+
+    duration_minutes = saved_settings.mixing_settings()["duration_minutes"]
+    circulation_microsteps = int((duration_minutes * 60) / STEP_DELAY)
+    progress_chunk_steps = max(1, int(progress_interval / STEP_DELAY))
+
+    for bucket_index in range(4):
+        grams_remaining = saved_settings.bucket_volume(bucket_index) * density_of_liquid
+        if grams_remaining > 0:
+            moved_microsteps = 0
+            while moved_microsteps < circulation_microsteps:
+                chunk_steps = min(progress_chunk_steps, circulation_microsteps - moved_microsteps)
+                move_stepper(bucket_index + 1, chunk_steps)
+                moved_microsteps += chunk_steps
+                if progress_callback:
+                    progress_callback(bucket_index, moved_microsteps * STEP_DELAY)
