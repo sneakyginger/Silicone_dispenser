@@ -143,19 +143,21 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
         print(f"    calibration pulse dispensed too little ({delta:.3f} g); keeping saved {saved_steps_per_gram:.2f} steps/g")
 
     while True:
+        positions = [1, 1, 1, 1]
+        set_servos(positions)
+        current = measure_weight()
+        remaining = target - current
+        
         if remaining <= 0.05:
             positions = [1, 1, 1, 1]
             set_servos(positions)
             print(f"Finished dispensing component {bucket_id}: target={target:.2f} g, actual={current:.2f} g")
             STEP_DELAY = 0.02
             break
+
         
-        positions = [1, 1, 1, 1]
-        set_servos(positions)
-        current = measure_weight()
         positions[bucket_id - 1] = 0
         set_servos(positions)
-        remaining = target - current
         if remaining > 5: 
             STEP_DELAY = 0.02
         elif remaining > 1:
