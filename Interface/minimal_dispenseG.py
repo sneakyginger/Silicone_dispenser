@@ -147,7 +147,9 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
         set_servos(positions)
         current = measure_weight()
         remaining = target - current
-        
+
+        progress_callback(bucket_id - 1, current - start_weight)
+
         if remaining <= 0.05:
             positions = [1, 1, 1, 1]
             set_servos(positions)
@@ -171,9 +173,9 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
         move_stepper(bucket_id, steps)
 
         now = time.monotonic()
-        if progress_callback and (now - last_report) >= progress_interval:
-            progress_callback(bucket_id - 1, current - start_weight)
-            last_report = now
+        #if progress_callback and (now - last_report) >= progress_interval:
+        #    progress_callback(bucket_id - 1, current - start_weight)
+        #    last_report = now
 
     if progress_callback:
         progress_callback(bucket_id - 1, measure_weight() - start_weight)
