@@ -98,11 +98,14 @@ def set_servos(positions):
 # --- The one function other files call --------------------------------------
 
 def multi_dispense(amounts, progress_callback=None, progress_interval=10):
+    start_time = time.perf_counter()
     # Report progress to the UI by calling, at most once per `progress_interval` seconds:
     #     progress_callback(component_index, grams_dispensed_so_far)
     for i, amount in enumerate(amounts):
         if amount > 0:
             dispense_1comp(i + 1, amount, progress_callback)
+    elapsed_time = time.perf_counter() - start_time
+    print(f"multi_dispense completed in {elapsed_time:.2f} seconds.")
 
 
 def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=10):
