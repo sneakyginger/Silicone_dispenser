@@ -35,8 +35,8 @@ SERVO_ANGLE_DISPENSE = 90        # degrees for the "dispense" position
 SERVO_ANGLE_MIX = 0              # degrees for the "mix" position
 
 
-calibration_steps_percentage = 0.5
-dispensing_steps_percentage = 0.8
+calibration_steps_percentage = 0.75
+dispensing_steps_percentage = 0.9
 
 
 # --- Helpers available to your implementation -------------------------------
