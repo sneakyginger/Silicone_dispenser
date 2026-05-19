@@ -18,6 +18,8 @@ if sum([use_minimal_g, use_minimal_n, use_minimal_n2]) > 1:
     sys.exit("Choose only one of -g, -n, or -n2.")
 import dispensing_job
 import dispensing_progress_view
+import circulating_job
+import circulating_progress_view
 import mixing_settings_form
 import top_bar
 import theme
@@ -96,6 +98,20 @@ else:
                     time.sleep(_DispenseStub.sim_update_seconds)
                 measured[i] = final_measured
             return measured
+
+        @staticmethod
+        def circulate(progress_callback=None, progress_interval=1):
+            duration_seconds = saved_settings.mixing_settings()["duration_minutes"] * 60
+            for i in range(4):
+                if saved_settings.bucket_volume(i) <= 0:
+                    continue
+                elapsed = 0.0
+                while elapsed < duration_seconds:
+                    sleep_seconds = min(progress_interval, duration_seconds - elapsed)
+                    time.sleep(sleep_seconds)
+                    elapsed += sleep_seconds
+                    if progress_callback is not None:
+                        progress_callback(i, elapsed)
     dispense = _DispenseStub()
     Encoder = None
 
@@ -123,6 +139,7 @@ MENU_MIXING_START_TIME = 11
 MENU_1COMPONENT_SELECT = 12
 MENU_1COMPONENT_WEIGHT = 13
 MENU_DISPENSING = -1
+MENU_CIRCULATING = -2
 MENU_2COMPONENT_SELECTION = 15
 
 max_weight_1component = 100
@@ -270,7 +287,7 @@ def available_locations(current_location, direction, options):
     return current_location
 
 def menu_has_return_button(menu):
-    return menu not in (MENU_START, MENU_MIX_CONFIRM, MENU_DISPENSING)
+    return menu not in (MENU_START, MENU_MIX_CONFIRM, MENU_DISPENSING, MENU_CIRCULATING)
 
 def available_menu_locations(menu, sprites):
     if menu_has_return_button(menu):
@@ -295,7 +312,7 @@ button_size = (75,75)
 
 def get_click_target(mouse_pos, menu, sprites, loci):
     """Map a mouse click position to the location index it activates, or None."""
-    if menu == MENU_DISPENSING:
+    if menu in (MENU_DISPENSING, MENU_CIRCULATING):
         return None
 
     return_rect = pygame.Rect(0, 0, 120, 120)
@@ -497,6 +514,7 @@ def draw_bar_track(x, y, bar_width):
     pygame.draw.rect(screen, SELECTION_BAR_TRACK_COLOR, pygame.Rect(x, y, int(bar_width), 50))
 dt = 0
 dispense_started = False
+circulate_started = False  # Circulation screen UI: tracks whether the background circulation job has been launched.
 dispense_warning_message = ""
 LOW_VOLUME_THRESHOLD_ML = 20
 running = True
@@ -504,11 +522,11 @@ while running:
     dt = dt + clock.tick()
     if dt > 1000/60:
         dt = 0
+        newframe = True
         pygame.display.flip()
     loci = locus(sprites)
-    selection_image_rect.center = (loci[location]) 
-    return_selection_image_rect.center = (loci[location])
     screen.fill(BACKGROUND_COLOR)# clear screen
+    selection_image_rect.center = (loci[location]) 
 
     if is_raspberry_pi():
         encoder = Encoder.def_encoder(Pin_left, Pin_right, Pin_click)
@@ -714,7 +732,11 @@ while running:
 
         elif menu == MENU_MIX_CONFIRM:
             if location == 0:
-                menu = MENU_DISPENSING
+                if circulating_job.start(dispense):
+                    circulate_started = True  # Circulation screen UI: marks the progress screen as active after the worker starts.
+                    menu = MENU_CIRCULATING
+                else:
+                    menu = MENU_START
             elif location == 1:
                 menu = MENU_START
 
@@ -933,8 +955,10 @@ while running:
         screen.blit(mixing_settings_text, mixing_settings_text_rect)  # draw mixing settings text
         screen.blit(replace_cartridge_text, replace_cartridge_text_rect)  # draw replace cartridge text
         screen.blit(circulating_settings_image, circulating_settings_image_rect)  # draw
-        animation_period = 6000
-        animation_frame = (animation_frame + 1) % animation_period
+        animation_period = 60
+        if(newframe):
+            animation_frame = (animation_frame + 1) % animation_period
+            newframe = False
         if animation_frame < animation_period//4:
             screen.blit(refill_image_1, refill_image_rect_1)  # draw replace cartridge image
         elif animation_frame < 2 * animation_period//4:
@@ -1081,6 +1105,16 @@ while running:
             weight_2component_progress = max_weight_2component//2
             weight_4component_progress = max_weight_4component//2
             hardness_4component_progress = (min_hardness_4component + max_hardness_4component) // 2
+
+    if menu == MENU_CIRCULATING:  # draw circulation loading bars
+        if circulate_started:
+            circulation_snapshot = circulating_job.snapshot()  # Circulation screen UI: thread-safe copy of worker progress for drawing.
+            circulating_progress_view.draw(screen, circulation_snapshot)
+            if circulation_snapshot["done"]:
+                circulating_job.reset()
+                menu = MENU_START
+                location = 0
+                circulate_started = False  # Circulation screen UI: clears the active progress screen after completion.
 
     if menu != previous_menu:
         if menu != MENU_MIX_CONFIRM:
