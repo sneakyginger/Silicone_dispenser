@@ -60,7 +60,7 @@ def move_stepper(motor_id, microsteps):
         GPIO.output(pin, 0); time.sleep(STEP_DELAY / 2)
     GPIO.output(DIR_PIN, 1)
     i = 0
-    while i<=300:
+    while i<=200:
         GPIO.output(pin, 1)
         time.sleep(0.015 / 2)
         GPIO.output(pin, 0)
@@ -131,9 +131,10 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
 
     delta = after_cal - start_weight
     if delta > 0.01:
-        steps_per_gram = cal_steps / delta-0.01
-        saved_settings.set_bucket_microsteps_per_gram(bucket_id - 1, steps_per_gram)
-        print(f"    calibrated: {delta:.3f} g in {cal_steps} steps -> {steps_per_gram:.2f} steps/g (previous {saved_steps_per_gram:.2f})")
+        steps_per_gram = cal_steps / delta-0.
+        if(steps_per_gram < saved_steps_per_gram*1.5):
+            saved_settings.set_bucket_microsteps_per_gram(bucket_id - 1, steps_per_gram)
+            print(f"    calibrated: {delta:.3f} g in {cal_steps} steps -> {steps_per_gram:.2f} steps/g (previous {saved_steps_per_gram:.2f})")
     else:
         steps_per_gram = saved_steps_per_gram
         print(f"    calibration pulse dispensed too little ({delta:.3f} g); keeping saved {saved_steps_per_gram:.2f} steps/g")
