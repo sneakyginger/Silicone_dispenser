@@ -143,6 +143,13 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
         print(f"    calibration pulse dispensed too little ({delta:.3f} g); keeping saved {saved_steps_per_gram:.2f} steps/g")
 
     while True:
+        if remaining <= 0.05:
+            positions = [1, 1, 1, 1]
+            set_servos(positions)
+            print(f"Finished dispensing component {bucket_id}: target={target:.2f} g, actual={current:.2f} g")
+            STEP_DELAY = 0.02
+            break
+        
         positions = [1, 1, 1, 1]
         set_servos(positions)
         current = measure_weight()
@@ -156,12 +163,7 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
         else:
             STEP_DELAY = 0.06
 
-        if remaining <= 0.05:
-            positions = [1, 1, 1, 1]
-            set_servos(positions)
-            print(f"Finished dispensing component {bucket_id}: target={target:.2f} g, actual={current:.2f} g")
-            STEP_DELAY = 0.02
-            break
+        
         steps = max(MIN_STEPS, int(remaining * dispensing_steps_percentage * steps_per_gram))
         print(f"moving motor {bucket_id} for {steps} microsteps (remaining: {remaining:.2f} g)")
         move_stepper(bucket_id, steps)
