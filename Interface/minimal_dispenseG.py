@@ -59,10 +59,10 @@ def move_stepper(motor_id, microsteps):
         GPIO.output(pin, 1); time.sleep(STEP_DELAY / 2)
         GPIO.output(pin, 0); time.sleep(STEP_DELAY / 2)
     GPIO.output(DIR_PIN, 1)
-    if microsteps >210:
+    if microsteps > 210+40:
         i = 0
     else:
-        i = 210-microsteps-40
+        i = 210-microsteps+40
     while i<=210:
         GPIO.output(pin, 1)
         time.sleep(0.015 / 2)
