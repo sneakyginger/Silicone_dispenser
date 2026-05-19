@@ -26,7 +26,7 @@ manual_sensor = keyboard_weight_entry  # backwards-compatible alias.
 STEPPER_PINS = [7, 11, 13, 15]   # BOARD pin per motor (1..4)
 MF_PIN = 16                      # microstep-full pin
 DIR_PIN = 18                     # direction pin
-STEP_DELAY = 0.017                # seconds per microstep pulse
+STEP_DELAY = 0.02                  # seconds per microstep pulse
 MICROSTEPS_PER_GRAM = 82.47      # calibrated: 5000 steps → 60.627 g
 MIN_STEPS = 40                   # minimum microsteps per pulse to overcome pump backlash
 
@@ -59,7 +59,10 @@ def move_stepper(motor_id, microsteps):
         GPIO.output(pin, 1); time.sleep(STEP_DELAY / 2)
         GPIO.output(pin, 0); time.sleep(STEP_DELAY / 2)
     GPIO.output(DIR_PIN, 1)
-    i = 0
+    if microsteps >200:
+        i = 0
+    else:
+        i = 200-microsteps-40
     while i<=200:
         GPIO.output(pin, 1)
         time.sleep(0.015 / 2)
@@ -147,9 +150,9 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
         set_servos(positions)
         remaining = target - current
         if remaining > 5: 
-            STEP_DELAY = 0.017
+            STEP_DELAY = 0.02
         elif remaining > 1:
-            STEP_DELAY = 0.03
+            STEP_DELAY = 0.04
         else:
             STEP_DELAY = 0.06
 
@@ -157,7 +160,7 @@ def dispense_1comp(bucket_id, amount, progress_callback=None, progress_interval=
             positions = [1, 1, 1, 1]
             set_servos(positions)
             print(f"Finished dispensing component {bucket_id}: target={target:.2f} g, actual={current:.2f} g")
-            STEP_DELAY = 0.015
+            STEP_DELAY = 0.02
             break
         steps = max(MIN_STEPS, int(remaining * dispensing_steps_percentage * steps_per_gram))
         print(f"moving motor {bucket_id} for {steps} microsteps (remaining: {remaining:.2f} g)")
