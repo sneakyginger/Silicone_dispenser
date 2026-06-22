@@ -1,0 +1,20 @@
+Aan te passen:
+
+Voor de buis m.b.t. dimensies en occlusie (via matlab module): 
+Pump Housing Bottom:
+	sketch 1: diameter van de middelste cirkel (aangeduide dimensie)
+	sketch 7: breedte van de 2 cutouts voor de klemming van de buis
+Pump Housing Top:
+	sketch 1: diameter van de buitenste cirkel
+
+Voor de andere aansluitingen:
+Container (Fusion):
+	sketch 25: lengtes/dimensions van de revolve voor de barb verbinding afhankelijk van de klemming/binnen/buitendiameter van de buis
+		   opletten op de chamfers aan de onderzijde hiervan om het zonder support printbaar te maken
+
+Voor de restrictor (Fusion):
+	sketch 1: idem als bij container
+	sketch 3 en 5: afhankelijk van de binnendiameter van de buis mee aanpassen met sketch 1
+
+	
+
